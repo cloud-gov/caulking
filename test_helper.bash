@@ -13,6 +13,7 @@ cleanGitRepo() {
 }
 
 testCommit() {
+    filename=$1
     (cd "${REPO_PATH}" && git add "${filename}")
     (cd ${REPO_PATH} && git commit -m 'test commit')
 }
@@ -30,7 +31,7 @@ addFileWithNoSecrets() {
 
     touch "${filename}"
     echo "Just a plain old file" >> "${filename}"
-    testCommit
+    testCommit $filename
 }
 
 addFileWithAwsSecrets() {
@@ -38,9 +39,9 @@ addFileWithAwsSecrets() {
 
     cat >${secrets_file} <<END
 SHHHH... Secrets in this file
-AWS_SECRET_ACCESS_KEY: WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp
+aws_secret_access_key = WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp
 END
-    testCommit
+    testCommit $secrets_file
 }
 
 addFileWithAwsAccessKey() {
@@ -49,7 +50,7 @@ addFileWithAwsAccessKey() {
 SHHHH... Secrets in this file
 AWS_ACCESS_KEY_ID: AKIAJLLCKKYFEWP5MWXA 
 END
-    testCommit
+    testCommit $secrets_file
 }
 
 addFileWithSlackAPIToken() {
@@ -59,7 +60,7 @@ addFileWithSlackAPIToken() {
 SHHHH... Secrets in this file
 slack_api_token=xoxb-333649436676-799261852869-clFJVVIaoJahpORboa3Ba2al
 END
-    testCommit
+    testCommit $secrets_file
 }
 
 addFileWithIPv4() {
@@ -69,16 +70,5 @@ addFileWithIPv4() {
 SHHHH... Secrets in this file
 Host: 127.0.0.1
 END
-    testCommit
+    testCommit $secrets_file
 }
-
-addFileWithSSN() {
-    local secrets_file="${REPO_PATH}/ssnfile.md"
-
-    cat >${secrets_file} <<END
-SHHHH... Secrets in this file
-SSN: 322-05-4321
-END
-    testCommit
-}
-

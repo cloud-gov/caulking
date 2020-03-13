@@ -34,10 +34,12 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-@test "leak prevention catches api token in test repo" {
+@test "leak prevention catches Slack api token in test repo" {
     run addFileWithSlackAPIToken
-    [ $(echo "$output" | grep -c 'Found Secrets: 1') -eq 1 ]
+    [ ${status} -eq 1 ]
 }
 
-
-
+@test "leak prevention catches IPv4 address in test repo" {
+    run addFileWithIPv4
+    [ ${status} -eq 1 ]
+}
