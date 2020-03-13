@@ -8,7 +8,6 @@ INSTALL_TARGETS= gitleaks hook_script global_hooks hook_script patterns
 
 .DEFAULT: install
 
-FORCE:
 
 install: $(INSTALL_TARGETS)
 
@@ -39,3 +38,5 @@ ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
 
 /usr/local/bin/gitleaks:
 	brew install gitleaks
+
+FORCE:

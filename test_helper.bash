@@ -67,7 +67,7 @@ addFileWithSSN() {
 
     cat >${secrets_file} <<END
 SHHHH... Secrets in this file
-SSN: 322-99-4321
+SSN: 322-05-4321
 END
     testCommit
 }

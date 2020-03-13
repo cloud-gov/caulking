@@ -1,7 +1,7 @@
 #!/bin/sh 
 
 gitleaksEnabled=$(git config --bool hooks.gitleaks)
-cmd="/usr/local/bin/gitleaks --verbose --redact --pretty"
+cmd="/usr/local/bin/gitleaks --verbose --redact --pretty --config=$HOME/.git-support/gitleaks.toml"
 if [ $gitleaksEnabled == "true" ]; then
     $cmd
     status=$?
