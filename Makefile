@@ -2,11 +2,13 @@ GIT_SUPPORT_PATH=  ${HOME}/.git-support
 RAW_GITLEAKS= https://raw.githubusercontent.com/zricethezav/gitleaks
 GITLEAKS_VERSION=v4.1.0
 
-INSTALL_TARGETS= gitleaks hook_script global_hooks hook_script hook_configuration
+INSTALL_TARGETS= gitleaks hook_script global_hooks hook_script patterns
 
 .PHONY: $(INSTALL_TARGETS)
 
 .DEFAULT: install
+
+FORCE:
 
 install: $(INSTALL_TARGETS)
 
@@ -22,12 +24,12 @@ global_hooks:
 	git config --global hooks.gitleaks true
 	git config --global core.hooksPath ${GIT_SUPPORT_PATH}/hooks
 
-hook_configuration: ${GIT_SUPPORT_PATH}/gitleaks.toml
+patterns: ${GIT_SUPPORT_PATH}/gitleaks.toml
 
 ${GIT_SUPPORT_PATH}/gitleaks.toml: leaky-repo.toml local.toml
 	cat $^ > $@
 
-leaky-repo.toml:
+leaky-repo.toml: FORCE
 	curl --silent ${RAW_GITLEAKS}/${GITLEAKS_VERSION}/examples/$@ -o $@
 
 ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
