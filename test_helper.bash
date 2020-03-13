@@ -62,6 +62,16 @@ END
     testCommit
 }
 
+addFileWithIPv4() {
+    local secrets_file="${REPO_PATH}/ipv4file.md"
+
+    cat >${secrets_file} <<END
+SHHHH... Secrets in this file
+Host: 127.0.0.1
+END
+    testCommit
+}
+
 addFileWithSSN() {
     local secrets_file="${REPO_PATH}/ssnfile.md"
 
