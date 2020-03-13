@@ -6,7 +6,3 @@
 	regex = '''[\W\D]?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}[\W\D]?'''
 	tags = ["IPv4", "IP", "addresses"]
 
-[[rules]]
-	description = "Slack API tokens"
-	regex = '''xox.-[0-9]{12}-[0-9]{12}-[0-9a-zA-Z]{24}'''
-	tags = ["key", "slack"]
