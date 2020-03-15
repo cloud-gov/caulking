@@ -73,3 +73,12 @@ END
     testCommit $secrets_file
 }
 
+turnOffHooksGitleaks() {
+    (cd $REPO_PATH && git config --local hooks.gitleaks false)
+    ./check_repos.sh $REPO_PATH
+}
+
+createPrecommitNoGitleaks() {
+    (cd $REPO_PATH && mv .git/hooks/pre-commit.sample .git/hooks/pre-commit)
+    ./check_repos.sh $REPO_PATH
+}
