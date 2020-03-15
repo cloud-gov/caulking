@@ -43,3 +43,13 @@ load test_helper
     run addFileWithIPv4
     [ ${status} -eq 1 ]
 }
+
+@test "turning off hooks.gitleaks on a repo" {
+    run turnOffHooksGitleaks
+    [ ${status} -eq 1 ]
+}
+
+@test "creating precommit w/o gitleakss in a repo" {
+    run createPrecommitNoGitleaks
+    [ ${status} -eq 1 ]
+}

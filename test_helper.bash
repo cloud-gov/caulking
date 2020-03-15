@@ -72,3 +72,4 @@ Host: 127.0.0.1
 END
     testCommit $secrets_file
 }
+
