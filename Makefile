@@ -39,4 +39,7 @@ ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
 /usr/local/bin/gitleaks:
 	brew install gitleaks
 
+/usr/local/bin/pcregrep:
+	brew install pcregep
+
 FORCE:

@@ -18,7 +18,20 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-@test "creating precommit w/o gitleakss in a repo" {
-    run createPrecommitNoGitleaks
+@test "creating precommit w/o gitleaks in a repo" {
+    createPrecommitNoGitleaks
+    run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
     [ ${status} -eq 1 ]
+}
+
+@test "creating precommit w commented gitleaks in a repo" {
+    createPrecommitCommentedGitleaks
+    run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
+    [ ${status} -eq 1 ]
+}
+
+@test "creating precommit w OK gitleaks in a repo" {
+    run createPrecommitOKGitleaks
+    run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
+    [ ${status} -eq 0 ]
 }

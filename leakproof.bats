@@ -44,11 +44,10 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-@test "all repos have hooks.gitleaks set to true" {
+@test "repos have hooks.gitleaks set to true" {
     ./check_repos.sh $HOME check_hooks_gitleaks >&3
 }
 
-@test "creating precommit w/o gitleakss in a repo" {
-    run createPrecommitNoGitleaks
-    [ ${status} -eq 1 ]
+@test "repos are using precommit hooks with gitleaks" { 
+    ./check_repos.sh $HOME check_precommit_hook >&3
 }

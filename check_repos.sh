@@ -32,7 +32,11 @@ check_hooks_gitleaks() {
 }
 
 check_precommit_hook() {
-    echo "check_precommit_hook"
+    set -xv
+    if [ -f $gitrepo/hooks/pre-commit ]; then
+      pcregrep -q '^((?!#).)*gitleaks.*$' $gitrepo/hooks/pre-commit
+      return $?
+    fi
     return 0
 }
 

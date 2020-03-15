@@ -79,7 +79,21 @@ turnOffHooksGitleaks() {
     ./check_repos.sh $HOME check_hooks_gitleaks
 }
 
+## remaining are for development purposes
 createPrecommitNoGitleaks() {
     (cd $REPO_PATH && mv .git/hooks/pre-commit.sample .git/hooks/pre-commit)
-    ./check_repos.sh $REPO_PATH
+}
+
+createPrecommitCommentedGitleaks() {
+    cat >$REPO_PATH/.git/hooks/pre-commit <<END
+# lets not run gitleaks
+END
+}
+
+createPrecommitOKGitLeaks() {
+    cat >$REPO_PATH/.git/hooks/pre-commit <<END
+#!/bin/sh
+echo special stuff
+/usr/local/bin/gitleaks
+END
 }
