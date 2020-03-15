@@ -5,7 +5,7 @@ REPO_PATH=$(mktemp -d "${BATS_TMPDIR}/gittest.XXXXXX")
 BUNDLE=caulking_test_repo.bundle
 
 setupGitRepo() {
-    git clone $BUNDLE $REPO_PATH
+    git clone $BUNDLE $REPO_PATH >/dev/null 2>/dev/null
 }
 
 cleanGitRepo() {
@@ -73,9 +73,10 @@ END
     testCommit $secrets_file
 }
 
+# for development purposes
 turnOffHooksGitleaks() {
     (cd $REPO_PATH && git config --local hooks.gitleaks false)
-    ./check_repos.sh $REPO_PATH
+    ./check_repos.sh $HOME check_hooks_gitleaks
 }
 
 createPrecommitNoGitleaks() {

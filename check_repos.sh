@@ -1,4 +1,4 @@
-#! /bin/sh -euo pipefail
+#! /bin/bash -euo pipefail
 
 fail() {
     echo $@
@@ -14,7 +14,7 @@ else
 fi 
 
 case $2 in 
-   check_hooks_gitleak|check_precommit_hook) 
+   check_hooks_gitleaks|check_precommit_hook) 
         option=$2
         :;;
    *) fail "invalid second argument";;
@@ -22,7 +22,7 @@ esac
 
 exit_status=0
 
-check_hooks_gitleak() {
+check_hooks_gitleaks() {
     hooks_gitleak=$(cd $gitrepo; git config --bool hooks.gitleaks)
     if [ $hooks_gitleak = "true" ]; then
         return 0
@@ -36,17 +36,15 @@ check_precommit_hook() {
     return 0
 }
 
-find $root -name '.git' -type d -maxdepth 5 2>/dev/null | 
-    while read gitrepo; do 
-        echo $gitrepo
-        if eval $option $gitrepo; then
-            echo "OK $gitrepo"
-            :
-        else
-            echo Fail: $gitrepo
-            exit_status=1
-        fi
-    done
+# read gitrepo list from `find` using Process Substitution
+# so exit_status isn't in a subshell
+while read gitrepo; do 
+    if eval $option $gitrepo; then
+        :
+    else
+        echo "  $0 Fail $option: $gitrepo"
+        exit_status=1
+    fi
+done <<< "$( find $root -name '.git' -type d -maxdepth 5 2>/dev/null )"
 
-echo status $exit_status
 exit $exit_status 
