@@ -55,3 +55,18 @@ load test_helper
     run yamlTest "deploy-password: ohSh.aiNgai%noh4us%ie5nee.nah1ee"
     [ ${status} -eq 1 ]
 }
+
+@test "it catches yaml with Slack webhook" {
+    run yamlTest "slack-webhook-url: https://hooks.slack.com/services/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"
+    [ ${status} -eq 1 ]
+}
+
+@test "it catches yaml with encryption key" {
+    run yamlTest "development-enc-key: aich3thei2ieCai0choyohg9Iephoh8I"
+    [ ${status} -eq 1 ]
+}
+
+@test "it catches yaml with auth pass" {
+    run yamlTest "development-auth-pass: woothothae5IezaiD8gu0eiweKui4sah"
+    [ ${status} -eq 1 ]
+}
