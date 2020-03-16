@@ -6,3 +6,14 @@
 	regex = '''[\W\D]?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}[\W\D]?'''
 	tags = ["IPv4", "IP", "addresses"]
 
+# Commented out in upstream `leaky-repo.tom`, using here:
+[[rules]]
+	description = "s3config"
+  	regex = '''(?i)(dbpasswd|dbuser|dbname|dbhost|api_key|apikey|key|api|password|user|guid|hostname|pw|auth)(.{0,3})?([0-9a-zA-Z-_\/+!{}=]{4,120})'''
+	fileNameRegex = '''(?i)s3cfg$'''
+
+[[rules]]
+	description = "yaml secrets"
+	regex = '''(?i)(password): '''
+  	fileNameRegex = '''(?i)(\.yml|\.yaml)$'''
+	tags = ["yaml"]

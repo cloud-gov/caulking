@@ -6,10 +6,9 @@
 # Prerequisites:
 #     * gitleaks and rules are installed with `
 #              make clean_gitleaks install`
-#              brew install bats-core
 # Running Tests:
-#
-#              bats leakproof.bats
+#   make audit
+#      
 
 load test_helper
 
@@ -50,4 +49,9 @@ load test_helper
 
 @test "repos are using precommit hooks with gitleaks" { 
     ./check_repos.sh $HOME check_precommit_hook >&3
+}
+
+@test "it catches yaml with deploy password" {
+    run yamlTest "deploy-password: ohSh.aiNgai%noh4us%ie5nee.nah1ee"
+    [ ${status} -eq 1 ]
 }

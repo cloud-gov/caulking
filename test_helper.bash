@@ -73,6 +73,15 @@ END
     testCommit $secrets_file
 }
 
+yamlTest() {
+    local secrets_file="${REPO_PATH}/cloudgov.yml"
+    cat >${secrets_file} <<END
+# Credentials
+$1
+END
+    testCommit $secrets_file
+}
+
 # for development purposes
 turnOffHooksGitleaks() {
     (cd $REPO_PATH && git config --local hooks.gitleaks false)
