@@ -2,20 +2,24 @@ GIT_SUPPORT_PATH=  ${HOME}/.git-support
 RAW_GITLEAKS= https://raw.githubusercontent.com/zricethezav/gitleaks
 GITLEAKS_VERSION=v4.1.0
 
-INSTALL_TARGETS= gitleaks hook_script global_hooks hook_script patterns
+INSTALL_TARGETS= /usr/local/bin/gitleaks hook_script global_hooks hook_script patterns
 
-.PHONY: $(INSTALL_TARGETS)
-
-.DEFAULT: install
-
+.PHONY: $(INSTALL_TARGETS) clean install audit
 
 install: $(INSTALL_TARGETS)
 
 clean: 
 	/bin/rm -f ${GIT_SUPPORT_PATH}/hooks/pre-commit
-	/bin/rm -rf ${GIT_SUPPORT_PATH}/seekre-rules
 
-gitleaks: /usr/local/bin/gitleaks
+clean_seekrets:
+	/bin/rm -rf ${GIT_SUPPORT_PATH}/seekret-rules
+	-git config --global --unset gitseekret.rulesenabled
+	-git config --global --unset gitseekret.rulespath
+	-git config --global --unset gitseekret.exceptionsfile
+	-git config --global --unset gitseekret.version
+
+audit: /usr/local/bin/bats /usr/local/bin/pcregrep 
+	bats -t caulked.bats
 
 hook_script: ${GIT_SUPPORT_PATH}/hooks/pre-commit global_hooks
 
@@ -36,10 +40,13 @@ ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
 	install -m 0755 -cv $< $@
 	cp $< $@
 
-/usr/local/bin/gitleaks:
-	brew install gitleaks
+/usr/local/bin/bats:
+	brew install bats-core
 
-/usr/local/bin/pcregrep:
-	brew install pcregep
+/usr/local/bin/%:
+	brew install %
+
+
+
 
 FORCE:
