@@ -2,7 +2,7 @@ GIT_SUPPORT_PATH=  ${HOME}/.git-support
 RAW_GITLEAKS= https://raw.githubusercontent.com/zricethezav/gitleaks
 GITLEAKS_VERSION=v4.1.0
 
-INSTALL_TARGETS= /usr/local/bin/gitleaks hook_script global_hooks hook_script patterns
+INSTALL_TARGETS= /usr/local/bin/gitleaks hook global_hooks patterns
 
 .PHONY: $(INSTALL_TARGETS) clean install audit
 
@@ -21,7 +21,7 @@ clean_seekrets:
 audit: /usr/local/bin/bats /usr/local/bin/pcregrep 
 	bats -t caulked.bats
 
-hook_script: ${GIT_SUPPORT_PATH}/hooks/pre-commit global_hooks
+hook: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
 global_hooks: 
 	git config --global hooks.gitleaks true
