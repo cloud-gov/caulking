@@ -15,6 +15,7 @@ load test_helper
 @test "leak prevention allows plain text" {
     run addFileWithNoSecrets
     [ ${status} -eq 0 ]
+    echo ${lines[0]} | grep -q "No leaks detected in staged changes"
 }
 
 @test "leak prevention catches aws secrets in test repo" {
