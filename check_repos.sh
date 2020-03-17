@@ -1,5 +1,11 @@
 #! /bin/bash -euo pipefail
 
+MAXDEPTH=5
+
+# MAXDEPTH 5 assumes a home directory structure that's no deeper than this:
+#       $HOME/(projects)/(organization)/(repository)/(another_dir)/(yet_another_dir)
+# Depth 0   / 1         / 2           / 3           / 4           / 5 
+
 fail() {
     echo $@
     echo "Usage: $0 root_dir (check_precommit_hook | check_hooks_gitleak)"
@@ -49,6 +55,6 @@ while read gitrepo; do
         echo "  $0 Fail $option: $gitrepo"
         exit_status=1
     fi
-done <<< "$( find $root -name '.git' -type d -maxdepth 5 2>/dev/null )"
+done <<< "$( find $root -name '.git' -type d -maxdepth $MAXDEPTH 2>/dev/null )"
 
 exit $exit_status 
