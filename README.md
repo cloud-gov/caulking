@@ -16,7 +16,20 @@ Invoking `make audit` the first time will install `pcregrep` and `bats-core`.
 
 To get rid of `git-seekrets` configuration, run `make clean_seekrets`
 
-# Adding files that trigger `gitleaks`
+## Auditing notes
+
+The `make audit` target installs prerequisites then runs `bats caulked.bats`. 
+
+The tests check for:
+
+* common patterns of secrets causing a commit to fail
+* that `hooks.gitleaks` is set to true underneath $HOME to $MAXDEPTH setting
+* that any custom `/.git/hooks/pre-commit` scripts also still call gitleaks
+
+These assume a compliant engineer who wants to abide by use of `gitleaks`, and 
+doesn't deliberately subvert that intent.
+
+## Adding files that trigger `gitleaks`
 
 If the patterns we're using are too aggressive, consider an edit to `local.toml` and making a pull request.
 

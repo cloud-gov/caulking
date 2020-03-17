@@ -2,11 +2,11 @@ GIT_SUPPORT_PATH=  ${HOME}/.git-support
 RAW_GITLEAKS= https://raw.githubusercontent.com/zricethezav/gitleaks
 GITLEAKS_VERSION=v4.1.0
 
-INSTALL_TARGETS= /usr/local/bin/gitleaks hook global_hooks patterns
+INSTALL_TARGETS= hook global_hooks patterns
 
 .PHONY: $(INSTALL_TARGETS) clean install audit
 
-install: $(INSTALL_TARGETS)
+install: /usr/local/bin/gitleaks $(INSTALL_TARGETS)
 
 clean: 
 	/bin/rm -f ${GIT_SUPPORT_PATH}/hooks/pre-commit
@@ -43,10 +43,10 @@ ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
 /usr/local/bin/bats:
 	brew install bats-core
 
+/usr/local/bin/pcregrep:
+	brew install pcre
+
 /usr/local/bin/%:
-	brew install %
-
-
-
+	brew install $(@F)
 
 FORCE:
