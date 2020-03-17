@@ -29,17 +29,41 @@ The tests check for:
 These assume a compliant engineer who wants to abide by use of `gitleaks`, and 
 doesn't deliberately subvert that intent.
 
-## Adding files that trigger `gitleaks`
+## What now?
 
-If the patterns we're using are too aggressive, consider an edit to `local.toml` and making a pull request.
+You have installed gitleaks and our patterns, and you've verified that all of your
+repositories are not inadvertently sidestepping the caulking. Continue on with your day. We may periodically ask you to run `make patterns` and `make audit` to update your rules and test that you are still protected from committing known secret patterns.
 
-If you get a `gitleaks` error, you can ignore it _temporarily_ with:
+If you get a `git commit` error message like this:
 
 ```
-git config --local hooks.gitleaks false
-git commit -am "message" 
-git config --local hooks.gitleaks true
+{
+	"line": "Juana M. is at juana@example.com",
+	"offender": "javier@example.com",
+	"commit": "0000000000000000000000000000000000000000",
+	"repo": "gittest.ffqOwg",
+	"rule": "Email",
+	"commitMessage": "***STAGED CHANGES***",
+	"author": "",
+	"email": "",
+	"file": "secretsfile.md",
+	"date": "1970-01-01T00:00:00Z",
+	"tags": "email"
+}
 ```
+
+Then, remove or fix the offending line.
+
+### But what if the "offending line" isn't a secret?
+
+You have a couple of choices:
+
+* Submit a PR to improve our patterns (guidance forthcoming)
+* Submit an issue to this repo, and then ignore `gitleaks` _temporarily_ with:
+
+        git config --local hooks.gitleaks false
+        git commit -am "message" 
+        git config --local hooks.gitleaks true
 
 You may want to have `.bashrc` function like:
 
