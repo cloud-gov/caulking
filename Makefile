@@ -36,7 +36,7 @@ leaky-repo.toml: FORCE
 	curl --silent ${RAW_GITLEAKS}/${GITLEAKS_VERSION}/examples/$@ -o $@
 
 ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
-	mkdir -p ${GIT_SUPPORT_PATH}
+	mkdir -p ${GIT_SUPPORT_PATH}/hooks
 	install -m 0755 -cv $< $@
 	cp $< $@
 
