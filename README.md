@@ -69,9 +69,14 @@ You may want to have `.bashrc` function like:
 
 ```
 gitforce() {
-    git config --local hooks.gitleaks false
-    git commit -am "$@" 
-    git config --local hooks.gitleaks true
+    read -p "You are about to commit a potential secret. Are you sure? " -n 1 -r
+        echo    # (optional) move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        git config --local hooks.gitleaks false
+        git commit -am "$@" 
+        git config --local hooks.gitleaks true
+    fi
 }
 ```
 
