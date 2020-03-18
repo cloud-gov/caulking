@@ -10,21 +10,25 @@ Goals:
 
 ## Installation notes
 
-This assumes you are on MacOS with HomeBrew installed. `make install` will brew install `gitleaks`
+This assumes you are on MacOS with HomeBrew installed. `make install` will brew install `gitleaks`. The install will:
 
-Invoking `make audit` the first time will install `pcregrep` and `bats-core`.
+* install `gitleaks`
+* add a global `pre-commit` hook to `$HOME/.git-support/hooks/pre=commit`
+* add the configuration with patterns to `$HOME/.git-support/gitleaks.toml`
+
+You now have the gitleaks pre-commit hook enabled globally.
 
 To get rid of `git-seekrets` configuration, run `make clean_seekrets`
 
 ## Auditing notes
 
-The `make audit` target installs prerequisites then runs `bats caulked.bats`. 
+The `make audit` target installs prerequisites then runs the test harness `bats caulked.bats`. 
 
-The tests check for:
+The tests check for a working gitleaks setup, and that you haven't inadvertently disabled gitleaks in your repositories. It checks:
 
-* common patterns of secrets causing a commit to fail
+* that common patterns of secrets cause a commit to fail
 * that `hooks.gitleaks` is set to true underneath $HOME to $MAXDEPTH setting
-* that any custom `/.git/hooks/pre-commit` scripts also still call gitleaks
+* that any custom `/.git/hooks/pre-commit` scripts also still call `gitleaks`
 
 These assume a compliant engineer who wants to abide by use of `gitleaks`, and 
 doesn't deliberately subvert that intent.
