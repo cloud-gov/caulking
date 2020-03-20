@@ -78,7 +78,7 @@ gitforce() {
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         git config --local hooks.gitleaks false
-        git commit -am "$@" 
+        git commit -m "$@" 
         git config --local hooks.gitleaks true
     fi
 }
