@@ -1,6 +1,8 @@
 GIT_SUPPORT_PATH=  ${HOME}/.git-support
 RAW_GITLEAKS= https://raw.githubusercontent.com/zricethezav/gitleaks
 GITLEAKS_VERSION=v4.1.0
+NOW=$(shell date)
+ME=$(shell whoami)
 
 INSTALL_TARGETS= hook global_hooks patterns
 
@@ -19,6 +21,7 @@ clean_seekrets:
 	-git config --global --unset gitseekret.version
 
 audit: /usr/local/bin/bats /usr/local/bin/pcregrep 
+	@echo "${ME} / ${NOW}"
 	bats -t caulked.bats
 
 hook: ${GIT_SUPPORT_PATH}/hooks/pre-commit
