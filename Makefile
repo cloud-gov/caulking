@@ -6,7 +6,7 @@ ME=$(shell whoami)
 
 INSTALL_TARGETS= hook global_hooks patterns
 
-.PHONY: $(INSTALL_TARGETS) clean install audit
+.PHONY: $(INSTALL_TARGETS) clean install audit config
 
 install: /usr/local/bin/gitleaks $(INSTALL_TARGETS)
 
@@ -30,7 +30,7 @@ global_hooks:
 	git config --global hooks.gitleaks true
 	git config --global core.hooksPath ${GIT_SUPPORT_PATH}/hooks
 
-patterns: ${GIT_SUPPORT_PATH}/gitleaks.toml
+config patterns: ${GIT_SUPPORT_PATH}/gitleaks.toml
 
 ${GIT_SUPPORT_PATH}/gitleaks.toml: leaky-repo.toml local.toml
 	cat $^ > $@
@@ -41,7 +41,6 @@ leaky-repo.toml: FORCE
 ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
 	mkdir -p ${GIT_SUPPORT_PATH}/hooks
 	install -m 0755 -cv $< $@
-	cp $< $@
 
 /usr/local/bin/bats:
 	brew install bats-core
