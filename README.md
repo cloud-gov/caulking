@@ -20,6 +20,10 @@ You now have the gitleaks pre-commit hook enabled globally.
 
 To get rid of `git-seekrets` configuration, run `make clean_seekrets`
 
+## Bug warning!
+
+If you get the error `reference not found` on a new repository it's due to this issue: [Gitleaks --uncommitted fails on first commit](https://github.com/zricethezav/gitleaks/issues/352). To fix you'll need to temporarily disable the pre-commit hook.
+
 ## Auditing notes
 
 The `make audit` target installs prerequisites then runs the test harness `bats caulked.bats`. 
