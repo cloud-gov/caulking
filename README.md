@@ -70,7 +70,7 @@ You have a couple of choices:
 * Submit an issue to this repo, and then ignore `gitleaks` _temporarily_ with:
 
         git config --local hooks.gitleaks false
-        git commit -am "message" 
+        git commit -m "message" 
         git config --local hooks.gitleaks true
 
 You may want to have `.bashrc` function like:
