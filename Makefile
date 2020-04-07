@@ -1,6 +1,4 @@
 GIT_SUPPORT_PATH=  ${HOME}/.git-support
-RAW_GITLEAKS= https://raw.githubusercontent.com/zricethezav/gitleaks
-GITLEAKS_VERSION=v4.1.0
 NOW=$(shell date)
 ME=$(shell whoami)
 
@@ -10,7 +8,7 @@ INSTALL_TARGETS= hook global_hooks patterns
 
 install: /usr/local/bin/gitleaks $(INSTALL_TARGETS)
 
-clean: 
+clean:
 	/bin/rm -f ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
 clean_seekrets:
@@ -20,23 +18,20 @@ clean_seekrets:
 	-git config --global --unset gitseekret.exceptionsfile
 	-git config --global --unset gitseekret.version
 
-audit: /usr/local/bin/bats /usr/local/bin/pcregrep 
+audit: /usr/local/bin/bats /usr/local/bin/pcregrep
 	@echo "${ME} / ${NOW}"
 	bats -t caulked.bats
 
 hook: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
-global_hooks: 
+global_hooks:
 	git config --global hooks.gitleaks true
 	git config --global core.hooksPath ${GIT_SUPPORT_PATH}/hooks
 
 config patterns: ${GIT_SUPPORT_PATH}/gitleaks.toml
 
-${GIT_SUPPORT_PATH}/gitleaks.toml: leaky-repo.toml local.toml
+${GIT_SUPPORT_PATH}/gitleaks.toml: local.toml
 	cat $^ > $@
-
-leaky-repo.toml: FORCE
-	curl --silent ${RAW_GITLEAKS}/${GITLEAKS_VERSION}/examples/$@ -o $@
 
 ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
 	mkdir -p ${GIT_SUPPORT_PATH}/hooks

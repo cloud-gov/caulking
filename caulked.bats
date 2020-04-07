@@ -8,7 +8,7 @@
 #              make clean_gitleaks install`
 # Running Tests:
 #   make audit
-#      
+#
 
 load test_helper
 
@@ -34,6 +34,21 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
+@test "leak prevention allows support and inquiries emails" {
+    run addFileWithCGEmails
+    [ ${status} -eq 1 ]
+}
+
+@test "leak prevention allows github emails" {
+    run addFileWithGithubEmails
+    [ ${status} -eq 1 ]
+}
+
+@test "leak prevention catches normal email addresses in test repo" {
+    run addFileWithSecretEmail
+    [ ${status} -eq 1 ]
+}
+
 @test "leak prevention catches Slack api token in test repo" {
     run addFileWithSlackAPIToken
     [ ${status} -eq 1 ]
@@ -48,7 +63,7 @@ load test_helper
     ./check_repos.sh $HOME check_hooks_gitleaks >&3
 }
 
-@test "repos are using precommit hooks with gitleaks" { 
+@test "repos are using precommit hooks with gitleaks" {
     ./check_repos.sh $HOME check_precommit_hook >&3
 }
 
