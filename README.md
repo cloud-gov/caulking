@@ -22,7 +22,7 @@ To get rid of `git-seekrets` configuration, run `make clean_seekrets`
 
 ## Bug warning!
 
-If you get the error `reference not found` on a new repository it's due to this issue: [Gitleaks --uncommitted fails on first commit](https://github.com/zricethezav/gitleaks/issues/352). To fix you'll need to temporarily disable the pre-commit hook.
+If you get the error `reference not found` on a new repository, be sure you've run `brew upgrade gitleaks` to install version 4.1.1 or later.
 
 ## Auditing notes - how to test if this is working
 
@@ -92,6 +92,13 @@ Here are some shortcuts:
 
 - `make hook`: update `~/.git-support/hooks/pre-commit` from local `pre-commit.sh`
 - `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml` plus upstream rules from the [GitLeaks](https://github.com/zricethezav/gitleaks) project
+
+## Rule sets
+
+The following rule sets helped inform our gitleaks.toml:
+
+* https://github.com/GSA/odp-code-repository-commit-rules/blob/master/gitleaks/rules.toml - used for guidance
+* https://github.com/zricethezav/gitleaks/blob/master/examples/leaky-repo.toml - used verbatim except for removing certain rulesets.
 
 # Public domain
 
