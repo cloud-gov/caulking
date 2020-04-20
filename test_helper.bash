@@ -2,10 +2,10 @@
 
 BATS_TMPDIR=${BATS_TMPDIR:-/tmp}     # set default if sourcing from cli
 REPO_PATH=$(mktemp -d "${BATS_TMPDIR}/gittest.XXXXXX")
-BUNDLE=caulking_test_repo.bundle
 
 setupGitRepo() {
-    git clone $BUNDLE $REPO_PATH >/dev/null 2>/dev/null
+    mkdir -p ${REPO_PATH}
+    (cd $REPO_PATH && git init .)
 }
 
 cleanGitRepo() {
