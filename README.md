@@ -1,6 +1,6 @@
 # Caulking stops leaks
 
-![caulking gun with grey caulk oozing out](https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Caulking.jpg/757px-Caulking.jpg)
+![caulking gun with grey caulk oozing out](https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Caulking.jpg/757px-Caulking.jpg =364x288)
 
 Goals:
 
@@ -24,23 +24,21 @@ To get rid of `git-seekrets` configuration, run `make clean_seekrets`
 
 If you get the error `reference not found` on a new repository it's due to this issue: [Gitleaks --uncommitted fails on first commit](https://github.com/zricethezav/gitleaks/issues/352). To fix you'll need to temporarily disable the pre-commit hook.
 
-## Auditing notes
+## Auditing notes - how to test if this is working
 
-The `make audit` target installs prerequisites then runs the test harness `bats caulked.bats`. 
+The `make audit` target installs prerequisites then runs the test harness `bats caulked.bats` and outputs whether the tests pass or fail. All tests must pass to be considered a successful install/audit.
 
-The tests check for a working gitleaks setup, and that you haven't inadvertently disabled gitleaks in your repositories. It checks:
+The tests check for a working `gitleaks` setup, and that you haven't inadvertently disabled `gitleaks` in your repositories. It checks:
 
 * that common patterns of secrets cause a commit to fail
 * that `hooks.gitleaks` is set to true underneath $HOME to $MAXDEPTH setting
 * that any custom `/.git/hooks/pre-commit` scripts also still call `gitleaks`
 
-These assume a compliant engineer who wants to abide by use of `gitleaks`, and 
-doesn't deliberately subvert that intent.
+These assume a compliant engineer who wants to abide by use of `gitleaks`,and  doesn't deliberately subvert that intent.
 
 ## What now?
 
-You have installed gitleaks and our patterns, and you've verified that all of your
-repositories are not inadvertently sidestepping the caulking. Continue on with your day. We may periodically ask you to run `make patterns` and `make audit` to update your rules and test that you are still protected from committing known secret patterns.
+You have installed gitleaks and our patterns, and you've verified that all of your repositories are not inadvertently sidestepping the caulking. Continue on with your day. We may periodically ask you to run `make patterns` and `make audit` to update your rules and test that you are still protected from committing known secret patterns.
 
 If you get a `git commit` error message like this:
 
@@ -73,7 +71,7 @@ You have a couple of choices:
         git commit -m "message" 
         git config --local hooks.gitleaks true
 
-You may want to have `.bashrc` function like:
+You may want to add function to your `.bashrc` profile like:
 
 ```
 gitforce() {
@@ -93,7 +91,7 @@ gitforce() {
 Here are some shortcuts:
 
 - `make hook`: update `~/.git-support/hooks/pre-commit` from local `pre-commit.sh`
-- `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml` plus upstream rules from the GitLeaks project
+- `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml` plus upstream rules from the [GitLeaks](https://github.com/zricethezav/gitleaks) project
 
 # Public domain
 

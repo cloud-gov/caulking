@@ -48,7 +48,34 @@ addFileWithAwsAccessKey() {
     local secrets_file="${REPO_PATH}/accessfile.md"
     cat >${secrets_file} <<END
 SHHHH... Secrets in this file
-AWS_ACCESS_KEY_ID: AKIAJLLCKKYFEWP5MWXA 
+AWS_ACCESS_KEY_ID: AKIAJLLCKKYFEWP5MWXA
+END
+    testCommit $secrets_file
+}
+
+addFileWithCGEmails() {
+    local secrets_file="${REPO_PATH}/cgemailfile.md"
+    cat >${secrets_file} <<END
+No secrets in this file
+Email addresses like support@cloud.gov and inquiries@cloud.gov
+END
+    testCommit $secrets_file
+}
+
+addFileWithGithubEmails() {
+    local secrets_file="${REPO_PATH}/ghemailfile.md"
+    cat >${secrets_file} <<END
+No secrets in this file
+Email address like noreply@github.com or support@github.com
+END
+    testCommit $secrets_file
+}
+
+addFileWithSecretEmail() {
+    local secrets_file="${REPO_PATH}/emailfile.md"
+    cat >${secrets_file} <<END
+SHHHH... Secrets in this file
+Email address like test@example.com
 END
     testCommit $secrets_file
 }
