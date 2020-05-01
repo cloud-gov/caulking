@@ -1,5 +1,10 @@
 #!/bin/sh 
 
+git_dir=$(git rev-parse --git-dir)
+if [ -f "$git_dir/hooks/pre-commit" ]; then
+    "$git_dir/hooks/pre-commit" "$@"
+fi
+
 gitleaksEnabled=$(git config --bool hooks.gitleaks)
 # Running _without_ `--redact` is safer.  Here's wny:
 # Suppose you think you're committing `example.yml`:

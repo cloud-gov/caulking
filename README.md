@@ -13,7 +13,7 @@ Goals:
 This assumes you are on MacOS with HomeBrew installed. `make install` will brew install `gitleaks`. The install will:
 
 * install `gitleaks`
-* add a global `pre-commit` hook to `$HOME/.git-support/hooks/pre=commit`
+* add a global `pre-commit` hook to `$HOME/.git-support/hooks/pre-commit`
 * add the configuration with patterns to `$HOME/.git-support/gitleaks.toml`
 
 You now have the gitleaks pre-commit hook enabled globally.
@@ -99,6 +99,23 @@ The following rule sets helped inform our gitleaks.toml:
 
 * https://github.com/GSA/odp-code-repository-commit-rules/blob/master/gitleaks/rules.toml - used for guidance
 * https://github.com/zricethezav/gitleaks/blob/master/examples/leaky-repo.toml - used verbatim except for removing certain rulesets.
+
+## What about other hooks? Will they still run?
+
+Yes. Caulking runs your other precommit hooks automatically. 
+
+Note: if you're using [pre-commit](https://pre-commit.com/) to manage pre-commit hooks, you'll likely get an error like this when running `pre-commit install`:
+```
+[ERROR] Cowardly refusing to install hooks with `core.hooksPath` set.
+hint: `git config --unset-all core.hooksPath`
+```
+You can work around this by running:
+```
+hookspath=$(git config core.hookspath)
+git config --global --unset-all core.hookspath
+pre-commit install
+git config --global core.hookspath "${hookspath}"
+```
 
 # Public domain
 
