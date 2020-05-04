@@ -3,6 +3,9 @@
 # bats test file for testing that caulking
 # prevents leaking secrets.
 #
+# Bug bounty and HackerOne folks - do not report this
+# file. These are all fake/obsolete keys.
+#
 # Prerequisites:
 #     * gitleaks and rules are installed with `
 #              make clean_gitleaks install`
