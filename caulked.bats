@@ -11,11 +11,15 @@
 #              make clean_gitleaks install`
 # Running Tests:
 #   make audit
-#
+# 
+# Development note: These tests all assume that your root
+# ~/.git-support/gitleaks.toml are up to date. If you're testing
+# `local.toml` then use `development.bats` (or use `make patterns` 
+# before `make audit`)
 
 load test_helper
 
-@test "leak prevention allows plain text" {
+@test "leak prevention allows plain text, check `git config --global -l` on failure" {
     run addFileWithNoSecrets
     [ ${status} -eq 0 ]
     echo ${lines[0]} | grep -q "No leaks detected in staged changes"
@@ -37,15 +41,6 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-@test "leak prevention allows support and inquiries emails" {
-    run addFileWithCGEmails
-    [ ${status} -eq 1 ]
-}
-
-@test "leak prevention allows github emails" {
-    run addFileWithGithubEmails
-    [ ${status} -eq 1 ]
-}
 
 @test "leak prevention catches normal email addresses in test repo" {
     run addFileWithSecretEmail
