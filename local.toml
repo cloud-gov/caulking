@@ -11,8 +11,6 @@ title = "gitleaks config"
 	regex = '''[\W\D]?[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}[\W\D]?'''
 	tags = ["IPv4", "IP", "addresses"]
 	[[rules.whitelist]]
-		file = '''(.*)?svg$'''
-	[[rules.whitelist]]
 		regex = '''(169.254.169.254|127.0.0.\d+)'''
 
 # s3config copied from `leaky-repo.toml` upstream, but uncommented:
@@ -225,5 +223,5 @@ title = "gitleaks config"
 
 [whitelist]
 	description = "image whitelists"
-	file = '''(.*?)(jpg|gif|doc|pdf|bin|svg)$'''
+	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''']
 

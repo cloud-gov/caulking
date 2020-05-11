@@ -56,9 +56,9 @@ testCommit() {
 
 @test "ingore ipv4-ish in svg" {
     cat > $REPO_PATH/ok.svg <<END
-"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 233 47\" id=\"logo\"\u003e\u003ctitle\u003elogo\u003c/title\u003e\u003cg fill=\"none\" fill-rule=\"evenodd\"\u003e\u003cpath d=\"M57.547 18.534a3.71 3.71 0 0 2.403.268.729. 0-1.679-1.276 5.563 5.563 0 0 0-2.02...",
+"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" d=\"M57.547 18.534a3.71 3.71 0 0 10.20.30.40 0-1.679-1.276 5.563 5.563 0 0 0-2.02...",
 END
-    run testCommit $REPO_PATH/ok.svg
+    run testCommit $REPO_PATH
     [ ${status} -eq 0 ]
 }
 
@@ -66,6 +66,6 @@ END
     cat > $REPO_PATH/email.md <<END
 Author: pburkholder@example.com
 END
-    run testCommit $REPO_PATH/email.md
+    run testCommit $REPO_PATH
     [ ${status} -eq 0 ]
 }
