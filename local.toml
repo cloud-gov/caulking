@@ -225,5 +225,5 @@ title = "gitleaks config"
 
 [whitelist]
 	description = "image whitelists"
-	file = '''(.*?)(jpg|gif|doc|pdf|bin)$'''
+	file = '''(.*?)(jpg|gif|doc|pdf|bin|svg)$'''
 
