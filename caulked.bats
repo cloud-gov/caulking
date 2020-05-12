@@ -84,3 +84,13 @@ load test_helper
     run yamlTest "development-auth-pass: woothothae5IezaiD8gu0eiweKui4sah"
     [ ${status} -eq 1 ]
 }
+
+# Note that we're not using a function in `test_helper.bash`, which 
+# may be easier to maintain and understand. PDB 2020-05-12
+@test "it catches base64 40char potential AWS secret key" {
+    cat > $REPO_PATH/random.txt <<END
+Login with this secret: +awsSecretAccessKeyisBase64=40characters
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 1 ]
+}

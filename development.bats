@@ -5,6 +5,8 @@
 # that only make sense during development on the 
 # developers system
 
+# Bug bounty folks: Any apparent keys or passwords are just test strings
+
 # Running Tests:
 #
 #              bats development.bats
@@ -65,6 +67,22 @@ END
 @test "ignore author copyright with email" {
     cat > $REPO_PATH/email.md <<END
 Author: pburkholder@example.com
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}
+
+@test "false negative OK on presumed AWS secret key" {
+    cat > $REPO_PATH/random.txt <<END
+foo=+awsSecretAccessKeyisBase64=40characters
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}
+
+@test "Pass on 41 character long base64 string" {
+    cat > $REPO_PATH/random.txt <<END
+Can't login with this secret: +1awsSecretAccessKeyisBase64=40characters
 END
     run testCommit $REPO_PATH
     [ ${status} -eq 0 ]
