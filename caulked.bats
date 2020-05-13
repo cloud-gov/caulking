@@ -19,7 +19,7 @@
 
 load test_helper
 
-@test "leak prevention allows plain text, check `git config --global -l` on failure" {
+@test "leak prevention allows plain text, check 'git config --global -l' on failure" {
     run addFileWithNoSecrets
     [ ${status} -eq 0 ]
     echo ${lines[0]} | grep -q "No leaks detected in staged changes"
