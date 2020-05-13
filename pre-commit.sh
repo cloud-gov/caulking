@@ -2,7 +2,9 @@
 
 git_dir=$(git rev-parse --git-dir)
 if [ -f "$git_dir/hooks/pre-commit" ]; then
+    set -e
     "$git_dir/hooks/pre-commit" "$@"
+    set +e
 fi
 
 gitleaksEnabled=$(git config --bool hooks.gitleaks)
