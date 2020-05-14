@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deploy-prometheus
+[33mWARN[0m[2020-06-17T08:17:49-04:00] 11 leaks detected. 268 commits audited in 705 milliseconds 503 microseconds 
+61afe80f5e289b2472dd7aed3bb2c52b6f9588e4

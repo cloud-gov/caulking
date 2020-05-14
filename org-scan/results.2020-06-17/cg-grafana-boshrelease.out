@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-grafana-boshrelease
+[36mINFO[0m[2020-06-17T08:18:11-04:00] No leaks detected. 67 commits audited in 315 milliseconds 808 microseconds 
+fe3ee480499ad29510117cd45f5695ebe6d190bc

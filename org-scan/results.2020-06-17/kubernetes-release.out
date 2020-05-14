@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/kubernetes-release
+[33mWARN[0m[2020-06-17T08:28:19-04:00] 12 leaks detected. 309 commits audited in 2 seconds 299 milliseconds 985 microseconds 
+691c25f1b849b2e1a74727d72624329d69bc276d

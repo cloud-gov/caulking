@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deploy-volume-services
+[33mWARN[0m[2020-06-17T08:17:53-04:00] 19 leaks detected. 85 commits audited in 175 milliseconds 358 microseconds 
+5f078e5510e6fc88bfe1e1e4ceb9ed3e54a79b37

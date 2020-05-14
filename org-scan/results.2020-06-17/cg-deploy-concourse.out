@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deploy-concourse
+[33mWARN[0m[2020-06-17T08:17:29-04:00] 38 leaks detected. 364 commits audited in 807 milliseconds 302 microseconds 
+f5fb1f896ef03a01044d41728ef866645c8119b9

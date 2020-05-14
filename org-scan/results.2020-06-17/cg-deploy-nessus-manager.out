@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deploy-nessus-manager
+[33mWARN[0m[2020-06-17T08:17:47-04:00] 15 leaks detected. 74 commits audited in 93 milliseconds 646 microseconds 
+606b24954f7aee12f7860ae04c9f06770933a4a9

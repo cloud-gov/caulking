@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cloud-native-aws-terraform-workshop
+[36mINFO[0m[2020-06-17T08:27:33-04:00] No leaks detected. 37 commits audited in 2 seconds 343 milliseconds 262 microseconds 
+86d568f27062697110961236d29e0a758225249e

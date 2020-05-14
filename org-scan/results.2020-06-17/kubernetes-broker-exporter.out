@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/kubernetes-broker-exporter
+[36mINFO[0m[2020-06-17T08:28:16-04:00] No leaks detected. 26 commits audited in 97 milliseconds 168 microseconds 
+b0a2575d990a2e8b5d61683f91c293eedfce3a5d

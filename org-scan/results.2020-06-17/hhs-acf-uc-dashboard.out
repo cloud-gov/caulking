@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/hhs-acf-uc-dashboard
+[33mWARN[0m[2020-06-17T08:27:58-04:00] 6 leaks detected. 157 commits audited in 2 seconds 448 milliseconds 851 microseconds 
+cac924bce4274d9a1f17dbc4374f23a6c00a61d3

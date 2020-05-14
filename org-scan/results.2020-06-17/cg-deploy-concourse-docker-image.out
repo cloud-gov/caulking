@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deploy-concourse-docker-image
+[36mINFO[0m[2020-06-17T08:17:30-04:00] No leaks detected. 158 commits audited in 350 milliseconds 116 microseconds 
+b02dd5d70a9b18836decc4f9968f0e0be1f8419e

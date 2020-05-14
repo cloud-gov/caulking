@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/postfix-boshrelease
+[36mINFO[0m[2020-06-17T08:30:10-04:00] No leaks detected. 38 commits audited in 255 milliseconds 109 microseconds 
+6f78b7b58313a28c27f99ec2563f4c10a2ff399b

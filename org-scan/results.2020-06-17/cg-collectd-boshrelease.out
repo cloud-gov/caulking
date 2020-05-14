@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-collectd-boshrelease
+[36mINFO[0m[2020-06-17T08:14:20-04:00] No leaks detected. 40 commits audited in 208 milliseconds 697 microseconds 
+cc699d8bb5580ae2cdc448c4e036ce4c44b29cb5

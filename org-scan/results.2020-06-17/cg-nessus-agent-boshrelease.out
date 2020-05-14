@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-nessus-agent-boshrelease
+[36mINFO[0m[2020-06-17T08:20:01-04:00] No leaks detected. 56 commits audited in 289 milliseconds 171 microseconds 
+e02998163d1ac8cbd2a12808c198965729e30cd7

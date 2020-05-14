@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-migrate-db
+[36mINFO[0m[2020-06-17T08:19:58-04:00] No leaks detected. 56 commits audited in 1 minute 24 seconds 165 milliseconds 374 microseconds 
+0e42ea77d322b0bfbf542785d3055fc3ba181832

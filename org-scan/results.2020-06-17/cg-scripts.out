@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-scripts
+[33mWARN[0m[2020-06-17T08:20:40-04:00] 1 leaks detected. 272 commits audited in 450 milliseconds 681 microseconds 
+47765cd6a1403aa068e8ca7dea7f160811a671b4

@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cf-nuxeo-demo
+[33mWARN[0m[2020-06-17T08:13:58-04:00] 13 leaks detected. 19 commits audited in 54 milliseconds 506 microseconds 
+030450f35d789e14a0365e90b8fbfefd1de00e3c

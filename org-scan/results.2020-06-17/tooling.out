@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/tooling
+[36mINFO[0m[2020-06-17T08:30:18-04:00] No leaks detected. 1 commits audited in 4 milliseconds 298 microseconds 
+b38dc751080df3fd645eb4343391646e435a3d24
