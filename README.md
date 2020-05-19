@@ -1,6 +1,6 @@
 # Caulking stops leaks
 
-![caulking gun with grey caulk oozing out](https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Caulking.jpg/757px-Caulking.jpg =364x288)
+![caulking gun with grey caulk oozing out](https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Caulking.jpg/757px-Caulking.jpg)
 
 Goals:
 
@@ -88,10 +88,13 @@ gitforce() {
 
 # Development tips
 
-Here are some shortcuts:
+To work on patterns, add test cases to `development.bats`, update patterns in `local.toml` then
+run `bats development.bats`.  Here are some shortcuts
 
 - `make hook`: update `~/.git-support/hooks/pre-commit` from local `pre-commit.sh`
-- `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml` plus upstream rules from the [GitLeaks](https://github.com/zricethezav/gitleaks) project
+- `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml` 
+- `make audit`: see that everything work togethe.
+
 
 ## Rule sets
 

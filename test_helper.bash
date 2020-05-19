@@ -57,23 +57,7 @@ END
     testCommit $secrets_file
 }
 
-addFileWithCGEmails() {
-    local secrets_file="${REPO_PATH}/cgemailfile.md"
-    cat >${secrets_file} <<END
-No secrets in this file
-Email addresses like support@cloud.gov and inquiries@cloud.gov
-END
-    testCommit $secrets_file
-}
 
-addFileWithGithubEmails() {
-    local secrets_file="${REPO_PATH}/ghemailfile.md"
-    cat >${secrets_file} <<END
-No secrets in this file
-Email address like noreply@github.com or support@github.com
-END
-    testCommit $secrets_file
-}
 
 addFileWithSecretEmail() {
     local secrets_file="${REPO_PATH}/emailfile.md"
@@ -99,7 +83,7 @@ addFileWithIPv4() {
 
     cat >${secrets_file} <<END
 SHHHH... Secrets in this file
-Host: 127.0.0.1
+Host: 10.20.30.40
 END
     testCommit $secrets_file
 }
@@ -112,14 +96,14 @@ $1
 END
     testCommit $secrets_file
 }
-
+##########################
 # for development purposes
+##########################
 turnOffHooksGitleaks() {
     (cd $REPO_PATH && git config --local hooks.gitleaks false)
-    ./check_repos.sh $HOME check_hooks_gitleaks
+    ./check_repos.sh $REPO_PATH check_hooks_gitleaks
 }
 
-## remaining are for development purposes
 createPrecommitNoGitleaks() {
     (cd $REPO_PATH && mv .git/hooks/pre-commit.sample .git/hooks/pre-commit)
 }
@@ -136,4 +120,31 @@ createPrecommitOKGitLeaks() {
 echo special stuff
 /usr/local/bin/gitleaks
 END
+}
+addFileWithCGEmails() {
+    local secrets_file="${REPO_PATH}/cgemailfile.md"
+    cat >${secrets_file} <<END
+No secrets in this file
+Email addresses like support@cloud.gov and inquiries@cloud.gov
+END
+    testCommit $secrets_file
+}
+
+addFileWithGithubEmails() {
+    local secrets_file="${REPO_PATH}/ghemailfile.md"
+    cat >${secrets_file} <<END
+No secrets in this file
+Email address like noreply@github.com or support@github.com
+END
+    testCommit $secrets_file
+}
+
+addFileWithInterpolatedYamlPassword() {
+    local secrets_file="${REPO_PATH}/ok_secret.yml"
+    cat >${secrets_file} <<END
+No secrets in this file
+database_password: ((database_password))
+another_password:   {{foo_pass}}
+END
+    testCommit $secrets_file
 }
