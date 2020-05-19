@@ -87,3 +87,12 @@ END
     run testCommit $REPO_PATH
     [ ${status} -eq 0 ]
 }
+
+@test "Pass that Ubuntu version is not ipv4" {
+    cat > $REPO_PATH/foo.yml <<END
+=3.1.2-11ubuntu0.16.04.8
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}
+
