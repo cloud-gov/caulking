@@ -188,8 +188,17 @@ title = "gitleaks config"
 	regex = '''(?i)(apikey|secret|key|api|password|pass|pw|host)=[0-9a-zA-Z-_.{}]{4,120}'''
 
 [[rules]]
+	description = "Generic Username"
+	regex = '''(?i)(dbuser|user)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
+	tags = ["key", "username", "generic"]
+	[[rules.whitelist]]
+		description = "A username in a terraform file is not a leak"
+		regex = '''\w+?username\w+='''
+		file = 	'''\.tf$'''
+
+[[rules]]
 	description = "Generic Credential"
-	regex = '''(?i)(dbpasswd|dbuser|dbname|dbhost|api_key|apikey|secret|key|api|password|user|guid|hostname|pw|auth)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
+	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
 	tags = ["key", "API", "generic"]
 	# ignore leaks with specific identifiers like slack and aws
 	[[rules.whitelist]]
@@ -238,5 +247,6 @@ title = "gitleaks config"
 
 [whitelist]
 	description = "image whitelists"
-	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''']
+	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''', '''development.bats''', '''caulked.bats''', '''local.toml''']
+	
 
