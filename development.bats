@@ -96,3 +96,29 @@ END
     [ ${status} -eq 0 ]
 }
 
+# Trying new `should` helper functions to aid
+# in readability
+function should_pass() {
+    [ ${status} -eq 0 ]
+}
+function should_fail() {
+    [ ${status} -eq 1 ]
+}
+
+@test "Pass a terraform IAM username reference" {
+    cat > $REPO_PATH/foo.tf <<END
+module "iam_cert_provision_user" {
+  username      = "cg-iam-cert-provision"
+END
+    run testCommit $REPO_PATH
+    should_pass
+}
+
+@test "Fail a username reference in non terraform" {
+    cat > $REPO_PATH/foo.yaml <<END
+module "iam_cert_provision_user" {
+  username      = "chthulu"
+END
+    run testCommit $REPO_PATH
+    should_fail
+}
