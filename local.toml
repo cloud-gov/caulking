@@ -42,21 +42,6 @@ title = "gitleaks config"
 		regex = '''(?i)(Author|Copyright|Contact)'''
 		description = "ignore explict author or copyright email"
 
-# The proper Perl regex for AWS secret keys is
-# (?<![A-Za-z0-9\\+])[A-Za-z0-9\\+=]{40}(?![A-Za-z0-9\\+=])
-# but the Go library doesn't do lookahead/lookbehind, so
-# we'll look for 40 base64 characters, then whitelist
-# if they're embedded in a string of 41 base64, that is, 
-# without any delimiters. This make a false negative for, say:
-#     foo=+awsSecretAccessKeyisBase64=40characters
-# but god have mercy on anyone trying to get that to work
-[[rules]]
-	description = "AWS secret key regardless of labeling"
-	regex = '''.?[A-Za-z0-9\\+=]{40}.?'''
-	[[rules.whitelist]]
-		regex = '''[A-Za-z0-9\\+=]{41}'''
-		description = "41 base64 characters is not an AWS secret key"
-
 # Rules from original `leaky-repo.toml` v4.1.1
 # https://raw.githubusercontent.com/zricethezav/gitleaks/master/examples/leaky-repo.toml
 # with the following rule sets removed:
