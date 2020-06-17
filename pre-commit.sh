@@ -21,6 +21,7 @@ if [ $gitleaksEnabled == "true" ]; then
     if [ $status -eq 1 ]; then
         cat <<\EOF
 Error: gitleaks has detected sensitive information in your changes.
+For examples use: CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890
 If you know what you are doing you can disable this check using:
     git config --local hooks.gitleaks false; 
     git commit ....; 
