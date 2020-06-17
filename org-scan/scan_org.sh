@@ -1,6 +1,6 @@
 #!/bin/sh
 
-CACHEDIR=${HOME}/Documents/caulking-org-scan/cache
+cachedir=${HOME}/Documents/caulking-org-scan/cache
 
 list_repos() {
     for page in 1 2 3 4; do
@@ -52,8 +52,6 @@ make_repo_list() {
 ### MAIN
 
 make_repo_list
-
-cache_dir=$CACHEDIR
 mkdir -p $cache_dir
 
 today=$(date +%Y-%m-%d)
