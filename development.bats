@@ -122,3 +122,13 @@ END
     run testCommit $REPO_PATH
     should_fail
 }
+
+# Testing for 40 base64 results in too many false positives,
+# e.g. all git commit references...
+@test "it no longer catches base64 40char potential AWS secret key" {
+    cat > $REPO_PATH/random.txt <<END
+Login with this secret: +awsSecretAccessKeyisBase64=40characters
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}

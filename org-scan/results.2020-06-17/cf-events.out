@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cf-events
+[36mINFO[0m[2020-06-17T08:12:53-04:00] No leaks detected. 20 commits audited in 38 milliseconds 252 microseconds 
+0e2199eb52f15c6975b59304338bc638bb66c7e2

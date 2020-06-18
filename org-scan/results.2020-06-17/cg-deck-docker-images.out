@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deck-docker-images
+[36mINFO[0m[2020-06-17T08:16:12-04:00] No leaks detected. 5 commits audited in 8 milliseconds 583 microseconds 
+fc69207bdea69cf3ed12db3548acbe8791fdfea4

@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cf-domain-broker-alb-boshrelease
+[36mINFO[0m[2020-06-17T08:12:51-04:00] No leaks detected. 28 commits audited in 142 milliseconds 477 microseconds 
+da2e6deb2417e8f4e4a805da133021aff0ab29b4

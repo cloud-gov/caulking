@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-s3-service-broker
+[33mWARN[0m[2020-06-17T08:20:35-04:00] 9 leaks detected. 91 commits audited in 510 milliseconds 453 microseconds 
+e077f4765598e33155715309a4425fdfa0906d1a

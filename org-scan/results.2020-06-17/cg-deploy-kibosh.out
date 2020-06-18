@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deploy-kibosh
+[33mWARN[0m[2020-06-17T08:17:37-04:00] 55 leaks detected. 6 commits audited in 2 seconds 579 milliseconds 711 microseconds 
+a1b506aab52f82461aaba9fa88c84176c7b53fc0

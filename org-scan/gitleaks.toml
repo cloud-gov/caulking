@@ -1,0 +1,244 @@
+title = "gitleaks config"
+
+# s3config copied from `leaky-repo.toml` upstream, but uncommented:
+[[rules]]
+	description = "s3config"
+	regex = '''(?i)(dbpasswd|dbuser|dbname|dbhost|api_key|apikey|key|api|password|user|guid|hostname|pw|auth)(.{0,3})?([0-9a-zA-Z-_\/+!{}=]{4,120})'''
+	fileNameRegex = '''(?i)s3cfg$'''
+
+[[rules]]
+	description = "AWS Manager ID"
+	regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+	tags = ["key", "AWS"]
+	[[rules.whitelist]]
+		regex = '''(ASIANPACIFICHERITAGE|EXAMPL)'''
+	[[rules.whitelist]]
+		regex = "AKIAIISVJZNKHAZZX3JQ" # logsearch-boshrelease
+	[[rules.whitelist]]
+		path = 'src/logsearch-config/test/logstash-filters/snippets' # logsearch-boshrelease
+	[[rules.whitelist]]
+		regex = "AKIAINI4TNGJWSTZXPUA" # cg-s3-service-broker
+	[[rules.whitelist]]
+		regex = "AKIAIEJHTE4VJB2UUR2A" # cg-manifests
+	[[rules.whitelist]]
+		regex = "AKIAIEYGDWG4KUPRZUXA" # cg-uaa
+	[[rules.whitelist]]
+		regex = "AKIAKAOIAF98HAWE09AW" # cg-site
+
+
+[[rules]]
+	description = "AWS cred file info"
+	regex = '''(?i)(aws_access_key_id|aws_secret_access_key)(.{0,20})?=.[0-9a-zA-Z\/+]{20,40}'''
+	tags = ["AWS"]
+	[[rules.whitelist]]
+		regex = '''abcdefghijklmnopqrstuvwxyz0123456789abcd|EXAMPL'''
+	[[rules.whitelist]]
+		regex = "AivaiZa3ooh2eeGahngoo8ahp2uikei2NooC9Kie" # logsearch-boshrelease
+	[[rules.whitelist]]
+		regex = "AKIAIISVJZNKHAZZX3JQ" # logsearch-boshrelease
+	[[rules.whitelist]]
+		regex = "AKIAJKCO5PJBSKTRUSJR" # logsearch-boshrelease
+	[[rules.whitelist]]
+		regex = "ENAEcHAH1AZ6EISHEEGAING8EnAI8PHU0Ot7OOg7" # logsearch-boshrelease
+
+
+[[rules]]
+	description = "AWS Secret Key"
+	regex = '''(?i)aws(.{0,20})?(?-i)['\"][0-9a-zA-Z\/+]{40}['\"]'''
+	tags = ["key", "AWS"]
+
+[[rules]]
+	description = "AWS MWS key"
+	regex = '''amzn\.mws\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+	tags = ["key", "AWS", "MWS"]
+
+[[rules]]
+	description = "Facebook Secret Key"
+	regex = '''(?i)(facebook|fb)(.{0,20})?(?-i)['\"][0-9a-f]{32}['\"]'''
+	tags = ["key", "Facebook"]
+	[[rules.whitelist]]
+		description = "cf-abacus false positives"
+		path = '''^lib/utils/partition/test'''
+	[[rules.whitelist]]
+		description = "cf-abacus false positives"
+		path = '''^lib/utils/partition/src/test'''
+
+[[rules]]
+	description = "Facebook Client ID"
+	regex = '''(?i)(facebook|fb)(.{0,20})?['\"][0-9]{13,17}['\"]'''
+	tags = ["key", "Facebook"]
+	[[rules.whitelist]]
+		description = "cg-styles Facebook app_id meta is not a leak"
+		regex = '''1401488693436528'''
+
+[[rules]]
+	description = "Twitter Secret Key"
+	regex = '''(?i)twitter(.{0,20})?['\"][0-9a-z]{35,44}['\"]'''
+	tags = ["key", "Twitter"]
+
+[[rules]]
+	description = "Twitter Client ID"
+	regex = '''(?i)twitter(.{0,20})?['\"][0-9a-z]{18,25}['\"]'''
+	tags = ["client", "Twitter"]
+
+[[rules]]
+	description = "Github"
+	regex = '''(?i)github(.{0,20})?(?-i)['\"][0-9a-zA-Z]{35,40}['\"]'''
+	tags = ["key", "Github"]
+
+[[rules]]
+	description = "LinkedIn Client ID"
+	regex = '''(?i)linkedin(.{0,20})?(?-i)['\"][0-9a-z]{12}['\"]'''
+	tags = ["client", "LinkedIn"]
+
+[[rules]]
+	description = "LinkedIn Secret Key"
+	regex = '''(?i)linkedin(.{0,20})?['\"][0-9a-z]{16}['\"]'''
+	tags = ["secret", "LinkedIn"]
+
+[[rules]]
+	description = "Slack"
+	regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
+	tags = ["key", "Slack"]
+
+[[rules]]
+	description = "EC"
+	regex = '''-----BEGIN EC PRIVATE KEY-----'''
+	tags = ["key", "EC"]
+	[[rules.whitelist]]
+		description = "test keys from cg-release/cf-release"
+		path = '''^src/narc/src/code.google.com/p/go.crypto/ssh/test'''
+
+[[rules]]
+	description = "Google API key"
+	regex = '''AIza[0-9A-Za-z\\-_]{35}'''
+	tags = ["key", "Google"]
+	[[rules.whitelist]]
+		description = "_includes/js.html expired key from cg-landing"
+		regex = 'AIzaSyCRngKslUGJTlibkQ3FkfTxj3Xss1UlZDA'
+
+[[rules]]
+	description = "Heroku API key"
+	regex = '''(?i)heroku(.{0,20})?['"][0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}['"]'''
+	tags = ["key", "Heroku"]
+
+[[rules]]
+	description = "MailChimp API key"
+	regex = '''(?i)(mailchimp|mc)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]'''
+	tags = ["key", "Mailchimp"]
+
+[[rules]]
+	description = "Mailgun API key"
+	regex = '''(?i)(mailgun|mg)(.{0,20})?['"][0-9a-z]{32}['"]'''
+	tags = ["key", "Mailgun"]
+
+[[rules]]
+	description = "PayPal Braintree access token"
+	regex = '''access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32}'''
+	tags = ["key", "Paypal"]
+
+[[rules]]
+	description = "Picatic API key"
+	regex = '''sk_live_[0-9a-z]{32}'''
+	tags = ["key", "Picatic"]
+
+[[rules]]
+	description = "Slack Webhook"
+	regex = '''https://hooks.slack.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24}'''
+	tags = ["key", "slack"]
+	[[rules.whitelist]]
+		description = "Slack key from https://github.com/MonsantoCo/cf-metrics"
+		regex = '''https://hooks.slack.com/services/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'''
+
+[[rules]]
+	description = "Stripe API key"
+	regex = '''(?i)stripe(.{0,20})?['\"][sk|rk]_live_[0-9a-zA-Z]{24}'''
+	tags = ["key", "Stripe"]
+
+[[rules]]
+	description = "Square access token"
+	regex = '''sq0atp-[0-9A-Za-z\-_]{22}'''
+	tags = ["key", "square"]
+
+[[rules]]
+	description = "Square OAuth secret"
+	regex = '''sq0csp-[0-9A-Za-z\\-_]{43}'''
+	tags = ["key", "square"]
+
+[[rules]]
+	description = "Twilio API key"
+	regex = '''(?i)twilio(.{0,20})?['\"][0-9a-f]{32}['\"]'''
+	tags = ["key", "twilio"]
+
+[[rules]]
+	description = "High Entropy"
+	regex = '''[0-9a-zA-Z-_!{}/=]{4,120}'''
+ 	fileNameRegex = '''(?i)(dump.sql|high-entropy-misc.txt)$'''
+	tags = ["entropy"]
+	[[rules.Entropies]]
+			Min = "4.3"
+			Max = "7.0"
+	[[rules.whitelist]]
+		description = "ignore ssh key and pems"
+		file = '''(pem|ppk|env)$'''
+		path = '''(.*)?ssh'''
+
+[[rules]]
+	description = "WP-Config"
+	regex='''define(.{0,20})?(DB_CHARSET|NONCE_SALT|LOGGED_IN_SALT|AUTH_SALT|NONCE_KEY|DB_HOST|DB_PASSWORD|AUTH_KEY|SECURE_AUTH_KEY|LOGGED_IN_KEY|DB_NAME|DB_USER)(.{0,20})?['|"].{10,120}['|"]'''
+	tags = ["key", "API", "generic"]
+
+[[rules]]
+	description = "yaml secrets"
+	regex = '''(?i)(password|enc.key|auth.pass|secret\w+):\s+(.*)'''
+	fileNameRegex = '''(?i)(\.yml|\.yaml)'''
+	tags = ["yaml"]
+	[[rules.whitelist]]
+		regex = '''(\(\(.*\)\)|\{\{.*\}\})'''
+		description = "ignore substituted values"
+	[[rules.whitelist]]
+		description = "ignore explicit example and test files"
+		file = "example.yml"
+	[[rules.whitelist]]
+		description = "ignore known examples or code snippets"
+		regex = '''1234567890|AUTH_PASS: pass|Auto|Master|default|DEFAULT|Value|    !Equals|        !If|CloudFormation|Password: auto|password: admin|CHANGEME|EXAMPLE|password:\n|'''
+	[[rules.whitelist]]
+		description = "ignore more known examples or code snippets"
+		regex = '''DATABASE_URL|1234567890|MY-SECRET-KEY'''
+	[[rules.whitelist]]
+		descript = "known passwords from upstream, not ours"
+		regex = '''drCmbTamVf2qnqfRp|YWRtaW4='''
+
+
+
+[whitelist]
+	description = "image whitelists"
+	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''']
+	commits = [
+		"24da6600b481ab2ed65fee6c51290ee904463adf", # cf-ex-drupal
+		"5a5333fe903abb2b0adbc9c712e2fd96919b86d5", # cf-ex-drupal
+		"14a1fc8943b48eb1803f908744e8b25fedf29e62", # cf-ex-wordpress
+		"43ba6cb37f8b8004fd95ecb8f507df71b5c35e6d", # cf-ex-wordpress
+		"5f0004a25a29628df3c0e636568366a0229e5198", # cf-ex-wordpress
+		"67f1a483fc9efeed753ac6f2b09ad60258a91b1d", # cf-ex-wordpress
+		"73a2ac9f1e5502c85f419d54841449b735a4fe85", # cf-ex-wordpress
+		"992bf86a832bc9ff5e231afa43f9774f3e392cc5", # cf-ex-wordpress
+		"aabf8a877a7081ea44f3ec7ec1f38ee4e4ea3b87", # cf-ex-wordpress
+		"b2b39cf70c2704be63b7691851673811e4a9adaf", # cf-ex-wordpress
+		"b5e9704a695a7b9607dbc7c10fbf853f53ee8046", # cf-ex-wordpress - first commit not whitelisted yet https://github.com/zricethezav/gitleaks/issues/389
+		"b8832204a064487410a479c610cea82cdc40eefa", # cf-ex-wordpress
+		"cbe89cdf12631ffb7a59bd30d3bbe12a03ba35be", # cf-ex-wordpress
+		"cec6b0c8fc97ed0d2306965f7edf2ff5f76ef9d2", # cf-ex-wordpress
+		"f0710fd47c2cf75861d5934f166fe061c44b469f", # cf-ex-wordpress
+		"f9c863d47b26bdb7b4e1e4887c94cffac0d1c973"
+	]
+	paths = [
+		'''^vendor''', 
+		'''Godeps''', 
+		'''vendor/golang.org''', 
+		'''vendor/github.com''', 
+		'''vendor/gopkg.in''',
+		'''src/github.com/aws/aws-sdk-go/aws/ec2metadata''', # cg-deploy-aws-light-stemcell-builder
+		'''src/influxdb/src/golang.org/x/crypto/ssh/testdata''' # cg-influx-db-boshrelease
+	]
+	#repos = [ "caulking" ]

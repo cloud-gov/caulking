@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cf-buildpack-db-export
+[36mINFO[0m[2020-06-17T08:10:49-04:00] No leaks detected. 19 commits audited in 31 milliseconds 521 microseconds 
+dfe565cabfe28892737a41b53895388c8d518552

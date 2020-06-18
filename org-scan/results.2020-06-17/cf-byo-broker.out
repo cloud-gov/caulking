@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cf-byo-broker
+[33mWARN[0m[2020-06-17T08:10:51-04:00] 34 leaks detected. 237 commits audited in 1 second 215 milliseconds 632 microseconds 
+209583fcae05314f31220a01689dfb6ea61ce6e1

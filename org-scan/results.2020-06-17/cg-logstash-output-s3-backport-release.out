@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-logstash-output-s3-backport-release
+[36mINFO[0m[2020-06-17T08:18:31-04:00] No leaks detected. 5 commits audited in 17 milliseconds 164 microseconds 
+a0adfdc0654e69682a212aea217dbf1fb00da581

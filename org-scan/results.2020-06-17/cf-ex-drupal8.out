@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cf-ex-drupal8
+[33mWARN[0m[2020-06-17T08:13:08-04:00] 25 leaks detected. 126 commits audited in 11 seconds 261 milliseconds 148 microseconds 
+0f4c99e3ba5110c96f7bc50816a340dedee4376f

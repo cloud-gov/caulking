@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deploy-docker-swarm
+[33mWARN[0m[2020-06-17T08:17:32-04:00] 18 leaks detected. 57 commits audited in 206 milliseconds 729 microseconds 
+be7c881356e97be68ee588567df6a2bf7080cf1b

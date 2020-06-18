@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/cg-deploy-credhub
+[33mWARN[0m[2020-06-17T08:17:30-04:00] 6 leaks detected. 18 commits audited in 73 milliseconds 523 microseconds 
+3ade335874643cb74cb9a1e0a6d5437708ae46c8

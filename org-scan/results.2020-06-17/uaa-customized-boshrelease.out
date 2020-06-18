@@ -1,0 +1,3 @@
+gitleaks --config=./gitleaks.toml --repo-path=/Users/peterdburkholder/Documents/caulking-org-scan/cache/uaa-customized-boshrelease
+[36mINFO[0m[2020-06-17T08:30:23-04:00] No leaks detected. 54 commits audited in 3 seconds 825 milliseconds 114 microseconds 
+7d016f6b04549cce8109d5d0ff8dc89ff48f4cad
