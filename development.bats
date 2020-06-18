@@ -132,3 +132,38 @@ END
     run testCommit $REPO_PATH
     [ ${status} -eq 0 ]
 }
+
+@test "it allows 23.22.13.113 as an ip address" {
+    cat > $REPO_PATH/ip.txt <<END
+GSA IP address is 23.22.13.113
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}
+
+@test "it allows feed-a-bee as an example secret hex value" {
+    cat > $REPO_PATH/sample.yml <<END
+enc_key: feedabee
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}
+
+@test "it allows 1234567890 as an example secret digital value" {
+    cat > $REPO_PATH/sample.yml <<END
+enc_key: 1234567890
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}
+
+@test "it allows CHANGEME or EXAMPLE as example secrets" {
+    cat > $REPO_PATH/sample.sh <<END
+password = "CHANGEME"
+AWS_ACCESS_KEY_ID = "AKIAEXAMPLEXXXXXXXXXXXX"
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}
+
+
