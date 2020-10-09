@@ -18,6 +18,15 @@ testCommit() {
     gitleaks --config=./local.toml --repo-path=${REPO_PATH} --uncommitted
 }
 
+# Trying new `should` helper functions to aid
+# in readability
+function should_pass() {
+    [ ${status} -eq 0 ]
+}
+function should_fail() {
+    [ ${status} -eq 1 ]
+}
+
 @test "turning off hooks.gitleaks on a repo" {
     run turnOffHooksGitleaks
     [ ${status} -eq 1 ]
@@ -39,6 +48,18 @@ testCommit() {
     run createPrecommitOKGitleaks
     run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
     [ ${status} -eq 0 ]
+}
+
+@test "it fails when you have a personal email" {
+    git config --file $REPO_PATH/.git/config user.email foo@bar.com
+    run ./check_repos.sh $REPO_PATH check_user_email >&3
+    should_fail
+}
+
+@test "it succeeds when you have a biz email" {
+    git config --file $REPO_PATH/.git/config user.email foo@gsa.gov
+    run ./check_repos.sh $REPO_PATH check_user_email >&3
+    should_pass
 }
 
 @test "leak prevention allows support and inquiries emails" {
@@ -96,14 +117,6 @@ END
     [ ${status} -eq 0 ]
 }
 
-# Trying new `should` helper functions to aid
-# in readability
-function should_pass() {
-    [ ${status} -eq 0 ]
-}
-function should_fail() {
-    [ ${status} -eq 1 ]
-}
 
 @test "Pass a terraform IAM username reference" {
     cat > $REPO_PATH/foo.tf <<END
@@ -165,5 +178,3 @@ END
     run testCommit $REPO_PATH
     [ ${status} -eq 0 ]
 }
-
-
