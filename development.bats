@@ -179,6 +179,14 @@ END
     [ ${status} -eq 0 ]
 }
 
+@test "it allows version starting with 0 as not an IPv4 address" {
+    cat > $REPO_PATH/sample.text <<END
+apt-get -y upgrade python3-software-properties=0.96.20.10
+END
+    run testCommit $REPO_PATH
+    [ ${status} -eq 0 ]
+}
+
 @test "if fails a suspect filename extension" {
     touch $REPO_PATH/foo.pem 
     run testCommit $REPO_PATH
