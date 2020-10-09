@@ -41,7 +41,6 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-
 @test "leak prevention catches normal email addresses in test repo" {
     run addFileWithSecretEmail
     [ ${status} -eq 1 ]
@@ -63,6 +62,11 @@ load test_helper
 
 @test "repos are using precommit hooks with gitleaks" {
     ./check_repos.sh $HOME check_precommit_hook >&3
+}
+
+@test "audit fails if AWS keys are in ~/.aws" {
+    run grep -rq 'AKIA' $HOME/.aws
+    [ ${status} -eq 1 ]
 }
 
 @test "it catches yaml with deploy password" {

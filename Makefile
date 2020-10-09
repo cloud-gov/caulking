@@ -20,7 +20,7 @@ clean_seekrets:
 
 audit: /usr/local/bin/bats /usr/local/bin/pcregrep
 	@echo "${ME} / ${NOW}"
-	bats -t caulked.bats
+	bats -p caulked.bats
 
 hook: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
