@@ -65,6 +65,10 @@ load test_helper
     ./check_repos.sh $HOME check_precommit_hook >&3
 }
 
+@test "git configuration uses a @gsa.gov email" {
+    ./check_repos.sh $HOME check_user_email >&3
+}
+
 @test "it catches yaml with deploy password" {
     run yamlTest "deploy-password: ohSh.aiNgai%noh4us%ie5nee.nah1ee"
     [ ${status} -eq 1 ]

@@ -1,6 +1,7 @@
 #! /bin/bash -euo pipefail
 
 MAXDEPTH=5
+USER_DOMAIN=gsa.gov
 
 # MAXDEPTH 5 assumes a home directory structure that's no deeper than this:
 #       $HOME/(projects)/(organization)/(repository)/(another_dir)/(yet_another_dir)
@@ -8,7 +9,7 @@ MAXDEPTH=5
 
 fail() {
     echo $@
-    echo "Usage: $0 root_dir (check_precommit_hook | check_hooks_gitleak)"
+    echo "Usage: $0 root_dir (check_precommit_hook | check_hooks_gitleak | check_user_email)"
     exit 2
 }
 
@@ -20,7 +21,7 @@ else
 fi 
 
 case $2 in 
-   check_hooks_gitleaks|check_precommit_hook) 
+   check_hooks_gitleaks|check_precommit_hook|check_user_email)
         option=$2
         :;;
    *) fail "invalid second argument";;
@@ -44,6 +45,15 @@ check_precommit_hook() {
       return $?
     fi
     return 0
+}
+
+check_user_email() {
+    user_domain=$(cd $gitrepo; git config user.email | cut -d @ -f 2)
+    if [ "$user_domain" = "$USER_DOMAIN" ]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # read gitrepo list from `find` using Process Substitution
