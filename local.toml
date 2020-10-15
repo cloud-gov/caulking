@@ -10,7 +10,7 @@ title = "gitleaks config"
 	description = "IPv4 addresses"
 	regex = '''\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'''
 	tags = ["IPv4", "IP", "addresses"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''(169.254.169.254|127.0.0.\d+|23.22.13.113)''' # 23.22.13.113 is gsa.gov
 
 
@@ -25,23 +25,23 @@ title = "gitleaks config"
 	regex = '''(?i)(password|enc.key|auth.pass):\s+(.*)'''
 	fileNameRegex = '''(?i)(\.yml|\.yaml)'''
 	tags = ["yaml"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''(\(\(.*\)\)|\{\{.*\}\})'''
 		description = "ignore substituted values"
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "Email except non-pii business email"
 	regex = '''(.{0,48}?)[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'''
 	tags = ["email"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''(?i)@(cloud.gov|gsa.gov|github.com)'''
 		description = "ignore inquiries@cloud.gov etc"
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		path = '''Godeps._workspace'''
 		description = "ignore included vendor files"
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''(?i)(Author|Copyright|Contact)'''
 		description = "ignore explict author or copyright email"
 
@@ -54,21 +54,21 @@ title = "gitleaks config"
 	description = "AWS MANAGER ID"
 	regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
 	tags = ["key", "AWS"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "AWS cred file info"
 	regex = '''(?i)(aws_access_key_id|aws_secret_access_key)(.{0,20})?=.[0-9a-zA-Z\/+]{20,40}'''
 	tags = ["AWS"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "AWS Secret Key"
 	regex = '''(?i)aws(.{0,20})?(?-i)['\"][0-9a-zA-Z\/+]{40}['\"]'''
 	tags = ["key", "AWS"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
@@ -100,7 +100,7 @@ title = "gitleaks config"
 	description = "Github"
 	regex = '''(?i)github(.{0,20})?(?-i)['\"][0-9a-zA-Z]{35,40}['\"]'''
 	tags = ["key", "Github"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
@@ -117,7 +117,7 @@ title = "gitleaks config"
 	description = "Slack"
 	regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
 	tags = ["key", "Slack"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
@@ -160,7 +160,7 @@ title = "gitleaks config"
 	description = "Slack Webhook"
 	regex = '''https://hooks.slack.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24}'''
 	tags = ["key", "slack"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
@@ -186,18 +186,18 @@ title = "gitleaks config"
 [[rules]]
 	description = "Env Var"
 	regex = '''(?i)(apikey|secret|key|api|password|pass|pw|host)=[0-9a-zA-Z-_.{}]{4,120}'''
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "Generic Username"
 	regex = '''(?i)(dbuser|user)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
 	tags = ["key", "username", "generic"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		description = "A username in a terraform file is not a leak"
 		regex = '''\w+?username\w+='''
 		file = 	'''\.tf$'''
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
@@ -205,19 +205,19 @@ title = "gitleaks config"
 	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
 	tags = ["key", "API", "generic"]
 	# ignore leaks with specific identifiers like slack and aws
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})'''
 		description = "ignore slack"
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		description = "MailChimp API key"
 		regex = '''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]'''
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		description = "AWS Manager ID"
 		regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		description = "Ignore vendor deps and GoPkg"
 		path = '''(vendor.github|Godeps._workspace)'''
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		description = "Ignore standard example credentials"
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
@@ -229,11 +229,11 @@ title = "gitleaks config"
 	[[rules.Entropies]]
 		Min = "4.3"
 		Max = "7.0"
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		description = "ignore ssh key and pems"
 		file = '''(pem|ppk|env)$'''
 		path = '''(.*)?ssh'''
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
@@ -244,20 +244,20 @@ title = "gitleaks config"
 		Min = "3.5"
 		Max = "4.5"
 		Group = "1"
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "WP-Config"
 	regex='''define(.{0,20})?(DB_CHARSET|NONCE_SALT|LOGGED_IN_SALT|AUTH_SALT|NONCE_KEY|DB_HOST|DB_PASSWORD|AUTH_KEY|SECURE_AUTH_KEY|LOGGED_IN_KEY|DB_NAME|DB_USER)(.{0,20})?['|"].{10,120}['|"]'''
 	tags = ["key", "API", "generic"]
-	[[rules.whitelist]]
+	[[rules.allowlist]]
 		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "Files with keys and credentials"
 	fileNameRegex = '''(?i)(id_rsa|passwd|id_rsa.pub|pgpass|pem|key|shadow)'''
 
-[whitelist]
-	description = "image whitelists"
+[allowlist]
+	description = "image allowlists"
 	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''', '''development.bats''', '''caulked.bats''', '''local.toml''']
