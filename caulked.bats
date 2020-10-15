@@ -35,8 +35,8 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-@test "leak prevention catches aws accounts in test repo" {
-    skip # not implemented
+@test "leak prevention catches aws accounts numbers in test repo" {
+    skip # AWS account number. not sensitive(?), hard to detect w/o false positives
     run addFileWithAwsAccounts
     [ ${status} -eq 1 ]
 }
