@@ -214,6 +214,15 @@ title = "gitleaks config"
 	regex='''define(.{0,20})?(DB_CHARSET|NONCE_SALT|LOGGED_IN_SALT|AUTH_SALT|NONCE_KEY|DB_HOST|DB_PASSWORD|AUTH_KEY|SECURE_AUTH_KEY|LOGGED_IN_KEY|DB_NAME|DB_USER)(.{0,20})?['|"].{10,120}['|"]'''
 	tags = ["key", "API", "generic"]
 
+[[rules]]
+	description = "File name extensions of credentials"
+	file = '''(?i)\.(pgpass|pem|key)'''
+	tags = ["file"]
+
+[[rules]]
+	description = "File names of credentials"
+	file = '''(?i)^(id_rsa|passwd|pgpass|shadow)'''
+
 [allowlist]
 	description = "image allowlists"
 	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''', '''development.bats''', '''caulked.bats''', '''local.toml''']
