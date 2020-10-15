@@ -27,8 +27,7 @@ title = "gitleaks config"
 	tags = ["yaml"]
 	[rules.allowlist]
 		description = "ignore substituted values and examples"
-		regexes = ['''(\(\(.*\)\)|\{\{.*\}\})''', 
-			'''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
+		regexes = ['''(\(\(.*\)\)|\{\{.*\}\})''']
 
 [[rules]]
 	description = "Email except non-pii business email"
@@ -48,22 +47,16 @@ title = "gitleaks config"
 	description = "AWS MANAGER ID"
 	regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
 	tags = ["key", "AWS"]
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "AWS cred file info"
 	regex = '''(?i)(aws_access_key_id|aws_secret_access_key)(.{0,20})?=.[0-9a-zA-Z\/+]{20,40}'''
 	tags = ["AWS"]
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "AWS Secret Key"
 	regex = '''(?i)aws(.{0,20})?(?-i)['\"][0-9a-zA-Z\/+]{40}['\"]'''
 	tags = ["key", "AWS"]
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "AWS MWS key"
@@ -94,8 +87,6 @@ title = "gitleaks config"
 	description = "Github"
 	regex = '''(?i)github(.{0,20})?(?-i)['\"][0-9a-zA-Z]{35,40}['\"]'''
 	tags = ["key", "Github"]
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "LinkedIn Client ID"
@@ -111,8 +102,6 @@ title = "gitleaks config"
 	description = "Slack"
 	regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
 	tags = ["key", "Slack"]
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "EC"
@@ -154,8 +143,6 @@ title = "gitleaks config"
 	description = "Slack Webhook"
 	regex = '''https://hooks.slack.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24}'''
 	tags = ["key", "slack"]
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "Stripe API key"
@@ -180,8 +167,6 @@ title = "gitleaks config"
 [[rules]]
 	description = "Env Var"
 	regex = '''(?i)(apikey|secret|key|api|password|pass|pw|host)=[0-9a-zA-Z-_.{}]{4,120}'''
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "Generic Username"
@@ -189,8 +174,7 @@ title = "gitleaks config"
 	tags = ["key", "username", "generic"]
 	[rules.allowlist]
 		description = "A username in a terraform file is not a leak"
-		regexes = ['''\w+?username\w+=''',
-		  '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
+		regexes = ['''\w+?username\w+=''']
 		files = 	['''\.tf$''']
 
 [[rules]]
@@ -200,7 +184,6 @@ title = "gitleaks config"
 	# ignore leaks with specific identifiers like slack and aws
 	[rules.allowlist]
 		regexes = ['''xox[baprs]-([0-9a-zA-Z]{10,48})''',
-			'''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''',
 			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
 			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''']
 		paths = ['''(vendor.github|Godeps._workspace)''']
@@ -216,7 +199,6 @@ title = "gitleaks config"
 	[rules.allowlist]
 		files = ['''(pem|ppk|env)$''']
 		paths = ['''(.*)?ssh''']
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "Potential bash var"
@@ -226,16 +208,13 @@ title = "gitleaks config"
 		Min = "3.5"
 		Max = "4.5"
 		Group = "1"
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [[rules]]
 	description = "WP-Config"
 	regex='''define(.{0,20})?(DB_CHARSET|NONCE_SALT|LOGGED_IN_SALT|AUTH_SALT|NONCE_KEY|DB_HOST|DB_PASSWORD|AUTH_KEY|SECURE_AUTH_KEY|LOGGED_IN_KEY|DB_NAME|DB_USER)(.{0,20})?['|"].{10,120}['|"]'''
 	tags = ["key", "API", "generic"]
-	[rules.allowlist]
-		regexes = ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
 
 [allowlist]
 	description = "image allowlists"
 	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''', '''development.bats''', '''caulked.bats''', '''local.toml''']
+	regexes	= ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
