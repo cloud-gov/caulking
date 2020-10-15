@@ -178,3 +178,15 @@ END
     run testCommit $REPO_PATH
     [ ${status} -eq 0 ]
 }
+
+@test "if fails a suspect filename extension" {
+    touch $REPO_PATH/foo.pem 
+    run testCommit $REPO_PATH
+    should_fail
+}
+
+@test "if fails a suspect filename" {
+    touch $REPO_PATH/shadow
+    run testCommit $REPO_PATH
+    should_fail
+}

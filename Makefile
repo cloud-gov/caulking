@@ -19,6 +19,7 @@ clean_seekrets:
 	-git config --global --unset gitseekret.version
 
 audit: /usr/local/bin/bats /usr/local/bin/pcregrep
+	@cat VERSION
 	@echo "${ME} / ${NOW}"
 	bats -p caulked.bats
 
@@ -28,7 +29,7 @@ global_hooks:
 	git config --global hooks.gitleaks true
 	git config --global core.hooksPath ${GIT_SUPPORT_PATH}/hooks
 
-config patterns: ${GIT_SUPPORT_PATH}/gitleaks.toml
+config patterns rules: ${GIT_SUPPORT_PATH}/gitleaks.toml
 
 ${GIT_SUPPORT_PATH}/gitleaks.toml: local.toml
 	cat $^ > $@

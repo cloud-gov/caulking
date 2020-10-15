@@ -10,40 +10,33 @@ title = "gitleaks config"
 	description = "IPv4 addresses"
 	regex = '''\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'''
 	tags = ["IPv4", "IP", "addresses"]
-	[[rules.whitelist]]
-		regex = '''(169.254.169.254|127.0.0.\d+|23.22.13.113)''' # 23.22.13.113 is gsa.gov
+	[rules.allowlist]
+		regexes = ['''(169.254.169.254|127.0.0.\d+|23.22.13.113)'''] # 23.22.13.113 is gsa.gov
 
 
 # s3config copied from `leaky-repo.toml` upstream, but uncommented:
 [[rules]]
 	description = "s3config"
 	regex = '''(?i)(dbpasswd|dbuser|dbname|dbhost|api_key|apikey|key|api|password|user|guid|hostname|pw|auth)(.{0,3})?([0-9a-zA-Z-_\/+!{}=]{4,120})'''
-	fileNameRegex = '''(?i)s3cfg$'''
+	file = '''(?i)s3cfg$'''
 
 [[rules]]
 	description = "yaml secrets"
 	regex = '''(?i)(password|enc.key|auth.pass):\s+(.*)'''
-	fileNameRegex = '''(?i)(\.yml|\.yaml)'''
+	file = '''(?i)(\.yml|\.yaml)'''
 	tags = ["yaml"]
-	[[rules.whitelist]]
-		regex = '''(\(\(.*\)\)|\{\{.*\}\})'''
-		description = "ignore substituted values"
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
+	[rules.allowlist]
+		description = "ignore substituted values and examples"
+		regexes = ['''(\(\(.*\)\)|\{\{.*\}\})''']
 
 [[rules]]
 	description = "Email except non-pii business email"
 	regex = '''(.{0,48}?)[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'''
 	tags = ["email"]
-	[[rules.whitelist]]
-		regex = '''(?i)@(cloud.gov|gsa.gov|github.com)'''
-		description = "ignore inquiries@cloud.gov etc"
-	[[rules.whitelist]]
-		path = '''Godeps._workspace'''
-		description = "ignore included vendor files"
-	[[rules.whitelist]]
-		regex = '''(?i)(Author|Copyright|Contact)'''
-		description = "ignore explict author or copyright email"
+	[rules.allowlist]
+		regexes = ['''(?i)@(cloud.gov|gsa.gov|github.com)''',
+			'''(?i)(Author|Copyright|Contact)''']
+		pathes = ['''Godeps._workspace''']
 
 # Rules from original `leaky-repo.toml` v4.1.1
 # https://raw.githubusercontent.com/zricethezav/gitleaks/master/examples/leaky-repo.toml
@@ -54,22 +47,16 @@ title = "gitleaks config"
 	description = "AWS MANAGER ID"
 	regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
 	tags = ["key", "AWS"]
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "AWS cred file info"
 	regex = '''(?i)(aws_access_key_id|aws_secret_access_key)(.{0,20})?=.[0-9a-zA-Z\/+]{20,40}'''
 	tags = ["AWS"]
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "AWS Secret Key"
 	regex = '''(?i)aws(.{0,20})?(?-i)['\"][0-9a-zA-Z\/+]{40}['\"]'''
 	tags = ["key", "AWS"]
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "AWS MWS key"
@@ -100,8 +87,6 @@ title = "gitleaks config"
 	description = "Github"
 	regex = '''(?i)github(.{0,20})?(?-i)['\"][0-9a-zA-Z]{35,40}['\"]'''
 	tags = ["key", "Github"]
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "LinkedIn Client ID"
@@ -117,8 +102,6 @@ title = "gitleaks config"
 	description = "Slack"
 	regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
 	tags = ["key", "Slack"]
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "EC"
@@ -160,8 +143,6 @@ title = "gitleaks config"
 	description = "Slack Webhook"
 	regex = '''https://hooks.slack.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24}'''
 	tags = ["key", "slack"]
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "Stripe API key"
@@ -186,55 +167,38 @@ title = "gitleaks config"
 [[rules]]
 	description = "Env Var"
 	regex = '''(?i)(apikey|secret|key|api|password|pass|pw|host)=[0-9a-zA-Z-_.{}]{4,120}'''
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "Generic Username"
 	regex = '''(?i)(dbuser|user)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
 	tags = ["key", "username", "generic"]
-	[[rules.whitelist]]
+	[rules.allowlist]
 		description = "A username in a terraform file is not a leak"
-		regex = '''\w+?username\w+='''
-		file = 	'''\.tf$'''
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
+		regexes = ['''\w+?username\w+=''']
+		files = 	['''\.tf$''']
 
 [[rules]]
 	description = "Generic Credential"
 	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
 	tags = ["key", "API", "generic"]
 	# ignore leaks with specific identifiers like slack and aws
-	[[rules.whitelist]]
-		regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})'''
-		description = "ignore slack"
-	[[rules.whitelist]]
-		description = "MailChimp API key"
-		regex = '''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]'''
-	[[rules.whitelist]]
-		description = "AWS Manager ID"
-		regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
-	[[rules.whitelist]]
-		description = "Ignore vendor deps and GoPkg"
-		path = '''(vendor.github|Godeps._workspace)'''
-	[[rules.whitelist]]
-		description = "Ignore standard example credentials"
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
+	[rules.allowlist]
+		regexes = ['''xox[baprs]-([0-9a-zA-Z]{10,48})''',
+			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
+			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''']
+		paths = ['''(vendor.github|Godeps._workspace)''']
 
 [[rules]]
 	description = "High Entropy"
 	regex = '''[0-9a-zA-Z-_!{}/=]{4,120}'''
-  	fileNameRegex = '''(?i)(dump.sql|high-entropy-misc.txt)$'''
+	file = '''(?i)(dump.sql|high-entropy-misc.txt)$'''
 	tags = ["entropy"]
 	[[rules.Entropies]]
 		Min = "4.3"
 		Max = "7.0"
-	[[rules.whitelist]]
-		description = "ignore ssh key and pems"
-		file = '''(pem|ppk|env)$'''
-		path = '''(.*)?ssh'''
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
+	[rules.allowlist]
+		files = ['''(pem|ppk|env)$''']
+		paths = ['''(.*)?ssh''']
 
 [[rules]]
 	description = "Potential bash var"
@@ -244,20 +208,22 @@ title = "gitleaks config"
 		Min = "3.5"
 		Max = "4.5"
 		Group = "1"
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
 	description = "WP-Config"
 	regex='''define(.{0,20})?(DB_CHARSET|NONCE_SALT|LOGGED_IN_SALT|AUTH_SALT|NONCE_KEY|DB_HOST|DB_PASSWORD|AUTH_KEY|SECURE_AUTH_KEY|LOGGED_IN_KEY|DB_NAME|DB_USER)(.{0,20})?['|"].{10,120}['|"]'''
 	tags = ["key", "API", "generic"]
-	[[rules.whitelist]]
-		regex = '''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890'''
 
 [[rules]]
-	description = "Files with keys and credentials"
-	fileNameRegex = '''(?i)(id_rsa|passwd|id_rsa.pub|pgpass|pem|key|shadow)'''
+	description = "File name extensions of credentials"
+	file = '''(?i)\.(pgpass|pem|key)'''
+	tags = ["file"]
 
-[whitelist]
-	description = "image whitelists"
+[[rules]]
+	description = "File names of credentials"
+	file = '''(?i)^(id_rsa|passwd|pgpass|shadow)'''
+
+[allowlist]
+	description = "image allowlists"
 	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''', '''development.bats''', '''caulked.bats''', '''local.toml''']
+	regexes	= ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']

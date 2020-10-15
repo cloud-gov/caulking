@@ -93,8 +93,22 @@ run `bats development.bats`.  Here are some shortcuts
 
 - `make hook`: update `~/.git-support/hooks/pre-commit` from local `pre-commit.sh`
 - `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml` 
-- `make audit`: see that everything work togethe.
+- `make audit`: see that everything work together.
 
+## Testing bats tests
+
+To test bats tests, start a subshell, load in the functions from `test_helper.bash`,
+then be sure to run `setup` before any test to populate `$REPO_PATH` and so on.  For
+example:
+
+``` sh
+bash # start a new shell
+source test_helper.bash # load all the helper functions
+setup 
+addFileWithNoSecrets # do the failing thing 
+echo $?
+^D
+```
 
 ## Rule sets
 
