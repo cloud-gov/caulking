@@ -134,6 +134,21 @@ pre-commit install
 git config --global core.hookspath "${hookspath}"
 ```
 
+## Incompatible gitleaks changes
+
+Sometimes gitleaks updates will have breaking changes, and you'll need to compare gitleaks
+between the current version and an older version. To install an older gitleaks version with `brew`:
+
+* Browse the [brew history for the gitleaks formula](https://github.com/Homebrew/homebrew-core/commits/master/Formula/gitleaks.rb)
+* Find the `commit` that matches the older version you want to roll back to
+* Then run: 
+  ```
+  wget https://raw.githubusercontent.com/Homebrew/homebrew-core/<commit>/Formula/gitleaks.rb
+  brew unlink gitleaks
+  brew install ./gitleaks.rb
+  ```
+* You'll now have the older version. 
+
 # Public domain
 
 This project is in the worldwide public domain. As stated in CONTRIBUTING:

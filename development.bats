@@ -187,14 +187,23 @@ END
     [ ${status} -eq 0 ]
 }
 
-@test "if fails a suspect filename extension" {
+@test "it fails a suspect filename extension" {
     touch $REPO_PATH/foo.pem 
     run testCommit $REPO_PATH
     should_fail
 }
 
-@test "if fails a suspect filename" {
+@test "it fails a suspect filename" {
     touch $REPO_PATH/shadow
     run testCommit $REPO_PATH
     should_fail
 }
+
+@test "it fails a Sauce access key" {
+  cat > $REPO_PATH/travis.yml <<END
+    - SAUCE_ACCESS_KEY='39a45464-cb1d-4b8d-aa1f-83c7c04fa673'
+END
+    run testCommit $REPO_PATH
+    should_fail
+}
+
