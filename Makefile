@@ -1,6 +1,7 @@
 GIT_SUPPORT_PATH=  ${HOME}/.git-support
 NOW=$(shell date)
 ME=$(shell whoami)
+GITLEAKS_VERSION=7.2.1
 
 INSTALL_TARGETS= hook global_hooks patterns
 
@@ -22,6 +23,7 @@ audit: /usr/local/bin/bats /usr/local/bin/pcregrep
 	gitleaks --version | grep 6.2.0 || brew unlink gitleaks && make install
 	@cat VERSION
 	@echo "${ME} / ${NOW}"
+	test $$(gitleaks --version) =  ${GITLEAKS_VERSION} || make upgrade
 	bats -p caulked.bats
 
 hook: ${GIT_SUPPORT_PATH}/hooks/pre-commit
@@ -50,5 +52,8 @@ ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
 
 /usr/local/bin/%:
 	brew install $(@F)
+
+upgrade:
+	brew upgrade gitleaks
 
 FORCE:

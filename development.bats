@@ -15,7 +15,7 @@ load test_helper
 
 # override testCommit to use local.toml in development
 testCommit() {
-    gitleaks --config=./local.toml --repo-path=${REPO_PATH} --uncommitted
+    gitleaks --leaks-exit-code=1 --config-path=./local.toml --path=${REPO_PATH} --unstaged
 }
 
 # Trying new `should` helper functions to aid
@@ -116,7 +116,6 @@ END
     run testCommit $REPO_PATH
     [ ${status} -eq 0 ]
 }
-
 
 @test "Pass a terraform IAM username reference" {
     cat > $REPO_PATH/foo.tf <<END
