@@ -19,6 +19,7 @@ clean_seekrets:
 	-git config --global --unset gitseekret.version
 
 audit: /usr/local/bin/bats /usr/local/bin/pcregrep
+	gitleaks --version | grep 6.2.0 || brew unlink gitleaks && make install
 	@cat VERSION
 	@echo "${ME} / ${NOW}"
 	bats -p caulked.bats
@@ -43,6 +44,9 @@ ${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
 
 /usr/local/bin/pcregrep:
 	brew install pcre
+
+/usr/local/bin/gitleaks:
+	brew install ./gitleaks.rb
 
 /usr/local/bin/%:
 	brew install $(@F)

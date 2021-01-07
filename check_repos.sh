@@ -31,7 +31,7 @@ exit_status=0
 
 check_hooks_gitleaks() {
     hooks_gitleak=$(cd $gitrepo; git config --bool hooks.gitleaks)
-    if [ $hooks_gitleak = "true" ]; then
+    if [ "$hooks_gitleak" = "true" ]; then
         return 0
     else
         return 1
