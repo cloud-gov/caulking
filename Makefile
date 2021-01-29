@@ -53,6 +53,7 @@ ${GIT_SUPPORT_PATH} ${HOOKS}:
 	brew install $(@F)
 
 upgrade:
+	@echo Simplify this code once we are all back to 7.2.1 or higher.
 	brew rm gitleaks
 	brew install gitleaks
 	brew link gitleaks
