@@ -1,32 +1,32 @@
-GIT_SUPPORT_PATH=  ${HOME}/.git-support
+CAULKING_VERSION=1.1.0 2021-01-28
+GITLEAKS_VERSION=7.2.1
 NOW=$(shell date)
 ME=$(shell whoami)
-GITLEAKS_VERSION=7.2.1
 
-INSTALL_TARGETS= hook global_hooks patterns
+GIT_SUPPORT_PATH=  ${HOME}/.git-support
+HOOKS=${GIT_SUPPORT_PATH}/hooks
+PRECOMMIT=${GIT_SUPPORT_PATH}/hooks/pre-commit
+PATTERNS=${GIT_SUPPORT_PATH}/gitleaks.toml
+GITLEAKS= /usr/local/bin/gitleaks
 
-.PHONY: $(INSTALL_TARGETS) clean install audit config
+INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
-install: /usr/local/bin/gitleaks $(INSTALL_TARGETS)
+.PHONY: clean audit global_hooks
 
-clean:
-	/bin/rm -f ${GIT_SUPPORT_PATH}/hooks/pre-commit
+install: $(INSTALL_TARGETS) global_hooks
 
-clean_seekrets:
-	/bin/rm -rf ${GIT_SUPPORT_PATH}/seekret-rules
-	-git config --global --unset gitseekret.rulesenabled
-	-git config --global --unset gitseekret.rulespath
-	-git config --global --unset gitseekret.exceptionsfile
-	-git config --global --unset gitseekret.version
-
-audit: /usr/local/bin/bats /usr/local/bin/pcregrep
-	gitleaks --version | grep 6.2.0 || brew unlink gitleaks && make install
-	@cat VERSION
+audit: /usr/local/bin/bats /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
+	@test $$(gitleaks --version) =  ${GITLEAKS_VERSION} || make upgrade
+	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
-	test $$(gitleaks --version) =  ${GITLEAKS_VERSION} || make upgrade
 	bats -p caulked.bats
 
-hook: ${GIT_SUPPORT_PATH}/hooks/pre-commit
+clean:
+	/bin/rm -rf ${GIT_SUPPORT_PATH}
+	git config --global --unset hooks.gitleaks
+	git config --global --unset core.hooksPath
+
+hook pre-commit: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
 global_hooks:
 	git config --global hooks.gitleaks true
@@ -34,21 +34,20 @@ global_hooks:
 
 config patterns rules: ${GIT_SUPPORT_PATH}/gitleaks.toml
 
-${GIT_SUPPORT_PATH}/gitleaks.toml: local.toml
-	cat $^ > $@
+${PATTERNS}: local.toml ${GIT_SUPPORT_PATH}
+	cat $< > $@
 
-${GIT_SUPPORT_PATH}/hooks/pre-commit: pre-commit.sh
-	mkdir -p ${GIT_SUPPORT_PATH}/hooks
+${PRECOMMIT}: pre-commit.sh ${HOOKS}
 	install -m 0755 -cv $< $@
+
+${GIT_SUPPORT_PATH} ${HOOKS}:
+	mkdir -p $@ 
 
 /usr/local/bin/bats:
 	brew install bats-core
 
 /usr/local/bin/pcregrep:
 	brew install pcre
-
-/usr/local/bin/gitleaks:
-	brew install ./gitleaks.rb
 
 /usr/local/bin/%:
 	brew install $(@F)
