@@ -55,5 +55,6 @@ ${GIT_SUPPORT_PATH} ${HOOKS}:
 upgrade:
 	brew rm gitleaks
 	brew install gitleaks
+	brew link gitleaks
 
 FORCE:
