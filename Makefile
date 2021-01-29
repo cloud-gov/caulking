@@ -53,6 +53,7 @@ ${GIT_SUPPORT_PATH} ${HOOKS}:
 	brew install $(@F)
 
 upgrade:
-	brew upgrade gitleaks
+	brew rm gitleaks
+	brew install gitleaks
 
 FORCE:
