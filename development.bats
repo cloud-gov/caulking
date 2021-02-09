@@ -206,3 +206,12 @@ END
     should_fail
 }
 
+
+@test "it allows an inspec count of users" { 
+  cat > $REPO_PATH/inspec.rb <<END
+    user_count = input('admins').length + input('non-admins').length
+END
+    run testCommit $REPO_PATH
+    should_pass
+}
+
