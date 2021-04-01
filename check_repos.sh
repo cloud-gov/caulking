@@ -39,7 +39,6 @@ check_hooks_gitleaks() {
 }
 
 check_precommit_hook() {
-    set -xv
     if [ -f $gitrepo/hooks/pre-commit ]; then
       pcregrep -q '^((?!#).)*gitleaks\s.*$' $gitrepo/hooks/pre-commit
       return $?
@@ -62,7 +61,7 @@ while read gitrepo; do
     if eval $option $gitrepo; then
         :
     else
-        echo "  $0 Fail $option: $gitrepo"
+        echo "FAIL $option for repository: $gitrepo" 1>&2
         exit_status=1
     fi
 done <<< "$( find $root -name '.git' -type d -maxdepth $MAXDEPTH 2>/dev/null )"
