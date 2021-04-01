@@ -64,9 +64,13 @@ load test_helper
     ./check_repos.sh $HOME check_precommit_hook >&3
 }
 
-@test "audit fails if AWS keys are in ~/.aws" {
+@test "the ~/.aws directory is free of AWS keys" {
+  if [ -d ~/.aws ]; then 
     run grep -rq 'AKIA' $HOME/.aws
     [ ${status} -eq 1 ]
+  else
+    true
+  fi
 }
 
 @test "git configuration uses a @gsa.gov email" {
