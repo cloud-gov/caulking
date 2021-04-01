@@ -174,9 +174,9 @@ title = "gitleaks config"
 	regex = '''(?i)(dbuser|user)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
 	tags = ["key", "username", "generic"]
 	[rules.allowlist]
-		description = "A username in a terraform file is not a leak"
+		description = "A username in a terraform file and programs is not a leak"
 		regexes = ['''\w+?username\w+=''']
-		files = 	['''\.tf$''']
+		files = 	['''\.(tf|rb|go|py)$''']
 
 [[rules]]
 	description = "Generic Credential"
