@@ -26,6 +26,13 @@ clean:
 	git config --global --unset hooks.gitleaks
 	git config --global --unset core.hooksPath
 
+clean_seekrets:
+	/bin/rm -rf ${GIT_SUPPORT_PATH}/seekret-rules
+	-git config --global --unset gitseekret.rulesenabled
+	-git config --global --unset gitseekret.rulespath
+	-git config --global --unset gitseekret.exceptionsfile
+	-git config --global --unset gitseekret.version
+
 hook pre-commit: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
 global_hooks:
