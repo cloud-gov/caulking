@@ -14,7 +14,8 @@ gitleaksEnabled=$(git config --bool hooks.gitleaks)
 # but you're actually trying to commit:
 #   database-pass: a-real-damn-password
 # then, you need to see the full output to realize your mistake
-cmd="/usr/local/bin/gitleaks --unstaged --verbose --leaks-exit-code=1 --config-path=$HOME/.git-support/gitleaks.toml"
+gitleaksPath=$(which gitleaks)
+cmd="$gitleaksPath --unstaged --verbose --leaks-exit-code=1 --config-path=$HOME/.git-support/gitleaks.toml"
 if [ $gitleaksEnabled == "true" ]; then
     $cmd
     status=$?
