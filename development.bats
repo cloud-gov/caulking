@@ -215,3 +215,12 @@ END
     should_pass
 }
 
+@test "it fails a multi-line secret key" {
+  cat > REPOS_PATH/webapp.py <<END
+    app.secret_key = (
+        "\x07~m\xde\x76\xda\x18\x6f!\x86\xdf_@%\xf1{\xbb\xe8)\xcbV\xde\x84\xc3"
+     )
+END
+    run testCommit $REPO_PATH
+    should_fail
+}
