@@ -1,4 +1,4 @@
-# Caulking stops leaks
+e  Caulking stops leaks
 
 ![caulking gun with grey caulk oozing out](https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Caulking.jpg/757px-Caulking.jpg)
 
@@ -88,8 +88,14 @@ gitforce() {
 
 # Development tips
 
-To work on patterns, add test cases to `development.bats`, update patterns in `local.toml` then
-run `bats development.bats`.  Here are some shortcuts
+To add a new test case:
+
+* add it to `development.bats`
+* run `bats development.bats`
+* it should fail, since you've not yet updated local.toml
+* work on local.toml until `bats development.bats` passes
+
+Here are some shortcuts when you're ready to test the whole package
 
 - `make hook`: update `~/.git-support/hooks/pre-commit` from local `pre-commit.sh`
 - `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml` 
