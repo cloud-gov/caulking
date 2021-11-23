@@ -206,6 +206,22 @@ END
     should_fail
 }
 
+@test "it fails a user with funny characters" {
+  cat > $REPO_PATH/sqlhosts <<END
+    user = '39a454/64\-cb@1d-4b.8d-aa1f-83c7c04fa673'
+END
+    run testCommit $REPO_PATH
+    should_fail
+}
+
+@test "it fails a key with funny characters" {
+  cat > $REPO_PATH/webapp.py <<END
+    app.secret_key = '''39a454/64\-cb1d-4b8d-aa1f-83c7c04fa673'''
+END
+    run testCommit $REPO_PATH
+    should_fail
+}
+
 @test "it fails a flask secret key" {
   cat > $REPO_PATH/webapp.py <<END
     app.secret_key = (
