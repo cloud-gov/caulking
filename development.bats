@@ -206,6 +206,15 @@ END
     should_fail
 }
 
+@test "it fails a flask secret key" {
+  cat > $REPO_PATH/webapp.py <<END
+    app.secret_key = (
+        '39a45464-cb1d-4b8d-aa1f-83c7c04fa673'
+    )
+END
+    run testCommit $REPO_PATH
+    should_fail
+}
 
 @test "it allows an inspec count of users" { 
   cat > $REPO_PATH/inspec.rb <<END

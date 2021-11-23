@@ -180,7 +180,18 @@ title = "gitleaks config"
 
 [[rules]]
 	description = "Generic Credential"
-	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
+	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]|[(\\]\s*$)'''
+	tags = ["key", "API", "generic"]
+	# ignore leaks with specific identifiers like slack and aws
+	[rules.allowlist]
+		regexes = ['''xox[baprs]-([0-9a-zA-Z]{10,48})''',
+			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
+			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''']
+		paths = ['''(vendor.github|Godeps._workspace)''']
+
+[[rules]]
+	description = "Generic Credential Newlines"
+	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})=\s+[(\\]'''
 	tags = ["key", "API", "generic"]
 	# ignore leaks with specific identifiers like slack and aws
 	[rules.allowlist]
