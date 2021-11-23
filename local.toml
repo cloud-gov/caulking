@@ -171,7 +171,7 @@ title = "gitleaks config"
 
 [[rules]]
 	description = "Generic Username"
-	regex = '''(?i)(dbuser|user)(.{0,20})?['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]'''
+	regex = '''(?i)(dbuser|user)(.{0,20})?['"]([0-9a-zA-Z-_\\+!{}@\./=]{4,120})['"]'''
 	tags = ["key", "username", "generic"]
 	[rules.allowlist]
 		description = "A username in a terraform file and programs is not a leak"
@@ -180,7 +180,7 @@ title = "gitleaks config"
 
 [[rules]]
 	description = "Generic Credential"
-	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['|"]([0-9a-zA-Z-_\/+!{}/=]{4,120})['|"]|[(\\]\s*$)'''
+	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['"](\S{4,120})['"]|[(\\]\s*$)'''
 	tags = ["key", "API", "generic"]
 	# ignore leaks with specific identifiers like slack and aws
 	[rules.allowlist]
@@ -212,7 +212,7 @@ title = "gitleaks config"
 
 [[rules]]
 	description = "WP-Config"
-	regex='''define(.{0,20})?(DB_CHARSET|NONCE_SALT|LOGGED_IN_SALT|AUTH_SALT|NONCE_KEY|DB_HOST|DB_PASSWORD|AUTH_KEY|SECURE_AUTH_KEY|LOGGED_IN_KEY|DB_NAME|DB_USER)(.{0,20})?['|"].{10,120}['|"]'''
+	regex='''define(.{0,20})?(DB_CHARSET|NONCE_SALT|LOGGED_IN_SALT|AUTH_SALT|NONCE_KEY|DB_HOST|DB_PASSWORD|AUTH_KEY|SECURE_AUTH_KEY|LOGGED_IN_KEY|DB_NAME|DB_USER)(.{0,20})?['"].{10,120}['"]'''
 	tags = ["key", "API", "generic"]
 
 [[rules]]
