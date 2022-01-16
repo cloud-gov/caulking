@@ -118,7 +118,7 @@ createPrecommitOKGitLeaks() {
     cat >$REPO_PATH/.git/hooks/pre-commit <<END
 #!/bin/sh
 echo special stuff
-/usr/local/bin/gitleaks
+$HOME/bin/gitleaks
 END
 }
 addFileWithCGEmails() {
