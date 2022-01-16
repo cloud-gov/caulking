@@ -1,4 +1,4 @@
-CAULKING_VERSION=1.3.0 2021-12-21
+CAULKING_VERSION=1.3.1 2022-01-16
 GITLEAKS_VERSION=7.6.1
 GITLEAKS_CHECKSUM=5e51a33beb6f358970815ecbbc40c6c28fb785ef6342da9a689713f99fece54f
 NOW=$(shell date)
@@ -8,7 +8,7 @@ GIT_SUPPORT_PATH=  ${HOME}/.git-support
 HOOKS=${GIT_SUPPORT_PATH}/hooks
 PRECOMMIT=${GIT_SUPPORT_PATH}/hooks/pre-commit
 PATTERNS=${GIT_SUPPORT_PATH}/gitleaks.toml
-GITLEAKS= /usr/local/bin/gitleaks
+GITLEAKS= ${HOME}/bin/gitleaks
 
 INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
@@ -16,8 +16,8 @@ INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
 install: $(INSTALL_TARGETS) global_hooks
 
-audit: /usr/local/bin/bats /usr/local/bin/pcregrep /usr/local/bin/wget ${GITLEAKS} $(INSTALL_TARGETS)
-	@test $$(gitleaks --version) = ${GITLEAKS_VERSION} || make upgrade
+audit: /usr/local/bin/bats /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
+	@test $$(${GITLEAKS} --version) = "v.${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make install'" && false )
 	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
 	bats -p caulked.bats
@@ -57,15 +57,10 @@ ${GIT_SUPPORT_PATH} ${HOOKS}:
 /usr/local/bin/pcregrep:
 	brew install pcre
 
-/usr/local/bin/wget:
-	brew install wget
-
-/usr/local/bin/gitleaks:
-	wget https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks-darwin-amd64
+${HOME}/bin/gitleaks:
 	mkdir -p ${HOME}/bin
-	mv gitleaks-darwin-amd64 ${HOME}/bin/gitleaks
-	chmod 755 ${HOME}/bin/gitleaks
-	ln -s ${HOME}/bin/gitleaks ${GITLEAKS}
+	curl -o $@ -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks-darwin-amd64
+	chmod 755 $@
 
 upgrade:
 	brew uninstall gitleaks || rm -f ${GITLEAKS} && rm -f ${HOME}/bin/gitleaks
