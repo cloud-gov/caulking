@@ -188,6 +188,7 @@ title = "gitleaks config"
 			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
 			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''']
 		paths = ['''(vendor.github|Godeps._workspace)''']
+		files = ['''^(yarn.lock|package-lock.json|pnpm-lock.yaml)$''']
 
 [[rules]]
 	description = "High Entropy"
