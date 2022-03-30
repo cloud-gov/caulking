@@ -240,3 +240,19 @@ END
     should_pass
 }
 
+@test "it excludes lockfiles from Generic Credential checks" {
+  cat > $REPO_PATH/yarn.lock <<END
+    "@hapi/boom@9.x.x", "@hapi/boom@^9.1.0":
+END
+    run testCommit $REPO_PATH
+    should_pass
+}
+
+@test "it excludes nested lockfiles from Generic Credential checks" {
+  mkdir -p $REPO_PATH/apps/foo 
+  cat > $REPO_PATH/apps/foo/yarn.lock <<END
+    "@hapi/boom@9.x.x", "@hapi/boom@^9.1.0":
+END
+    run testCommit $REPO_PATH
+    should_pass
+}
