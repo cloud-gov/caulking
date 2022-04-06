@@ -37,7 +37,7 @@ title = "gitleaks config"
 	[rules.allowlist]
 		regexes = ['''(?i)@(cloud.gov|gsa.gov|github.com)''',
 			'''(?i)(Author|Copyright|Contact)''']
-		pathes = ['''Godeps._workspace''']
+		paths = ['''Godeps._workspace''']
 
 # Rules from original `leaky-repo.toml` v4.1.1
 # https://raw.githubusercontent.com/zricethezav/gitleaks/master/examples/leaky-repo.toml
