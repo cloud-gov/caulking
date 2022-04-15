@@ -26,6 +26,8 @@ If you get the error `reference not found` on a new repository, be sure you've r
 
 ## Auditing notes - how to test if this is working
 
+> **Please note:** You will need to use a `gsa.gov` email address for your commits in order for the audit tests to pass. See [the GitHub documentation on how to set your commit email](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-user-account/managing-email-preferences/setting-your-commit-email-address#setting-your-commit-email-address-in-git).
+
 The `make audit` target installs prerequisites then runs the test harness `bats caulked.bats` and outputs whether the tests pass or fail. All tests must pass to be considered a successful install/audit.
 
 The tests check for a working `gitleaks` setup, and that you haven't inadvertently disabled `gitleaks` in your repositories. It checks:
