@@ -88,6 +88,21 @@ gitforce() {
 }
 ```
 
+Or, if you are using ZSH for your shell, add this to your `.zshrc` file:
+
+```zsh
+gitforce() {
+    read "confirm?You are about to commit a potential secret. Are you sure (y/n)?"
+        echo    # (optional) move to a new line
+    if [[ "$confirm" =~ ^[Yy]$ ]]
+    then
+        git config --local hooks.gitleaks false
+        git commit -m "$@" 
+        git config --local hooks.gitleaks true
+    fi
+}
+```
+
 # Development tips
 
 To work on patterns, add test cases to `development.bats`, update patterns in `local.toml` then
