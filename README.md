@@ -75,7 +75,7 @@ You have a couple of choices:
 
 You may want to add function to your `.bashrc` profile like:
 
-```
+```bash
 gitforce() {
     read -p "You are about to commit a potential secret. Are you sure (y/n)? " -n 1 -r
         echo    # (optional) move to a new line
