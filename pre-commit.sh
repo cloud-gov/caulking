@@ -14,7 +14,7 @@ gitleaksEnabled=$(git config --bool hooks.gitleaks)
 # but you're actually trying to commit:
 #   database-pass: a-real-damn-password
 # then, you need to see the full output to realize your mistake
-cmd="$HOME/bin/gitleaks protect --config=$HOME/.git-support/gitleaks.toml --verbose -l debug"
+cmd="$HOME/bin/gitleaks protect --config=$HOME/.git-support/gitleaks.toml --verbose --staged"
 if [ $gitleaksEnabled == "true" ]; then
     $cmd
     status=$?
