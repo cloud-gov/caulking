@@ -11,10 +11,10 @@
 #              make clean_gitleaks install`
 # Running Tests:
 #   make audit
-# 
+#
 # Development note: These tests all assume that your root
 # ~/.git-support/gitleaks.toml are up to date. If you're testing
-# `local.toml` then use `development.bats` (or use `make patterns` 
+# `local.toml` then use `development.bats` (or use `make patterns`
 # before `make audit`)
 
 load test_helper
@@ -22,7 +22,7 @@ load test_helper
 @test "leak prevention allows plain text, check 'git config --global -l' on failure" {
     run addFileWithNoSecrets
     [ ${status} -eq 0 ]
-    echo ${lines[2]} | grep -q "No leaks found"
+    echo ${lines[6]} | grep -q "no leaks found"
 }
 
 @test "leak prevention catches aws secrets in test repo" {
@@ -65,7 +65,7 @@ load test_helper
 }
 
 @test "the ~/.aws directory is free of AWS keys" {
-  if [ -d ~/.aws ]; then 
+  if [ -d ~/.aws ]; then
     run grep -rq 'AKIA' $HOME/.aws
     [ ${status} -eq 1 ]
   else

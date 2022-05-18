@@ -1,6 +1,7 @@
 CAULKING_VERSION=1.3.1 2022-01-16
-GITLEAKS_VERSION=7.6.1
-GITLEAKS_CHECKSUM=5e51a33beb6f358970815ecbbc40c6c28fb785ef6342da9a689713f99fece54f
+GITLEAKS_VERSION=8.8.4
+GITLEAKS_ARTIFACT="gitleaks_${GITLEAKS_VERSION}_darwin_x64.tar.gz"
+GITLEAKS_CHECKSUM=509430dada69ee4314068847a8a424d4102defc23fd5714330d36366796feef7
 NOW=$(shell date)
 ME=$(shell whoami)
 
@@ -17,7 +18,7 @@ INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 install: $(INSTALL_TARGETS) global_hooks
 
 audit: /usr/local/bin/bats /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
-	@test $$(${GITLEAKS} --version) = "v.${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make install'" && false )
+	@test $$(${GITLEAKS} version) = "${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make install'" && false )
 	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
 	bats -p caulked.bats
@@ -49,7 +50,7 @@ ${PRECOMMIT}: pre-commit.sh ${HOOKS}
 	install -m 0755 -cv $< $@
 
 ${GIT_SUPPORT_PATH} ${HOOKS}:
-	mkdir -p $@ 
+	mkdir -p $@
 
 /usr/local/bin/bats:
 	brew install bats-core
@@ -59,7 +60,8 @@ ${GIT_SUPPORT_PATH} ${HOOKS}:
 
 ${HOME}/bin/gitleaks:
 	mkdir -p ${HOME}/bin
-	curl -o $@ -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks-darwin-amd64
+	curl -o ${HOME}/bin/${GITLEAKS_ARTIFACT} -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/${GITLEAKS_ARTIFACT}
+	tar -xvzf ${HOME}/bin/${GITLEAKS_ARTIFACT} --directory ${HOME}/bin
 	chmod 755 $@
 
 upgrade:

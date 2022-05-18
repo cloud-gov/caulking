@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/sh
 
 git_dir=$(git rev-parse --git-dir)
 if [ -f "$git_dir/hooks/pre-commit" ]; then
@@ -14,7 +14,7 @@ gitleaksEnabled=$(git config --bool hooks.gitleaks)
 # but you're actually trying to commit:
 #   database-pass: a-real-damn-password
 # then, you need to see the full output to realize your mistake
-cmd="$HOME/bin/gitleaks --unstaged --verbose --leaks-exit-code=1 --config-path=$HOME/.git-support/gitleaks.toml"
+cmd="$HOME/bin/gitleaks protect --config=$HOME/.git-support/gitleaks.toml --verbose -l debug"
 if [ $gitleaksEnabled == "true" ]; then
     $cmd
     status=$?
@@ -23,12 +23,12 @@ if [ $gitleaksEnabled == "true" ]; then
 Error: gitleaks has detected sensitive information in your changes.
 For examples use: CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890
 If you know what you are doing you can disable this check using:
-    git config --local hooks.gitleaks false; 
-    git commit ....; 
-    git config --local hooks.gitleaks true; 
+    git config --local hooks.gitleaks false;
+    git commit ....;
+    git config --local hooks.gitleaks true;
 EOF
         exit 1
-    else 
+    else
         exit $status
     fi
 fi

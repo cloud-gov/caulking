@@ -2,7 +2,7 @@
 
 # Bug Bounty and Hackerone Folks: No need to report this file. The
 # apparent keys below are all test data used to
-# ensure our leak prevention tools are working. 
+# ensure our leak prevention tools are working.
 
 BATS_TMPDIR=${BATS_TMPDIR:-/tmp}     # set default if sourcing from cli
 REPO_PATH=$(mktemp -d "${BATS_TMPDIR}/gittest.XXXXXX")
