@@ -15,8 +15,11 @@ jobs:
           cache-name: cache-brew-lib
         with:
           path: |
-            ~/Library/Caches/Homebrew/pcre*
-            ~/Library/Caches/Homebrew/bats-core*
+            /usr/local/Homebrew
+            /usr/local/Cellar
+            /usr/local/Frameworks
+            /usr/local/bin
+            /usr/local/opt
           key: ${{ runner.os }}-brew-${{ hashFiles('Makefile') }}
           restore-keys: ${{ runner.os }}-brew-
 
