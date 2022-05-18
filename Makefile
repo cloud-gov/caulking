@@ -2,6 +2,7 @@ CAULKING_VERSION=1.3.1 2022-01-16
 GITLEAKS_VERSION=8.8.4
 GITLEAKS_ARTIFACT="gitleaks_${GITLEAKS_VERSION}_darwin_x64.tar.gz"
 GITLEAKS_CHECKSUM=509430dada69ee4314068847a8a424d4102defc23fd5714330d36366796feef7
+GITLEAKS_DOWNLOAD_DIR="${HOME}/bin/gitleaks-files"
 NOW=$(shell date)
 ME=$(shell whoami)
 
@@ -58,10 +59,12 @@ ${GIT_SUPPORT_PATH} ${HOOKS}:
 /usr/local/bin/pcregrep:
 	brew install pcre
 
-${HOME}/bin/gitleaks:
-	mkdir -p ${HOME}/bin
-	curl -o ${HOME}/bin/${GITLEAKS_ARTIFACT} -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/${GITLEAKS_ARTIFACT}
-	tar -xvzf ${HOME}/bin/${GITLEAKS_ARTIFACT} --directory ${HOME}/bin
+${GITLEAKS}:
+	mkdir -p ${GITLEAKS_DOWNLOAD_DIR}
+	curl -o ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/${GITLEAKS_ARTIFACT}
+	tar -xvzf ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} --directory ${GITLEAKS_DOWNLOAD_DIR}
+	cp ${GITLEAKS_DOWNLOAD_DIR}/gitleaks ${GITLEAKS}
+	rm -rf ${GITLEAKS_DOWNLOAD_DIR}
 	chmod 755 $@
 
 upgrade:
