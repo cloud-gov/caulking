@@ -17,8 +17,8 @@ jobs:
           path: |
             ~/Library/Caches/Homebrew/pcre*
             ~/Library/Caches/Homebrew/bats-core*
-          key: brew-${{ hashFiles('.github/brew-formulae') }}
-          restore-keys: brew-
+          key: ${{ runner.os }}-brew-${{ hashFiles('Makefile') }}
+          restore-keys: ${{ runner.os }}-brew-
 
       - name: Install caulking
         run: make install
