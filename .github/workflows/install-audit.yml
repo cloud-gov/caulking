@@ -21,7 +21,9 @@ jobs:
           restore-keys: brew-
 
       - name: Install caulking
-        run: make install
+        run: |
+          export TERM=screen-256color
+          make install
 
       - name: Run audit tests
         run: make audit
