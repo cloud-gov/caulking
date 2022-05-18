@@ -25,6 +25,11 @@ load test_helper
     echo ${lines[6]} | grep -q "no leaks found"
 }
 
+@test "leak prevention catches unstaged aws secrets in test repo" {
+    run unstagedFileWithAwsSecrets
+    [ ${status} -eq 1 ]
+}
+
 @test "leak prevention catches aws secrets in test repo" {
     run addFileWithAwsSecrets
     [ ${status} -eq 1 ]

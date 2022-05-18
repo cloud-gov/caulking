@@ -22,6 +22,11 @@ testCommit() {
     (cd ${REPO_PATH} && git commit -m 'test commit')
 }
 
+testUnstagedCommit() {
+    filename=$1
+    (cd ${REPO_PATH} && git commit -m 'test commit')
+}
+
 setup() {
     setupGitRepo
 }
@@ -36,6 +41,16 @@ addFileWithNoSecrets() {
     touch "${filename}"
     echo "Just a plain old file" >> "${filename}"
     testCommit $filename
+}
+
+unstagedFileWithAwsSecrets() {
+    local secrets_file="${REPO_PATH}/unstaged-secretsfile.md"
+
+    cat >${secrets_file} <<END
+SHHHH... Secrets in this file
+aws_secret_access_key = WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp
+END
+    testUnstagedCommit $secrets_file
 }
 
 addFileWithAwsSecrets() {
