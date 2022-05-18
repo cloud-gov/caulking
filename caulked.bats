@@ -79,6 +79,9 @@ load test_helper
 }
 
 @test "git configuration uses a @gsa.gov email" {
+    if [ $CI = 'true' ]; then
+        skip "Skipping test in CI"
+    fi
     ./check_repos.sh $HOME check_user_email >&3
 }
 
