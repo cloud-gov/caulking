@@ -5,12 +5,23 @@ on:
 
 jobs:
   install_and_audit:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-          
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-brew-lib
+        with:
+          path: |
+            ~/Library/Caches/Homebrew/pcre*
+            ~/Library/Caches/Homebrew/bats-core*
+          key: brew-${{ hashFiles('.github/brew-formulae') }}
+          restore-keys: brew-
+
       - name: Install caulking
-        run: make
+        run: make install
 
       - name: Run audit tests
         run: make audit
