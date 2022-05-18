@@ -15,7 +15,7 @@ load test_helper
 
 # override testCommit to use local.toml in development
 testCommit() {
-    gitleaks --leaks-exit-code=1 --config-path=./local.toml --path=${REPO_PATH} --unstaged
+    gitleaks protect --config=./local.toml --path=${REPO_PATH} --unstaged
 }
 
 # Trying new `should` helper functions to aid

@@ -19,7 +19,7 @@ INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 install: $(INSTALL_TARGETS) global_hooks
 
 audit: /usr/local/bin/bats /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
-	@test $$(${GITLEAKS} version) = "${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make install'" && false )
+	@test "$$(${GITLEAKS} version)" = "${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make clean install'" && false )
 	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
 	bats -p caulked.bats
@@ -28,6 +28,7 @@ clean:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}
 	git config --global --unset hooks.gitleaks
 	git config --global --unset core.hooksPath
+	/bin/rm -rf ${GITLEAKS}
 
 clean_seekrets:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}/seekret-rules
