@@ -1,0 +1,14 @@
+name: Install and run audit tests
+
+on:
+  pull_request:
+
+jobs:
+  install_and_audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install caulking
+        run: make
+
+      - name: Run audit tests
+        run: make audit
