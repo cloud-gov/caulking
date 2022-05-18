@@ -26,4 +26,5 @@ jobs:
       - name: Run audit tests
         run: |
           export TERM=screen-256color
+          brew --cache
           make audit
