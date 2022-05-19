@@ -176,7 +176,7 @@ title = "gitleaks config"
 	[rules.allowlist]
 		description = "A username in a terraform file and programs is not a leak"
 		regexes = ['''\w+?username\w+=''']
-		files = 	['''\.(tf|rb|go|py|js)$''']
+		paths = ['''\.(tf|rb|go|py|js)$''']
 
 [[rules]]
 	description = "Generic Credential"
@@ -187,8 +187,7 @@ title = "gitleaks config"
 		regexes = ['''xox[baprs]-([0-9a-zA-Z]{10,48})''',
 			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
 			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''']
-		paths = ['''(vendor.github|Godeps._workspace)''']
-		files = ['''^(yarn.lock|package-lock.json|pnpm-lock.yaml)$''']
+		paths = ['''(vendor.github|Godeps._workspace)''', '''^(yarn.lock|package-lock.json|pnpm-lock.yaml)$''']
 
 [[rules]]
 	description = "High Entropy"
@@ -197,8 +196,10 @@ title = "gitleaks config"
 	tags = ["entropy"]
 	entropy = 4.3
 	[rules.allowlist]
-		files = ['''(pem|ppk|env)$''']
-		paths = ['''(.*)?ssh''']
+		paths = [
+			'''(pem|ppk|env)$''',
+			'''(.*)?ssh'''
+		]
 
 [[rules]]
 	description = "Potential bash var"
@@ -214,7 +215,7 @@ title = "gitleaks config"
 
 [[rules]]
 	description = "File name extensions of credentials"
-	path = '''(?i)\.(pgpass|pem|key)'''
+	paths = '''(?i)\.(pgpass|pem|key)'''
 	tags = ["file"]
 
 [[rules]]
@@ -223,5 +224,5 @@ title = "gitleaks config"
 
 [allowlist]
 	description = "image allowlists"
-	files = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''', '''development.bats''', '''caulked.bats''', '''local.toml''']
+	paths = ['''(.*?)(jpg|gif|doc|pdf|bin|svg)$''', '''development.bats''', '''caulked.bats''', '''local.toml''']
 	regexes	= ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
