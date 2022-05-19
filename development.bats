@@ -2,7 +2,7 @@
 #
 # To keep `make audit` runs short with `caulked.bats`, this file
 # includes the rules for `allow`.  Also includes tests
-# that only make sense during development on the 
+# that only make sense during development on the
 # developers system
 
 # Bug bounty folks: Any apparent keys or passwords are just test strings
@@ -15,7 +15,7 @@ load test_helper
 
 # override testCommit to use local.toml in development
 testCommit() {
-    gitleaks protect --config=./local.toml --path=${REPO_PATH} --unstaged
+    gitleaks protect --config=./local.toml --source=${REPO_PATH} --staged
 }
 
 # Trying new `should` helper functions to aid
@@ -187,7 +187,7 @@ END
 }
 
 @test "it fails a suspect filename extension" {
-    touch $REPO_PATH/foo.pem 
+    touch $REPO_PATH/foo.pem
     run testCommit $REPO_PATH
     should_fail
 }
@@ -232,7 +232,7 @@ END
     should_fail
 }
 
-@test "it allows an inspec count of users" { 
+@test "it allows an inspec count of users" {
   cat > $REPO_PATH/inspec.rb <<END
     user_count = input('admins').length + input('non-admins').length
 END
@@ -249,7 +249,7 @@ END
 }
 
 @test "it excludes nested lockfiles from Generic Credential checks" {
-  mkdir -p $REPO_PATH/apps/foo 
+  mkdir -p $REPO_PATH/apps/foo
   cat > $REPO_PATH/apps/foo/yarn.lock <<END
     "@hapi/boom@9.x.x", "@hapi/boom@^9.1.0":
 END
