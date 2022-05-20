@@ -192,13 +192,13 @@ END
 }
 
 @test "it fails a suspect filename extension" {
-    touch $REPO_PATH/foo.pem
+    date > $REPO_PATH/foo.pem
     run testCommit $REPO_PATH
     assert_failure
 }
 
 @test "it fails a suspect filename" {
-    touch $REPO_PATH/shadow
+    date > $REPO_PATH/shadow
     run testCommit $REPO_PATH
     assert_failure
 }

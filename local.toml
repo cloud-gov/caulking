@@ -220,7 +220,7 @@ title = "gitleaks config"
 
 [[rules]]
 	description = "File names of credentials"
-	path = '''(?i)^(id_rsa|passwd|pgpass|shadow)'''
+	path = '''(?i)(id_rsa|passwd|pgpass|shadow)'''
 
 [allowlist]
 	description = "image allowlists"
