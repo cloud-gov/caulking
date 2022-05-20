@@ -5,6 +5,7 @@ GITLEAKS_CHECKSUM=509430dada69ee4314068847a8a424d4102defc23fd5714330d36366796fee
 GITLEAKS_DOWNLOAD_DIR="${HOME}/bin/gitleaks-files"
 NOW=$(shell date)
 ME=$(shell whoami)
+BATS=./test/bats/bin/bats
 
 GIT_SUPPORT_PATH=  ${HOME}/.git-support
 HOOKS=${GIT_SUPPORT_PATH}/hooks
@@ -18,11 +19,11 @@ INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
 install: $(INSTALL_TARGETS) global_hooks
 
-audit: /usr/local/bin/bats /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
+audit: /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
 	@test "$$(${GITLEAKS} version)" = "${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make clean install'" && false )
 	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
-	bats -p caulked.bats
+	${BATS} -p caulked.bats
 
 clean:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}
@@ -53,9 +54,6 @@ ${PRECOMMIT}: pre-commit.sh ${HOOKS}
 
 ${GIT_SUPPORT_PATH} ${HOOKS}:
 	mkdir -p $@
-
-/usr/local/bin/bats:
-	brew install bats-core
 
 /usr/local/bin/pcregrep:
 	brew install pcre

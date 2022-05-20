@@ -1,4 +1,4 @@
-#!/usr/bin/env bats
+#! ./test/bats/bin/bats
 #
 # bats test file for testing that caulking
 # prevents leaking secrets.

@@ -29,6 +29,8 @@ testUnstagedCommit() {
 
 setup() {
     setupGitRepo
+    load 'test/bats-support/load' # this is required by bats-assert!
+    load 'test/bats-assert/load'
 }
 
 teardown() {
