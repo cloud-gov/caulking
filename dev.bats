@@ -17,7 +17,7 @@ load test_helper
 # For testing we don't `git add` the file, so we exclude
 # the --staged flag we use in the pre-commit hook.
 testCommit() {
-    gitleaks protect --config=./local.toml --source=${REPO_PATH} --verbose
+    gitleaks detect --config=./local.toml --source=${REPO_PATH} --verbose --no-git
 }
 
 @test "check_repo fails when turning off hooks.gitleaks" {
