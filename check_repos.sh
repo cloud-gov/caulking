@@ -40,7 +40,7 @@ check_hooks_gitleaks() {
 
 check_precommit_hook() {
     if [ -f $gitrepo/hooks/pre-commit ]; then
-      pcregrep -q '^((?!#).)*gitleaks\s.*$' $gitrepo/hooks/pre-commit
+      pcregrep -q '^((?!#).)*gitleaks\s+protect' $gitrepo/hooks/pre-commit
       return $?
     fi
     return 0

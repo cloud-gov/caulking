@@ -1,4 +1,4 @@
-#!/usr/bin/env bats
+#!/usr/bin/env bash
 
 # Bug Bounty and Hackerone Folks: No need to report this file. The
 # apparent keys below are all test data used to
@@ -28,9 +28,9 @@ testUnstagedCommit() {
 }
 
 setup() {
-    setupGitRepo
     load 'test/bats-support/load' # this is required by bats-assert!
     load 'test/bats-assert/load'
+    setupGitRepo
 }
 
 teardown() {

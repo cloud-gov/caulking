@@ -41,10 +41,10 @@ END
     cat >$REPO_PATH/.git/hooks/pre-commit <<END
 #!/bin/sh
 echo special stuff
-$HOME/bin/gitleaks
+$HOME/bin/gitleaks  protect --foo
 END
     run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
-    [ ${status} -eq 0 ] # asssert_success fails here, why?
+    assert_success
 }
 
 @test "it fails when you have a personal email" {
