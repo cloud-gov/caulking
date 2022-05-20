@@ -244,7 +244,7 @@ END
     user_count = input('admins').length + input('non-admins').length
 END
     run testCommit $REPO_PATH
-    assert_failure
+    assert_success
 }
 
 @test "it passes allowed lockfiles from Generic Credential checks" {
