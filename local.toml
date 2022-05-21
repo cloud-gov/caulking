@@ -182,7 +182,8 @@ title = "gitleaks config"
 	description = "Generic Credential"
 	regex = '''(?i)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['"](\S{4,120})['"]|[(\\]\s*$)'''
 	tags = ["key", "API", "generic"]
-	# ignore leaks with specific identifiers like slack and aws
+	# ignore leaks with specific identifiers like slack and aws as these should be detected
+	# by more granular rules
 	[rules.allowlist]
 		regexes = ['''xox[baprs]-([0-9a-zA-Z]{10,48})''',
 			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
@@ -196,7 +197,7 @@ title = "gitleaks config"
 	tags = ["entropy"]
 	entropy = 4.3
 	[rules.allowlist]
-		paths = [
+		path = [
 			'''(pem|ppk|env)$''',
 			'''(.*)?ssh'''
 		]
@@ -215,7 +216,7 @@ title = "gitleaks config"
 
 [[rules]]
 	description = "File name extensions of credentials"
-	paths = '''(?i)\.(pgpass|pem|key)'''
+	path = '''(?i)\.(pgpass|pem|key)'''
 	tags = ["file"]
 
 [[rules]]
