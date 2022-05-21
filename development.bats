@@ -33,7 +33,7 @@ testCommit() {
 
 @test "check_repo fails if gitleaks is commented out" {
     cat >$REPO_PATH/.git/hooks/pre-commit <<END
-# lets not run gitleaks
+# lets not run gitleaks protect
 END
     run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
     assert_failure

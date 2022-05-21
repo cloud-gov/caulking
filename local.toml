@@ -197,7 +197,7 @@ title = "gitleaks config"
 	tags = ["entropy"]
 	entropy = 4.3
 	[rules.allowlist]
-		path = [
+		paths = [
 			'''(pem|ppk|env)$''',
 			'''(.*)?ssh'''
 		]
