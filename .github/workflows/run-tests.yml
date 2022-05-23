@@ -37,4 +37,4 @@ jobs:
 
       - name: Run audit tests
         run: |
-          ./test/bats/bin/bats development bats
+          ./test/bats/bin/bats development.bats
