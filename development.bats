@@ -116,7 +116,7 @@ END
     assert_success
 }
 
-# We pass/allow username in terraform. 
+# We pass/allow username in terraform.
 # THIS IS PROBABLY A BAD IDEA. ALLOWING ONLY TO ENSURE
 # consistency in upgrade to gitleaks 8.x.
 @test "it passes a terraform IAM username reference" {
@@ -138,7 +138,7 @@ END
 }
 
 # Testing for 40 base64 results in too many false positives,
-# e.g. all git commit references...  
+# e.g. all git commit references...
 # This may be duplicative of tests elsewhere in this file.
 @test "it no longer catches base64 40char potential AWS secret key" {
     cat > $REPO_PATH/random.txt <<END
@@ -231,7 +231,9 @@ END
 
 @test "it fails a flask secret key" {
   cat > $REPO_PATH/webapp.py <<END
-    app.secret_key = ( '39a45464-cb1d-4b8d-aa1f-83c7c04fa673')
+    app.secret_key = (
+        '39a45464-cb1d-4b8d-aa1f-83c7c04fa673'
+    )
 END
     run testCommit $REPO_PATH
     assert_failure
