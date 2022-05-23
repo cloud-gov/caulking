@@ -1,13 +1,15 @@
-name: Install and run audit tests
+name: Install and run tests
 
 on:
   pull_request:
 
 jobs:
-  install_and_audit:
+  install_and_tests:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
 
       - name: Cache Homebrew packages
         uses: actions/cache@v3
@@ -28,8 +30,11 @@ jobs:
       - name: Install caulking
         run: make install
 
-      - name: Run audit tests
+      - name: Run development tests
         run: |
           export TERM=screen-256color
-          brew --cache
           make audit
+
+      - name: Run audit tests
+        run: |
+          ./test/bats/bin/bats development bats
