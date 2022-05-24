@@ -1,8 +1,8 @@
-#!/usr/bin/env bats
+#!/usr/bin/env bash
 
 # Bug Bounty and Hackerone Folks: No need to report this file. The
 # apparent keys below are all test data used to
-# ensure our leak prevention tools are working. 
+# ensure our leak prevention tools are working.
 
 BATS_TMPDIR=${BATS_TMPDIR:-/tmp}     # set default if sourcing from cli
 REPO_PATH=$(mktemp -d "${BATS_TMPDIR}/gittest.XXXXXX")
@@ -22,7 +22,14 @@ testCommit() {
     (cd ${REPO_PATH} && git commit -m 'test commit')
 }
 
+testUnstagedCommit() {
+    filename=$1
+    (cd ${REPO_PATH} && git commit -m 'test commit')
+}
+
 setup() {
+    load 'test/bats-support/load' # this is required by bats-assert!
+    load 'test/bats-assert/load'
     setupGitRepo
 }
 
@@ -36,6 +43,16 @@ addFileWithNoSecrets() {
     touch "${filename}"
     echo "Just a plain old file" >> "${filename}"
     testCommit $filename
+}
+
+unstagedFileWithAwsSecrets() {
+    local secrets_file="${REPO_PATH}/unstaged-secretsfile.md"
+
+    cat >${secrets_file} <<END
+SHHHH... Secrets in this file
+aws_secret_access_key = WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp
+END
+    testUnstagedCommit $secrets_file
 }
 
 addFileWithAwsSecrets() {

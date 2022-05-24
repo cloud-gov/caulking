@@ -10,9 +10,10 @@ Goals:
 
 ## Installation notes
 
-This assumes you are on MacOS with HomeBrew installed. `make install` will brew install `gitleaks`. The install will:
+`make install` will install `gitleaks`. The install will:
 
 * install `gitleaks`
+  - **Note:** Only `gitleaks` version 8 is currently supported.
 * add a global `pre-commit` hook to `$HOME/.git-support/hooks/pre-commit`
 * add the configuration with patterns to `$HOME/.git-support/gitleaks.toml`
 
@@ -70,7 +71,7 @@ You have a couple of choices:
 * Submit an issue to this repo, and then ignore `gitleaks` _temporarily_ with:
 
         git config --local hooks.gitleaks false
-        git commit -m "message" 
+        git commit -m "message"
         git config --local hooks.gitleaks true
 
 You may want to add function to your `.bashrc` profile like:
@@ -109,7 +110,7 @@ To work on patterns, add test cases to `development.bats`, update patterns in `l
 run `bats development.bats`.  Here are some shortcuts
 
 - `make hook`: update `~/.git-support/hooks/pre-commit` from local `pre-commit.sh`
-- `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml` 
+- `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml`
 - `make audit`: see that everything work together.
 
 ## Testing bats tests
@@ -121,8 +122,8 @@ example:
 ``` sh
 bash # start a new shell
 source test_helper.bash # load all the helper functions
-setup 
-addFileWithNoSecrets # do the failing thing 
+setup
+addFileWithNoSecrets # do the failing thing
 echo $?
 ^D
 ```
@@ -136,7 +137,7 @@ The following rule sets helped inform our gitleaks.toml:
 
 ## What about other hooks? Will they still run?
 
-Yes. Caulking runs your other precommit hooks automatically. 
+Yes. Caulking runs your other precommit hooks automatically.
 
 Note: if you're using [pre-commit](https://pre-commit.com/) to manage pre-commit hooks, you'll likely get an error like this when running `pre-commit install`:
 ```
@@ -158,13 +159,13 @@ between the current version and an older version. To install an older gitleaks v
 
 * Browse the [brew history for the gitleaks formula](https://github.com/Homebrew/homebrew-core/commits/master/Formula/gitleaks.rb)
 * Find the `commit` that matches the older version you want to roll back to
-* Then run: 
+* Then run:
   ```
   wget https://raw.githubusercontent.com/Homebrew/homebrew-core/<commit>/Formula/gitleaks.rb
   brew unlink gitleaks
   brew install ./gitleaks.rb
   ```
-* You'll now have the older version. 
+* You'll now have the older version.
 
 # Public domain
 

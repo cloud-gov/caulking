@@ -1,8 +1,11 @@
-CAULKING_VERSION=1.3.1 2022-01-16
-GITLEAKS_VERSION=7.6.1
-GITLEAKS_CHECKSUM=5e51a33beb6f358970815ecbbc40c6c28fb785ef6342da9a689713f99fece54f
+CAULKING_VERSION=1.99.0 2022-05-24
+GITLEAKS_VERSION=8.8.4
+GITLEAKS_ARTIFACT="gitleaks_${GITLEAKS_VERSION}_darwin_x64.tar.gz"
+GITLEAKS_CHECKSUM=509430dada69ee4314068847a8a424d4102defc23fd5714330d36366796feef7
+GITLEAKS_DOWNLOAD_DIR="${HOME}/bin/gitleaks-files"
 NOW=$(shell date)
 ME=$(shell whoami)
+BATS=./test/bats/bin/bats
 
 GIT_SUPPORT_PATH=  ${HOME}/.git-support
 HOOKS=${GIT_SUPPORT_PATH}/hooks
@@ -16,16 +19,17 @@ INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
 install: $(INSTALL_TARGETS) global_hooks
 
-audit: /usr/local/bin/bats /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
-	@test $$(${GITLEAKS} --version) = "v.${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make install'" && false )
+audit: /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
+	@test "$$(${GITLEAKS} version)" = "${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make clean install'" && false )
 	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
-	bats -p caulked.bats
+	${BATS} -p caulked.bats
 
 clean:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}
 	git config --global --unset hooks.gitleaks
 	git config --global --unset core.hooksPath
+	/bin/rm -rf ${GITLEAKS}
 
 clean_seekrets:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}/seekret-rules
@@ -49,17 +53,17 @@ ${PRECOMMIT}: pre-commit.sh ${HOOKS}
 	install -m 0755 -cv $< $@
 
 ${GIT_SUPPORT_PATH} ${HOOKS}:
-	mkdir -p $@ 
-
-/usr/local/bin/bats:
-	brew install bats-core
+	mkdir -p $@
 
 /usr/local/bin/pcregrep:
 	brew install pcre
 
-${HOME}/bin/gitleaks:
-	mkdir -p ${HOME}/bin
-	curl -o $@ -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks-darwin-amd64
+${GITLEAKS}:
+	mkdir -p ${GITLEAKS_DOWNLOAD_DIR}
+	curl -o ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/${GITLEAKS_ARTIFACT}
+	tar -xvzf ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} --directory ${GITLEAKS_DOWNLOAD_DIR}
+	cp ${GITLEAKS_DOWNLOAD_DIR}/gitleaks ${GITLEAKS}
+	rm -rf ${GITLEAKS_DOWNLOAD_DIR}
 	chmod 755 $@
 
 upgrade:

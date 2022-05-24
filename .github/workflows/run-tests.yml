@@ -1,0 +1,37 @@
+name: Install and run tests
+
+on:
+  pull_request:
+
+jobs:
+  install_and_tests:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v3
+        env:
+          cache-name: cache-brew-lib
+        with:
+          path: |
+            /usr/local/Homebrew
+            /usr/local/Cellar/pcre*
+            /usr/local/bin/pcre*
+            /usr/local/opt/pcre*
+          key: ${{ runner.os }}-brew-${{ hashFiles('Makefile') }}
+          restore-keys: ${{ runner.os }}-brew-
+
+      - name: Install caulking
+        run: make install
+
+      - name: Run development tests
+        run: |
+          export TERM=screen-256color
+          make audit
+
+      - name: Run audit tests
+        run: |
+          ./test/bats/bin/bats development.bats
