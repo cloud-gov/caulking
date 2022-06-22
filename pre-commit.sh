@@ -16,11 +16,13 @@ run_gitleaks() {
     $cmd
     status=$?
     if [ $status -eq 1 ]; then
-        cat <<\EOF
-Error: gitleaks has detected sensitive information in your changes.
-For examples use: CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890
-If you know what you are doing you can disable this check using:
-    SKIP=gitleaks $*
+        cat <<-\EOF
+	Error: gitleaks has detected sensitive information in your changes.
+	For examples use: CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890
+	If you know what you are doing you can disable this check using:
+	    SKIP=gitleaks git commit ...
+	or using shell history:
+	    SKIP=gitleaks !! 
 EOF
         exit 1
     else
@@ -29,24 +31,22 @@ EOF
 }
 
 skip_gitleaks() {
-    echo "Sleeping for 5 seconds while you ponder your choices"
-    for i in 1 2 3 4 5; do
-      echo -n ". "
+    annoy=5
+    printf "Sleeping for $annoy seconds while you ponder your choices"
+    for i in $( jot -s" " $annoy); do
+      printf "."
       sleep 1
     done
-    read -p "Are you sure about skipping gitleaks? " yn
-    case $in in
-        [Yy]*) exit 0;;
-        *)     exit 1;;
-    esac
+    echo
+    exit 0
 }
 
 gitleaksEnabled=$(git config --bool hooks.gitleaks)
 if [ "$gitleaksEnabled" = "false" ]; then
-    echo "You're skipping gitleaks hooks.gitleaks if false"
+    echo "You're skipping gitleaks since hooks.gitleaks is 'false'"
     skip_gitleaks
 elif [ "$SKIP" = "gitleaks" ]; then
-    echo "You're skipping gitleaks check since SKIP=gitleaks"
+    echo "You're skipping gitleaks since SKIP=gitleaks"
     skip_gitleaks
 else
     run_gitleaks
