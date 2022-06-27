@@ -8,6 +8,35 @@ if [ -f "$git_dir/hooks/pre-commit" ]; then
     set +e
 fi
 
+# Prompt the user for a yes/no response.
+# Exit codes:
+#   0: user entered yes
+#   10: user entered no
+#
+prompt_yn() {
+  local prompt ans
+  if [ $# -ge 1 ]; then
+    prompt="$1"
+  else
+    prompt="Continue?"
+  fi
+
+  while true; do
+    # Allows us to read user input below, assigns stdin to keyboard (from Stackoverflow)
+    exec < /dev/tty
+    read -r -p "$prompt [y/n] " ans
+    exec <&-
+    case "$ans" in
+      Y|y|yes|YES|Yes)
+        return 0
+        ;;
+      N|n|no|NO|No)
+        return 10
+        ;;
+    esac
+  done
+}
+
 run_gitleaks() {
     # Running _without_ `--redact` is safer in a local development
     # env, as you need unobfuscated feedback on whether you're 
@@ -31,14 +60,13 @@ EOF
 }
 
 skip_gitleaks() {
-    annoy=5
-    printf "Sleeping for $annoy seconds while you ponder your choices"
-    for i in $( jot -s" " $annoy); do
-      printf "."
-      sleep 1
-    done
-    echo
-    exit 0
+    if prompt_yn "Do you want to SKIP gitleaks?"; then
+      echo "Skipping..."
+      exit 0
+    else
+      echo "Cancelled."
+      exit 10
+    fi
 }
 
 gitleaksEnabled=$(git config --bool hooks.gitleaks)
