@@ -10,6 +10,8 @@ Goals:
 
 ## Installation notes
 
+Clone the repository with the `--recurse-submodules` flag. Or, if you have already cloned the repository without the flag, run `git submodule update --init --recursive` from the root of the repository to initialize all submodules.
+
 `make install` will install `gitleaks`. The install will:
 
 * install `gitleaks`
