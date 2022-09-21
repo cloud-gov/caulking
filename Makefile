@@ -15,6 +15,8 @@ GITLEAKS= ${HOME}/bin/gitleaks
 
 INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
+HOMEBREW_PREFIX=$(shell brew config | grep HOMEBREW_PREFIX | awk '{print $$2}')
+
 .PHONY: clean audit global_hooks
 
 install: $(INSTALL_TARGETS) global_hooks
