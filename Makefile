@@ -15,11 +15,13 @@ GITLEAKS= ${HOME}/bin/gitleaks
 
 INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
+HOMEBREW_PREFIX=$(shell brew config | grep HOMEBREW_PREFIX | awk '{print $$2}')
+
 .PHONY: clean audit global_hooks
 
 install: $(INSTALL_TARGETS) global_hooks
 
-audit: /usr/local/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
+audit: ${HOMEBREW_PREFIX}/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
 	@test "$$(${GITLEAKS} version)" = "${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make clean install'" && false )
 	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
@@ -55,7 +57,7 @@ ${PRECOMMIT}: pre-commit.sh ${HOOKS}
 ${GIT_SUPPORT_PATH} ${HOOKS}:
 	mkdir -p $@
 
-/usr/local/bin/pcregrep:
+${HOMEBREW_PREFIX}/bin/pcregrep:
 	brew install pcre
 
 ${GITLEAKS}:
