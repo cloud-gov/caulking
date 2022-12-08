@@ -20,6 +20,28 @@ testCommit() {
     gitleaks detect --config=./local.toml --source=${REPO_PATH} --verbose --no-git
 }
 
+@test "it fails a .yml file with a concourse password" {
+  cat > $REPO_PATH/foo.yml <<END
+--
+jobs:
+- name: set-teams-staging
+  plan:
+  - get: team-source
+    params: {depth: 1}
+    trigger: true
+  - put: terraform-staging
+    params:
+      env_name: staging
+      terraform_source: team-source/teams
+      vars:
+        concourse_url: https://ci.fr-stage.cloud.gov
+        concourse_username: admin
+        concourse_password: blahBLARGblah123blah
+END
+    run testCommit $REPO_PATH
+    assert_failure
+}
+
 @test "check_repo fails when turning off hooks.gitleaks" {
     run turnOffHooksGitleaks
     assert_failure
@@ -263,3 +285,5 @@ END
     run testCommit $REPO_PATH
     assert_success
 }
+
+
