@@ -97,8 +97,8 @@ load test_helper
 
 @test "it is on the latest commit upstream" {
     URL=https://github.com/cloud-gov/caulking.git
-    git_head=$(git ls-remote $URL HEAD | cut -f1)
-    local_head=$(git log -n1 --format="%H" main)
+    git_head=$(git ls-remote $URL main | cut -f1)
+    local_head=$(git log -n1 --format="%H" HEAD)
     run test $git_head = $local_head
     assert_success
 }
