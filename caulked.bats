@@ -95,7 +95,7 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-@test "it is on the latest commit upstream" {
+@test "it is on the latest commit, on failure run: git pull; git checkout main" {
     URL=https://github.com/cloud-gov/caulking.git
     git_head=$(git ls-remote $URL main | cut -f1)
     local_head=$(git log -n1 --format="%H" HEAD)
