@@ -263,3 +263,13 @@ END
     run testCommit $REPO_PATH
     assert_success
 }
+
+@test "it catches yaml with deploy password" {
+    run yamlTest "deploy-password: ohSh.aiNgai%noh4us%ie5nee.nah1ee"
+    [ ${status} -eq 1 ]
+}
+
+@test "it catches yaml with Slack webhook" {
+    run yamlTest "slack-webhook-url: https://hooks.slack.com/services/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"
+    [ ${status} -eq 1 ]
+}

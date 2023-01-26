@@ -40,11 +40,6 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-@test "leak prevention catches aws accounts numbers in test repo" {
-    skip # AWS account number. not sensitive(?), hard to detect w/o false positives
-    run addFileWithAwsAccounts
-    [ ${status} -eq 1 ]
-}
 
 @test "leak prevention catches normal email addresses in test repo" {
     run addFileWithSecretEmail
@@ -85,16 +80,6 @@ load test_helper
     ./check_repos.sh $HOME check_user_email >&3
 }
 
-@test "it catches yaml with deploy password" {
-    run yamlTest "deploy-password: ohSh.aiNgai%noh4us%ie5nee.nah1ee"
-    [ ${status} -eq 1 ]
-}
-
-@test "it catches yaml with Slack webhook" {
-    run yamlTest "slack-webhook-url: https://hooks.slack.com/services/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"
-    [ ${status} -eq 1 ]
-}
-
 @test "it catches yaml with encryption key" {
     run yamlTest "development-enc-key: aich3thei2ieCai0choyohg9Iephoh8I"
     [ ${status} -eq 1 ]
@@ -105,3 +90,13 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
+@test "it is on the latest commit, on failure run: git pull; git checkout main" {
+    if [ "${GITHUB_ACTIONS}" = "true" ] ; then
+      skip "Attention: GITHUB_ACTIONS is true"
+    fi
+    URL=https://github.com/cloud-gov/caulking.git
+    git_head=$(git ls-remote $URL main | cut -f1)
+    local_head=$(git log -n1 --format="%H" HEAD)
+    run test $git_head = $local_head
+    assert_success
+}
