@@ -40,11 +40,6 @@ load test_helper
     [ ${status} -eq 1 ]
 }
 
-@test "leak prevention catches aws accounts numbers in test repo" {
-    skip # AWS account number. not sensitive(?), hard to detect w/o false positives
-    run addFileWithAwsAccounts
-    [ ${status} -eq 1 ]
-}
 
 @test "leak prevention catches normal email addresses in test repo" {
     run addFileWithSecretEmail
@@ -96,6 +91,9 @@ load test_helper
 }
 
 @test "it is on the latest commit, on failure run: git pull; git checkout main" {
+    if [ "${GITHUB_ACTIONS}" = "true" ] ; then
+      skip "Attention: GITHUB_ACTIONS is true"
+    fi
     URL=https://github.com/cloud-gov/caulking.git
     git_head=$(git ls-remote $URL main | cut -f1)
     local_head=$(git log -n1 --format="%H" HEAD)
