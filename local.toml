@@ -37,7 +37,7 @@ title = "gitleaks config"
 	[rules.allowlist]
 		regexes = ['''(?i)@(cloud.gov|gsa.gov|github.com)''',
 			'''(?i)(Author|Copyright|Contact)''']
-		paths = ['''Godeps._workspace''']
+		paths = ['''Godeps._workspace''', '''(composer.lock)$''']
 
 # Rules from original `leaky-repo.toml` v4.1.1
 # https://raw.githubusercontent.com/zricethezav/gitleaks/master/examples/leaky-repo.toml
@@ -188,7 +188,7 @@ title = "gitleaks config"
 		regexes = ['''xox[baprs]-([0-9a-zA-Z]{10,48})''',
 			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
 			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''']
-		paths = ['''(vendor.github|Godeps._workspace)''', '''(yarn.lock|package-lock.json|pnpm-lock.yaml)$''']
+		paths = ['''(vendor.github|Godeps._workspace)''', '''(yarn.lock|package-lock.json|pnpm-lock.yaml|composer.lock)$''']
 
 [[rules]]
 	description = "High Entropy"
