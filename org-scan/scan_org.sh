@@ -1,10 +1,10 @@
 #!/bin/sh
 
-cachedir=${HOME}/Documents/caulking-org-scan/cache
+cache_dir=${HOME}/Documents/caulking-org-scan/cache
 
 list_repos() {
     for page in 1 2 3 4; do
-    hub api /orgs/cloud-gov/repos\?per_page=100\&page=$page | 
+    gh api /orgs/cloud-gov/repos\?per_page=100\&page=$page | 
         #jq -r '.[] | select (.archived == true ) | .name'
         jq -r '.[] | .name'
     done
