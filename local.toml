@@ -1,5 +1,8 @@
 title = "gitleaks config"
 
+[extend]
+useDefault = true
+
 # Rules borrowed from GSA
 # https://github.com/GSA/odp-code-repository-commit-rules/blob/master/gitleaks/rules.toml
 # and customized for TTS
