@@ -45,3 +45,18 @@ useDefault = true
 		regexes = ['''(?i)@(cloud.gov|gsa.gov|github.com)''',
 			'''(?i)(Author|Copyright|Contact)''']
 		paths = ['''Godeps._workspace''', '''(composer.lock)$''']
+
+[[rules]]
+	id = "generic-username"
+	description = "Generic Username"
+	regex = '''(?i)(dbuser|user)(.{0,20})?['"]([0-9a-zA-Z-_\\+!{}@\./=]{4,120})['"]'''
+	tags = ["key", "username", "generic"]
+	[rules.allowlist]
+		description = "A username in a terraform file and programs is not a leak"
+		regexes = [
+			'''\w+?username\w+=''',
+			'''\"type\":''',
+		]
+		paths = [
+			'''\.(tf|rb|go|py|js|toml)$'''
+		]
