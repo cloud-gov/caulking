@@ -10,6 +10,7 @@ useDefault = true
 # If IPv4 is overbroad, cloud.gov external IPs may all be nonsensitive
 # and we can change match to (10|172|192). in the first octet.
 [[rules]]
+	id = "ipv4"
 	description = "IPv4 addresses"
 	regex = '''\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'''
 	tags = ["IPv4", "IP", "addresses"]
@@ -20,11 +21,13 @@ useDefault = true
 
 # s3config copied from `leaky-repo.toml` upstream, but uncommented:
 [[rules]]
+	id = "s3config"
 	description = "s3config"
 	regex = '''(?i)(dbpasswd|dbuser|dbname|dbhost|api_key|apikey|key|api|password|user|guid|hostname|pw|auth)(.{0,3})?([0-9a-zA-Z-_\/+!{}=]{4,120})'''
 	path = '''(?i)s3cfg$'''
 
 [[rules]]
+	id = "yaml-secrets"
 	description = "yaml secrets"
 	regex = '''(?i)(password|enc.key|auth.pass):\s+(.*)'''
 	path = '''(?i)(\.yml|\.yaml)'''
@@ -34,6 +37,7 @@ useDefault = true
 		regexes = ['''(\(\(.*\)\)|\{\{.*\}\})''']
 
 [[rules]]
+	id = "email"
 	description = "Email except non-pii business email"
 	regex = '''(.{0,48}?)[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'''
 	tags = ["email"]
