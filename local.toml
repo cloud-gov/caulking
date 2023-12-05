@@ -77,7 +77,12 @@ useDefault = true
 		]
 
 [[rules]]
-	id = "suspicious-filenames"
+	id = "suspicious-file-extensions"
 	description = "File name extensions of credentials"
 	path = '''(?i)\.(pgpass|pem|key)'''
 	tags = ["file"]
+
+[[rules]]
+	id = "suspicious-filenames"
+	description = "File names of credentials"
+	path = '''(?i)(id_rsa|passwd|pgpass|shadow)'''
