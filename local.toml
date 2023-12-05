@@ -49,7 +49,7 @@ useDefault = true
 [[rules]]
 	id = "email"
 	description = "Email except non-pii business email"
-	regex = '''.{0,48}?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})'''
+	regex = '''(.{0,48}?)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})'''
 	tags = ["email"]
 	[rules.allowlist]
 		regexes = [
