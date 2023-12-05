@@ -3,6 +3,16 @@ title = "gitleaks config"
 [extend]
 useDefault = true
 
+[allowlist]
+	description = "image allowlists"
+	paths = [
+		'''(.*?)(jpg|gif|doc|pdf|bin|svg)$''',
+		'''development.bats''',
+		'''caulked.bats''',
+		'''local.toml'''
+	]
+	regexes	= ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
+
 # Rules borrowed from GSA
 # https://github.com/GSA/odp-code-repository-commit-rules/blob/master/gitleaks/rules.toml
 # and customized for TTS
@@ -60,5 +70,5 @@ useDefault = true
 			'''\"type\":''',
 		]
 		paths = [
-			'''\.(tf|rb|go|py|js|toml)$'''
+			'''\.(tf|rb|go|py|js)$'''
 		]
