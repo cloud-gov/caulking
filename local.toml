@@ -79,7 +79,7 @@ useDefault = true
 [[rules]]
 	id = "generic-credential"
 	description = "Generic Credential"
-	regex = '''(?im)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['"](\S{4,120})['"]|[(\\]\s*$)'''
+	regex = '''(?im)(.*)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['"](\S{4,120})['"]|[(\\]\s*$)'''
 	tags = ["key", "API", "generic"]
 	# ignore leaks with specific identifiers like slack and aws as these should be detected
 	# by more granular rules
@@ -87,7 +87,10 @@ useDefault = true
 		regexes = [
 			'''xox[baprs]-([0-9a-zA-Z]{10,48})''',
 			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
-			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''',
+			'''\"type\":\"keyword\"''',
+			'''\"key\":''',
+			'''\"name\":\".*hostname\"'''
 		]
 		paths = [
 			'''(vendor.github|Godeps._workspace)''',
