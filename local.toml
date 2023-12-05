@@ -75,3 +75,9 @@ useDefault = true
 		paths = [
 			'''\.(tf|rb|go|py|js)$'''
 		]
+
+[[rules]]
+	id = "suspicious-filenames"
+	description = "File name extensions of credentials"
+	path = '''(?i)\.(pgpass|pem|key)'''
+	tags = ["file"]
