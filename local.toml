@@ -4,7 +4,7 @@ title = "gitleaks config"
 useDefault = true
 
 [allowlist]
-	description = "image allowlists"
+	description = "general allowlists"
 	paths = [
 		'''(.*?)(jpg|gif|doc|pdf|bin|svg)$''',
 		'''development.bats''',
@@ -49,14 +49,17 @@ useDefault = true
 [[rules]]
 	id = "email"
 	description = "Email except non-pii business email"
-	regex = '''(.{0,48}?)[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'''
+	regex = '''.{0,48}?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})'''
 	tags = ["email"]
 	[rules.allowlist]
 		regexes = [
 			'''(?i)@(cloud.gov|gsa.gov|github.com)''',
 			'''(?i)(Author|Copyright|Contact)'''
 			]
-		paths = ['''Godeps._workspace''', '''(composer.lock)$''']
+		paths = [
+			'''Godeps._workspace''',
+			'''(composer.lock)$'''
+		]
 
 [[rules]]
 	id = "generic-username"
