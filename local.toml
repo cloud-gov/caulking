@@ -71,7 +71,12 @@ useDefault = true
 		description = "A username in a terraform file and programs is not a leak"
 		regexes = [
 			'''\w+?username\w+=''',
-			'''\"type\":''',
+			# ignore username properties set in templates. for example:
+			#  	username': '<%= p('cloudfoundry.user'
+			'''(username)[\'\"]{0,1}[:=]\s{0,1}[\'\"]{0,1}\<\%\=\s{0,1}p\('''
+		]
+		stopwords = [
+			"user_agent"
 		]
 		paths = [
 			'''\.(tf|rb|go|py|js)$'''
@@ -89,9 +94,13 @@ useDefault = true
 			'''xox[baprs]-([0-9a-zA-Z]{10,48})''',
 			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
 			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''',
+			# ignore JSON property values including "keyword", such as { "type": "keyword" }
 			'''\"type\":\"keyword\"''',
-			'''\"key\":''',
-			'''\"name\":\".*hostname\"'''
+			# ignore JSON property values including "hostname", like { "name": "rtr.hostname" }
+			'''\"name\":\".*hostname\"''',
+			# ignore password properties set in ERB templates. for example:
+			# 	'password': '<%= p('cloudfoundry.password'
+			'''(password)[\'\"]{0,1}[:=]\s{0,1}[\'\"]{0,1}\<\%\=\s{0,1}p\('''
 		]
 		paths = [
 			'''(vendor.github|Godeps._workspace)''',
