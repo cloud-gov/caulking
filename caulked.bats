@@ -22,7 +22,7 @@ load test_helper
 @test "leak prevention allows plain text, check 'git config --global -l' on failure" {
     run addFileWithNoSecrets
     [ ${status} -eq 0 ]
-    echo ${lines[7]} | grep -q "no leaks found"
+    assert_output --partial "no leaks found"
 }
 
 @test "leak prevention catches unstaged aws secrets in test repo" {

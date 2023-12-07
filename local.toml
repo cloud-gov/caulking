@@ -71,7 +71,12 @@ useDefault = true
 		description = "A username in a terraform file and programs is not a leak"
 		regexes = [
 			'''\w+?username\w+=''',
-			'''\"type\":''',
+			# ignore username properties set in templates. for example:
+			#  	username': '<%= p('cloudfoundry.user'
+			'''(username)[\'\"]{0,1}[:=]\s{0,1}[\'\"]{0,1}\<\%\=\s{0,1}p\('''
+		]
+		stopwords = [
+			"user_agent"
 		]
 		paths = [
 			'''\.(tf|rb|go|py|js)$'''
@@ -80,7 +85,7 @@ useDefault = true
 [[rules]]
 	id = "generic-credential"
 	description = "Generic Credential"
-	regex = '''(?im)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['"](\S{4,120})['"]|[(\\]\s*$)'''
+	regex = '''(?im)(.*)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['"](\S{4,120})['"]|[(\\]\s*$)'''
 	tags = ["key", "API", "generic"]
 	# ignore leaks with specific identifiers like slack and aws as these should be detected
 	# by more granular rules
@@ -88,7 +93,14 @@ useDefault = true
 		regexes = [
 			'''xox[baprs]-([0-9a-zA-Z]{10,48})''',
 			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
-			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''',
+			# ignore JSON property values including "keyword", such as { "type": "keyword" }
+			'''\"type\":\"keyword\"''',
+			# ignore JSON property values including "hostname", like { "name": "rtr.hostname" }
+			'''\"name\":\".*hostname\"''',
+			# ignore password properties set in ERB templates. for example:
+			# 	'password': '<%= p('cloudfoundry.password'
+			'''(password)[\'\"]{0,1}[:=]\s{0,1}[\'\"]{0,1}\<\%\=\s{0,1}p\('''
 		]
 		paths = [
 			'''(vendor.github|Godeps._workspace)''',

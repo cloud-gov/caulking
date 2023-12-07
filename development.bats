@@ -135,6 +135,7 @@ module "iam_cert_provision_user" {
 END
     run testCommit $REPO_PATH
     assert_failure
+    assert_output --partial 'generic-username'
 }
 
 # Testing for 40 base64 results in too many false positives,
@@ -272,4 +273,65 @@ END
 @test "it catches yaml with Slack webhook" {
     run yamlTest "slack-webhook-url: https://hooks.slack.com/services/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"
     [ ${status} -eq 1 ]
+}
+
+@test "it allows a username as a templated ERB field" {
+  cat > $REPO_PATH/username.erb <<END
+    username': '<%= p('cloudfoundry.user'
+END
+    run testCommit $REPO_PATH
+    assert_success
+}
+
+@test "it allows a password as a templated ERB field" {
+  cat > $REPO_PATH/username.erb <<END
+    password': '<%= p('password
+END
+    run testCommit $REPO_PATH
+    assert_success
+}
+
+@test "it fails a generic password" {
+  cat > $REPO_PATH/password.yaml <<END
+    "password": "password"
+END
+    run testCommit $REPO_PATH
+    assert_failure
+    assert_output --partial 'generic-credential'
+}
+
+@test "it allows hostname as a JSON property value" {
+  cat > $REPO_PATH/foo.json <<END
+    {
+        "name": "rtr.hostname"
+    }
+END
+    run testCommit $REPO_PATH
+    assert_success
+}
+
+@test "it fails a generic hostname" {
+  cat > $REPO_PATH/config.yml <<END
+    hostname: "host-1"
+END
+    run testCommit $REPO_PATH
+    assert_failure
+    assert_output --partial 'generic-credential'
+}
+
+@test "it allows keyword as a JSON property value" {
+  cat > $REPO_PATH/test.json <<END
+    { "type": "keyword" }
+END
+    run testCommit $REPO_PATH
+    assert_success
+}
+
+@test "it fails JSON with keyword as property value but including another generic credential" {
+  cat > $REPO_PATH/test.json <<END
+    { "type": "keyword", "password": "password" }
+END
+    run testCommit $REPO_PATH
+    assert_failure
+    assert_output --partial 'generic-credential'
 }
