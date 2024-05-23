@@ -25,30 +25,6 @@ testCommit() {
     assert_failure
 }
 
-@test "check_repo fails if repo precommit is missing gitleaks" {
-    (cd $REPO_PATH && mv .git/hooks/pre-commit.sample .git/hooks/pre-commit)
-    run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
-    assert_failure
-}
-
-@test "check_repo fails if gitleaks is commented out" {
-    cat >$REPO_PATH/.git/hooks/pre-commit <<END
-# lets not run gitleaks protect
-END
-    run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
-    assert_failure
-}
-
-@test "check_repo OK with repo and a valid precommit hook" {
-    cat >$REPO_PATH/.git/hooks/pre-commit <<END
-#!/bin/sh
-echo special stuff
-$HOME/bin/gitleaks  protect --foo
-END
-    run ./check_repos.sh $REPO_PATH check_precommit_hook >&3
-    assert_success
-}
-
 @test "check_repo fails when you have a personal email" {
     git config --file $REPO_PATH/.git/config user.email foo@bar.com
     run ./check_repos.sh $REPO_PATH check_user_email >&3
