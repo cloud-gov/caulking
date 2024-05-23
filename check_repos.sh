@@ -42,10 +42,6 @@ check_hooks_gitleaks() {
 
 check_hooks_path() {
     # ensure that repos are not overriding the hookspath
-    hooks_path=$(cd "$gitrepo"; git config --local core.hooksPath)
-    if [ "$hooks_path" != "" ]; then
-        return 1
-    fi
     hooks_path_origin=$(cd "$gitrepo"; git config --show-origin core.hooksPath)
     if [[ "$hooks_path_origin" =~ /^file:$HOME/.gitconfig.*$HOME/.git-support/hooks ]]; then
         return 1
