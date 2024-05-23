@@ -11,7 +11,7 @@ USER_DOMAIN=gsa.gov
 
 fail() {
     echo "$@"
-    echo "Usage: $0 root_dir (check_precommit_hook | check_hooks_gitleak | check_user_email)"
+    echo "Usage: $0 root_dir (check_hooks_path | check_hooks_gitleak | check_user_email)"
     exit 2
 }
 
@@ -23,7 +23,7 @@ else
 fi
 
 case $2 in
-   check_hooks_gitleaks|check_precommit_hook|check_user_email)
+   check_hooks_gitleaks|check_hooks_path|check_user_email)
         option=$2
         :;;
    *) fail "invalid second argument";;
@@ -40,10 +40,15 @@ check_hooks_gitleaks() {
     fi
 }
 
-check_precommit_hook() {
-    if [ -f "$gitrepo/hooks/pre-commit" ]; then
-      pcregrep -q '^((?!#).)*gitleaks\s+protect' "$gitrepo/hooks/pre-commit"
-      return $?
+check_hooks_path() {
+    # ensure that repos are not overriding the hookspath
+    hooks_path=$(cd "$gitrepo"; git config --local core.hooksPath)
+    if [ "$hooks_path" != "" ]; then
+        return 1
+    fi
+    hooks_path_origin=$(cd "$gitrepo"; git config --show-origin core.hooksPath)
+    if [[ "$hooks_path_origin" =~ /^file:$HOME/.gitconfig.*$HOME/.git-support/hooks ]]; then
+        return 1
     fi
     return 0
 }

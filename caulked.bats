@@ -66,8 +66,8 @@ load test_helper
     ./check_repos.sh $HOME check_hooks_gitleaks >&3
 }
 
-@test "repos are using precommit hooks with gitleaks" {
-    ./check_repos.sh $HOME check_precommit_hook >&3
+@test "repos are not overriding the core hooks path" {
+    ./check_repos.sh $HOME check_hooks_path >&3
 }
 
 @test "the ~/.aws directory is free of AWS keys" {
