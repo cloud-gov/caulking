@@ -113,6 +113,16 @@ $1
 END
     testCommit $secrets_file
 }
+
+testLocalGitHook() {
+    local test_precommit_hook="${REPO_PATH}/.git/hooks/pre-commit"
+    cat >"${test_precommit_hook}" <<END
+echo foobar
+END
+    chmod 755 "$test_precommit_hook"
+    testCommit "$test_precommit_hook"
+}
+
 ##########################
 # for development purposes
 ##########################
