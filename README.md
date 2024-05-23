@@ -70,11 +70,17 @@ Then, remove or fix the offending line.
 You have a couple of choices:
 
 * Submit a PR to improve our patterns (guidance forthcoming)
-* Submit an issue to this repo, and then ignore `gitleaks` _temporarily_ with:
+* Submit an issue to this repo, and then ignore `gitleaks` for the commit with:
 
-```shell
+    ```shell
     SKIP=gitleaks git commit -m "message"
-```
+    ```
+
+    Then type `y` when you see this prompt:
+
+    ```shell
+    Do you want to SKIP gitleaks? [y/n] y
+    ```
 
 ## Development tips
 
