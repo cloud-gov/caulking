@@ -25,6 +25,11 @@ testCommit() {
     assert_failure
 }
 
+@test "check_repo fails when core.hooksPath is overridden" {
+    run changeGitHooksPath
+    assert_failure
+}
+
 @test "check_repo fails when you have a personal email" {
     git config --file $REPO_PATH/.git/config user.email foo@bar.com
     run ./check_repos.sh $REPO_PATH check_user_email >&3

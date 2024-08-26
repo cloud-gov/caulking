@@ -131,6 +131,11 @@ turnOffHooksGitleaks() {
     ./check_repos.sh $REPO_PATH check_hooks_gitleaks
 }
 
+changeGitHooksPath() {
+    (cd $REPO_PATH && git config --local core.hooksPath "foobar")
+    ./check_repos.sh $REPO_PATH check_hooks_path
+}
+
 createPrecommitNoGitleaks() {
     (cd $REPO_PATH && mv .git/hooks/pre-commit.sample .git/hooks/pre-commit)
 }
