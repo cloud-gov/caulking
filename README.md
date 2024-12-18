@@ -21,7 +21,10 @@ Clone the repository with the `--recurse-submodules` flag. Or, if you have alrea
 
 You now have the gitleaks pre-commit hook enabled globally.
 
-To get rid of `git-seekrets` configuration, run `make clean_seekrets`
+### If you're upgrading
+
+Before `gitleaks`, prior versions of `caulking` relied on `git-seekrets` - if you have
+an old `git-seekrets`-based caulking install you can remove it with `make clean_seekrets`
 
 ## Bug warning
 
