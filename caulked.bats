@@ -20,7 +20,17 @@
 load test_helper
 
 @test "leak prevention allows plain text, check 'git config --global -l' on failure" {
+    echo "Debug: Starting plain text test" >&2
+    echo "Debug: Current PATH: $PATH" >&2
+    echo "Debug: Gitleaks location: $(which gitleaks)" >&2
+    echo "Debug: Git hooks path: $(git config --global core.hookspath)" >&2
+    
     run addFileWithNoSecrets
+    
+    echo "Debug: Test exit status: $status" >&2
+    echo "Debug: Test output:" >&2
+    echo "$output" >&2
+    
     [ ${status} -eq 0 ]
     assert_output --partial "no leaks found"
 }
@@ -100,9 +110,26 @@ load test_helper
     if [ "${GITHUB_ACTIONS}" = "true" ] ; then
       skip "Attention: GITHUB_ACTIONS is true"
     fi
+    
+    # Get current branch name
+    local current_branch=$(git rev-parse --abbrev-ref HEAD)
+    
+    # Skip test if not on main branch
+    if [ "$current_branch" != "main" ]; then
+        skip "Not on main branch (current: $current_branch)"
+    fi
+    
     URL=https://github.com/cloud-gov/caulking.git
-    git_head=$(git ls-remote $URL main | cut -f1)
-    local_head=$(git log -n1 --format="%H" HEAD)
-    run test $git_head = $local_head
+    git_head=$(git ls-remote $URL HEAD | cut -f1)
+    local_head=$(git rev-parse HEAD)
+    
+    # Print diagnostic information if test fails
+    if [ "$git_head" != "$local_head" ]; then
+        echo "Remote HEAD: $git_head"
+        echo "Local HEAD:  $local_head"
+        echo "To update: git pull origin main"
+    fi
+    
+    run test "$git_head" = "$local_head"
     assert_success
 }
