@@ -115,19 +115,37 @@ END
 }
 
 testLocalGitHook() {
-    # First create the hook
-    local test_precommit_hook="${REPO_PATH}/.git/hooks/pre-commit"
-    cat >"${test_precommit_hook}" <<END
-#!/bin/bash
-echo foobar
-exit 0
-END
-    chmod 755 "$test_precommit_hook"
+    # Create a test pre-commit hook that will run alongside gitleaks
+    local hook_dir="$HOME/.git-support/hooks"
+    local original_hook="$hook_dir/pre-commit"
+    local backup_hook="$hook_dir/pre-commit.backup"
 
-    # Then create and commit a different file to trigger the hook
+    # Backup existing hook if it exists
+    if [ -f "$original_hook" ]; then
+        cp "$original_hook" "$backup_hook"
+    fi
+
+    # Create new hook that includes both our test output and original functionality
+    cat >"$original_hook" <<'END'
+#!/bin/bash
+echo "foobar"
+
+# Run gitleaks check if it exists
+if [ -f "$HOME/.git-support/gitleaks.toml" ]; then
+    gitleaks protect --staged --config="$HOME/.git-support/gitleaks.toml" --verbose
+fi
+END
+    chmod 755 "$original_hook"
+
+    # Create and commit a test file
     local test_file="${REPO_PATH}/test.txt"
     echo "test content" > "$test_file"
     testCommit "$test_file"
+
+    # Restore original hook
+    if [ -f "$backup_hook" ]; then
+        mv "$backup_hook" "$original_hook"
+    fi
 }
 
 ##########################

@@ -101,8 +101,8 @@ load test_helper
       skip "Attention: GITHUB_ACTIONS is true"
     fi
     URL=https://github.com/cloud-gov/caulking.git
-    git_head=$(git ls-remote $URL main | cut -f1)
-    local_head=$(git log -n1 --format="%H" HEAD)
-    run test $git_head = $local_head
+    git_head=$(git ls-remote $URL HEAD | cut -f1)
+    local_head=$(git rev-parse HEAD)
+    run test "$git_head" = "$local_head"
     assert_success
 }
