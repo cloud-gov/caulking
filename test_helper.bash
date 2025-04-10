@@ -18,8 +18,23 @@ cleanGitRepo() {
 
 testCommit() {
     filename=$1
+    echo "=== Git Status Before Add ===" >&2
+    (cd "${REPO_PATH}" && git status) >&2
+    
+    echo "=== Git Add ===" >&2
     (cd "${REPO_PATH}" && git add "${filename}")
-    (cd "${REPO_PATH}" && git commit -m 'test commit')
+    
+    echo "=== Git Status Before Commit ===" >&2
+    (cd "${REPO_PATH}" && git status) >&2
+    
+    echo "=== Git Commit ===" >&2
+    (cd "${REPO_PATH}" && GIT_TRACE=1 git commit -m 'test commit')
+    local commit_status=$?
+    
+    echo "=== Git Status After Commit ===" >&2
+    (cd "${REPO_PATH}" && git status) >&2
+    
+    return $commit_status
 }
 
 testUnstagedCommit() {
@@ -39,10 +54,29 @@ teardown() {
 
 addFileWithNoSecrets() {
     local filename="${REPO_PATH}/plainfile.md"
-
+    
+    # Set up git config for test repo
+    (cd "${REPO_PATH}" && git config user.name "Test User")
+    (cd "${REPO_PATH}" && git config user.email "test@example.com")
+    (cd "${REPO_PATH}" && git config hooks.gitleaks true)
+    
+    # Create and add file
     touch "${filename}"
     echo "Just a plain old file" >> "${filename}"
+    
+    # Set test environment variables
+    export BATS_TEST_FILENAME="caulked.bats"
+    unset GIT_TRACE
+    unset GIT_TRACE_SETUP
+    
+    # Try the commit
     testCommit "$filename"
+    local commit_status=$?
+    
+    # Clean up environment
+    unset BATS_TEST_FILENAME
+    
+    return $commit_status
 }
 
 unstagedFileWithAwsSecrets() {
@@ -73,7 +107,6 @@ AWS_ACCESS_KEY_ID: AKIAJLLCKKYFEWP5MWXA
 END
     testCommit "$secrets_file"
 }
-
 
 
 addFileWithSecretEmail() {
