@@ -11,7 +11,7 @@ useDefault = true
 		'''caulked.bats''',
 		'''local.toml'''
 	]
-	regexes	= ['''CHANGEME|changeme|feedabee|EXAMPLE|23.22.13.113|1234567890''']
+	regexes	= ['''CHANGEME|changeme|feedabee|not-actually-secret|EXAMPLE|23.22.13.113|1234567890''']
 
 # Rules borrowed from GSA
 # https://github.com/GSA/odp-code-repository-commit-rules/blob/master/gitleaks/rules.toml
