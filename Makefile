@@ -54,12 +54,7 @@ ${HOMEBREW_PREFIX}/bin/pcregrep:
 	brew install pcre
 
 ${GITLEAKS}:
-	mkdir -p ${GITLEAKS_DOWNLOAD_DIR}
-	curl -o ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/${GITLEAKS_ARTIFACT}
-	tar -xvzf ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} --directory ${GITLEAKS_DOWNLOAD_DIR}
-	cp ${GITLEAKS_DOWNLOAD_DIR}/gitleaks ${GITLEAKS}
-	rm -rf ${GITLEAKS_DOWNLOAD_DIR}
-	chmod 755 $@
+	brew install gitleaks
 
 upgrade:
 	brew uninstall gitleaks || rm -f ${GITLEAKS} && rm -f ${HOME}/bin/gitleaks
