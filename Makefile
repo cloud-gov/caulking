@@ -54,7 +54,7 @@ ${HOMEBREW_PREFIX}/bin/pcregrep:
 	brew install pcre
 
 ${GITLEAKS}:
-	brew install gitleaks || brew reinstall gitleaks
+	which gitleaks || brew install gitleaks
 
 upgrade:
 	brew uninstall gitleaks || rm -f ${GITLEAKS} && rm -f ${HOME}/bin/gitleaks
