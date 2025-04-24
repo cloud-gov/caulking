@@ -31,7 +31,7 @@ clean:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}
 	git config --global --unset hooks.gitleaks
 	git config --global --unset core.hooksPath
-	/bin/rm -rf ${GITLEAKS}
+	brew uninstall gitleaks
 
 hook pre-commit: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
