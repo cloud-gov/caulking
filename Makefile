@@ -7,11 +7,11 @@ NOW=$(shell date)
 ME=$(shell whoami)
 BATS=./test/bats/bin/bats
 
-GIT_SUPPORT_PATH=  ${HOME}/.git-support
+GIT_SUPPORT_PATH=${HOME}/.git-support
 HOOKS=${GIT_SUPPORT_PATH}/hooks
 PRECOMMIT=${GIT_SUPPORT_PATH}/hooks/pre-commit
 PATTERNS=${GIT_SUPPORT_PATH}/gitleaks.toml
-GITLEAKS= ${HOME}/bin/gitleaks
+GITLEAKS=${HOMEBREW_PREFIX}/bin/gitleaks
 
 INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
