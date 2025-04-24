@@ -1,8 +1,5 @@
 CAULKING_VERSION=2.0.0 2023-12-01
-GITLEAKS_VERSION=8.18.1
-GITLEAKS_ARTIFACT="gitleaks_${GITLEAKS_VERSION}_darwin_x64.tar.gz"
-GITLEAKS_CHECKSUM=8eaae2aec79175a2b9f1879994c47107752200408ef3bc100ce8f9e56ee0e199
-GITLEAKS_DOWNLOAD_DIR="${HOME}/bin/gitleaks-files"
+GITLEAKS_VERSION=8.24.3
 NOW=$(shell date)
 ME=$(shell whoami)
 BATS=./test/bats/bin/bats
@@ -31,7 +28,7 @@ clean:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}
 	git config --global --unset hooks.gitleaks
 	git config --global --unset core.hooksPath
-	brew uninstall gitleaks
+	brew uninstall gitleaks || rm -f ${GITLEAKS} && rm -f ${HOME}/bin/gitleaks
 
 hook pre-commit: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
