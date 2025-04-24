@@ -1,17 +1,14 @@
 CAULKING_VERSION=2.0.0 2023-12-01
-GITLEAKS_VERSION=8.18.1
-GITLEAKS_ARTIFACT="gitleaks_${GITLEAKS_VERSION}_darwin_x64.tar.gz"
-GITLEAKS_CHECKSUM=8eaae2aec79175a2b9f1879994c47107752200408ef3bc100ce8f9e56ee0e199
-GITLEAKS_DOWNLOAD_DIR="${HOME}/bin/gitleaks-files"
+GITLEAKS_VERSION=8.24.3
 NOW=$(shell date)
 ME=$(shell whoami)
 BATS=./test/bats/bin/bats
 
-GIT_SUPPORT_PATH=  ${HOME}/.git-support
+GIT_SUPPORT_PATH=${HOME}/.git-support
 HOOKS=${GIT_SUPPORT_PATH}/hooks
 PRECOMMIT=${GIT_SUPPORT_PATH}/hooks/pre-commit
 PATTERNS=${GIT_SUPPORT_PATH}/gitleaks.toml
-GITLEAKS= ${HOME}/bin/gitleaks
+GITLEAKS=${HOMEBREW_PREFIX}/bin/gitleaks
 
 INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
@@ -31,7 +28,7 @@ clean:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}
 	git config --global --unset hooks.gitleaks
 	git config --global --unset core.hooksPath
-	/bin/rm -rf ${GITLEAKS}
+	brew uninstall gitleaks || rm -f ${GITLEAKS} && rm -f ${HOME}/bin/gitleaks
 
 hook pre-commit: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
@@ -54,12 +51,7 @@ ${HOMEBREW_PREFIX}/bin/pcregrep:
 	brew install pcre
 
 ${GITLEAKS}:
-	mkdir -p ${GITLEAKS_DOWNLOAD_DIR}
-	curl -o ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/${GITLEAKS_ARTIFACT}
-	tar -xvzf ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} --directory ${GITLEAKS_DOWNLOAD_DIR}
-	cp ${GITLEAKS_DOWNLOAD_DIR}/gitleaks ${GITLEAKS}
-	rm -rf ${GITLEAKS_DOWNLOAD_DIR}
-	chmod 755 $@
+	which gitleaks || brew install gitleaks
 
 upgrade:
 	brew uninstall gitleaks || rm -f ${GITLEAKS} && rm -f ${HOME}/bin/gitleaks
