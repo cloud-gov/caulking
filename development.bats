@@ -221,6 +221,15 @@ END
     assert_failure
 }
 
+@test "it fails a single-line flask secret key" {
+  cat > $REPO_PATH/webapp.py <<END
+    app.secret_key = '39a45464-cb1d-4b8d-aa1f-83c7c04fa673'
+END
+    run testCommit $REPO_PATH
+    assert_failure
+    assert_output --partial 'generic-api-key'
+}
+
 @test "it allows inspec statement that counts users" {
   cat > $REPO_PATH/inspec.rb <<END
     user_count = input('admins').length + input('non-admins').length
@@ -272,13 +281,12 @@ END
     assert_success
 }
 
-@test "it fails a generic password" {
+@test "it fails a generic yaml password" {
   cat > $REPO_PATH/password.yaml <<END
-    "password": "password"
+    "password": "adgi3asdfkljhjsad"
 END
     run testCommit $REPO_PATH
     assert_failure
-    assert_output --partial 'generic-credential'
 }
 
 @test "it allows hostname as a JSON property value" {
@@ -297,7 +305,6 @@ END
 END
     run testCommit $REPO_PATH
     assert_failure
-    assert_output --partial 'generic-credential'
 }
 
 @test "it allows keyword as a JSON property value" {
@@ -310,9 +317,8 @@ END
 
 @test "it fails JSON with keyword as property value but including another generic credential" {
   cat > $REPO_PATH/test.json <<END
-    { "type": "keyword", "password": "password" }
+    { "type": "keyword", "password": "adgi3asdfkljhjsad" }
 END
     run testCommit $REPO_PATH
     assert_failure
-    assert_output --partial 'generic-credential'
 }

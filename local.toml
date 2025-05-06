@@ -3,19 +3,15 @@ title = "gitleaks config"
 [extend]
 useDefault = true
 
-[allowlist]
+[[allowlists]]
 	description = "general allowlists"
 	paths = [
-		'''(.*?)(jpg|gif|doc|pdf|bin|svg)$''',
+		'''(.*?)(jpg|gif|doc|pdf|bin|svg|png)$''',
 		'''development.bats''',
 		'''caulked.bats''',
 		'''local.toml'''
 	]
 	regexes	= ['''CHANGEME|changeme|feedabee|not-actually-secret|EXAMPLE|23.22.13.113|1234567890''']
-
-# Rules borrowed from GSA
-# https://github.com/GSA/odp-code-repository-commit-rules/blob/master/gitleaks/rules.toml
-# and customized for TTS
 
 # If IPv4 is overbroad, cloud.gov external IPs may all be nonsensitive
 # and we can change match to (10|172|192). in the first octet.
@@ -24,7 +20,7 @@ useDefault = true
 	description = "IPv4 addresses"
 	regex = '''\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'''
 	tags = ["IPv4", "IP", "addresses"]
-	[rules.allowlist]
+	[[rules.allowlists]]
 		regexes = [
 			'''(169.254.169.254|127.0.0.\d+|23.22.13.113)''', # 23.22.13.113 is gsa.gov
 			'''\b0\.(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){2}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b''' # OK to start w/ 0.
@@ -38,37 +34,37 @@ useDefault = true
 	path = '''(?i)s3cfg$'''
 
 [[rules]]
-	id = "yaml-secrets"
-	description = "yaml secrets"
-	regex = '''(?i)(password|enc.key|auth.pass):\s+(.*)'''
-	path = '''(?i)(\.yml|\.yaml)'''
-	tags = ["yaml"]
-	[rules.allowlist]
-		description = "ignore substituted values and examples"
-		regexes = ['''(\(\(.*\)\)|\{\{.*\}\})''']
-
-[[rules]]
 	id = "email"
 	description = "Email except non-pii business email"
 	regex = '''(.{0,48}?)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})'''
+	secretGroup = 2
 	tags = ["email"]
-	[rules.allowlist]
-		regexes = [
-			'''(?i)@(cloud.gov|gsa.gov|github.com)''',
-			'''(?i)(Author|Copyright|Contact)'''
-			]
+	[[rules.allowlists]]
+		regexes = ['''(?i)@(cloud.gov|gsa.gov|github.com)''']
 		paths = [
 			'''Godeps._workspace''',
 			'''(composer.lock)$'''
 		]
+	[[rules.allowlists]]
+		regexTarget = "match"
+		regexes = ['''(?i)(Author|Copyright|Contact)''']
+
+[[rules]]
+	# this rule inherits from and extends the default 'generic-api-key' rule.
+	id = "generic-api-key"
+	# default regex updated to match the multi-line flask test
+	regex = '''(?i)[\w.-]{0,50}?(?:access|auth|(?-i:[Aa]pi|API)|credential|creds|key|passw(?:or)?d|secret|token)(?:[ \t\w.-]{0,20})[\s'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60('"\s=]*([^\x60'"]{10,150}|[a-z0-9][a-z0-9+\/]{11,}={0,3})(?:[\x60'"\s;]|\\[nr]|$)'''
+	# entropy dropped down from default to match more possible values
+	entropy = 3.25
 
 [[rules]]
 	id = "generic-username"
 	description = "Generic Username"
-	regex = '''(?i)(dbuser|user)(.{0,20})?['"]([0-9a-zA-Z-_\\+!{}@\./=]{4,120})['"]'''
+	regex = '''(?i)(?:dbuser|user)(?:.{0,20})?['"]([0-9a-zA-Z-_\\+!{}@\./=]{4,120})['"]'''
 	tags = ["key", "username", "generic"]
-	[rules.allowlist]
+	[[rules.allowlists]]
 		description = "A username in a terraform file and programs is not a leak"
+		regexTarget = "match"
 		regexes = [
 			'''\w+?username\w+=''',
 			# ignore username properties set in templates. for example:
@@ -79,33 +75,15 @@ useDefault = true
 			"user_agent"
 		]
 		paths = [
-			'''\.(tf|rb|go|py|js)$'''
+			'''\.(tf|tfvars|rb|go|py|js)$'''
 		]
 
 [[rules]]
-	id = "generic-credential"
-	description = "Generic Credential"
-	regex = '''(?im)(.*)(dbpasswd|dbname|dbhost|api_key|apikey|secret|key|api|password|guid|hostname|pw|auth)(.{0,20})(['"](\S{4,120})['"]|[(\\]\s*$)'''
-	tags = ["key", "API", "generic"]
-	# ignore leaks with specific identifiers like slack and aws as these should be detected
-	# by more granular rules
-	[rules.allowlist]
-		regexes = [
-			'''xox[baprs]-([0-9a-zA-Z]{10,48})''',
-			'''(?i)(.{0,20})?['"][0-9a-f]{32}-us[0-9]{1,2}['"]''',
-			'''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}''',
-			# ignore JSON property values including "keyword", such as { "type": "keyword" }
-			'''\"type\":\"keyword\"''',
-			# ignore JSON property values including "hostname", like { "name": "rtr.hostname" }
-			'''\"name\":\".*hostname\"''',
-			# ignore password properties set in ERB templates. for example:
-			# 	'password': '<%= p('cloudfoundry.password'
-			'''(password)[\'\"]{0,1}[:=]\s{0,1}[\'\"]{0,1}\<\%\=\s{0,1}p\('''
-		]
-		paths = [
-			'''(vendor.github|Godeps._workspace)''',
-			'''(yarn.lock|package-lock.json|pnpm-lock.yaml|composer.lock)$'''
-		]
+	id = "generic-hostname"
+	description = "Rules to find hostnames"
+	# regex adopted from generic-api-key
+	regex = '''(?i)[\w.-]{0,50}?(?:dbname|hostname)(?:[ \t\w.-]{0,20})[\s'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60('"\s=]*([^\x60'"]{1,150}|[a-z0-9][a-z0-9+\/]{11,}={0,3})(?:[\x60'"\s;]|\\[nr]|$)'''
+	tags = ["hostname", "generic"]
 
 [[rules]]
 	id = "suspicious-file-extensions"

@@ -1,7 +1,7 @@
-CAULKING_VERSION=2.0.0 2023-12-01
-GITLEAKS_VERSION=8.18.1
+CAULKING_VERSION=3.0.0 2025-05-06
+GITLEAKS_VERSION=8.25.1
 GITLEAKS_ARTIFACT="gitleaks_${GITLEAKS_VERSION}_darwin_x64.tar.gz"
-GITLEAKS_CHECKSUM=8eaae2aec79175a2b9f1879994c47107752200408ef3bc100ce8f9e56ee0e199
+GITLEAKS_CHECKSUM=1ac8baf3424878c6990088fcf1129f870c3589461c3a99e9339b86d3d9608d40
 GITLEAKS_DOWNLOAD_DIR="${HOME}/bin/gitleaks-files"
 NOW=$(shell date)
 ME=$(shell whoami)
@@ -17,7 +17,7 @@ INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
 HOMEBREW_PREFIX=$(shell brew config | grep HOMEBREW_PREFIX | awk '{print $$2}')
 
-.PHONY: clean audit global_hooks
+.PHONY: clean audit test global_hooks
 
 install: $(INSTALL_TARGETS) global_hooks
 
@@ -26,6 +26,9 @@ audit: ${HOMEBREW_PREFIX}/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
 	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
 	${BATS} -p caulked.bats
+
+test: ${PATTERNS}
+	${BATS} -p development.bats
 
 clean:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}

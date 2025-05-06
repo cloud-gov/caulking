@@ -43,22 +43,22 @@ run_gitleaks() {
     echo "Debug: Starting gitleaks check" >&2
     echo "Debug: Using config at $HOME/.git-support/gitleaks.toml" >&2
     echo "Debug: gitleaks location: $(which gitleaks)" >&2
-    
+
     # Save current git trace settings
     old_git_trace="$GIT_TRACE"
     old_git_trace_setup="$GIT_TRACE_SETUP"
     unset GIT_TRACE
     unset GIT_TRACE_SETUP
-    
+
     # Running _without_ `--redact` is safer in a local development
-    cmd="gitleaks protect --staged --config=$HOME/.git-support/gitleaks.toml --verbose"
+    cmd="gitleaks git --staged --config=$HOME/.git-support/gitleaks.toml --verbose"
     echo "Debug: Running command: $cmd" >&2
-    
+
     output=$($cmd 2>&1)
     status=$?
     echo "Debug: gitleaks exit status: $status" >&2
     echo "$output" >&2
-    
+
     # Restore git trace settings
     if [ -n "$old_git_trace" ]; then
         export GIT_TRACE="$old_git_trace"
@@ -66,7 +66,7 @@ run_gitleaks() {
     if [ -n "$old_git_trace_setup" ]; then
         export GIT_TRACE_SETUP="$old_git_trace_setup"
     fi
-    
+
     # Check for "no leaks found" in output regardless of exit status
     if echo "$output" | grep -q "no leaks found"; then
         echo "no leaks found"
