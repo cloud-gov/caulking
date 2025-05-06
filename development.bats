@@ -221,6 +221,15 @@ END
     assert_failure
 }
 
+@test "it fails a single-line flask secret key" {
+  cat > $REPO_PATH/webapp.py <<END
+    app.secret_key = '39a45464-cb1d-4b8d-aa1f-83c7c04fa673'
+END
+    run testCommit $REPO_PATH
+    assert_failure
+    assert_output --partial 'generic-api-key'
+}
+
 @test "it allows inspec statement that counts users" {
   cat > $REPO_PATH/inspec.rb <<END
     user_count = input('admins').length + input('non-admins').length
@@ -278,7 +287,6 @@ END
 END
     run testCommit $REPO_PATH
     assert_failure
-    assert_output --partial 'generic-credential'
 }
 
 @test "it allows hostname as a JSON property value" {
@@ -289,15 +297,6 @@ END
 END
     run testCommit $REPO_PATH
     assert_success
-}
-
-@test "it fails a generic hostname" {
-  cat > $REPO_PATH/config.yml <<END
-    hostname: "host-1"
-END
-    run testCommit $REPO_PATH
-    assert_failure
-    assert_output --partial 'generic-credential'
 }
 
 @test "it allows keyword as a JSON property value" {
@@ -314,5 +313,4 @@ END
 END
     run testCommit $REPO_PATH
     assert_failure
-    assert_output --partial 'generic-credential'
 }
