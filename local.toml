@@ -3,7 +3,7 @@ title = "gitleaks config"
 [extend]
 useDefault = true
 
-[allowlist]
+[[allowlists]]
 	description = "general allowlists"
 	paths = [
 		'''(.*?)(jpg|gif|doc|pdf|bin|svg)$''',
@@ -24,7 +24,7 @@ useDefault = true
 	description = "IPv4 addresses"
 	regex = '''\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'''
 	tags = ["IPv4", "IP", "addresses"]
-	[rules.allowlist]
+	[[rules.allowlists]]
 		regexes = [
 			'''(169.254.169.254|127.0.0.\d+|23.22.13.113)''', # 23.22.13.113 is gsa.gov
 			'''\b0\.(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){2}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b''' # OK to start w/ 0.
@@ -43,7 +43,7 @@ useDefault = true
 	regex = '''(?i)(password|enc.key|auth.pass):\s+(.*)'''
 	path = '''(?i)(\.yml|\.yaml)'''
 	tags = ["yaml"]
-	[rules.allowlist]
+	[[rules.allowlists]]
 		description = "ignore substituted values and examples"
 		regexes = ['''(\(\(.*\)\)|\{\{.*\}\})''']
 
@@ -52,7 +52,7 @@ useDefault = true
 	description = "Email except non-pii business email"
 	regex = '''(.{0,48}?)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})'''
 	tags = ["email"]
-	[rules.allowlist]
+	[[rules.allowlists]]
 		regexes = [
 			'''(?i)@(cloud.gov|gsa.gov|github.com)''',
 			'''(?i)(Author|Copyright|Contact)'''
@@ -67,7 +67,7 @@ useDefault = true
 	description = "Generic Username"
 	regex = '''(?i)(dbuser|user)(.{0,20})?['"]([0-9a-zA-Z-_\\+!{}@\./=]{4,120})['"]'''
 	tags = ["key", "username", "generic"]
-	[rules.allowlist]
+	[[rules.allowlists]]
 		description = "A username in a terraform file and programs is not a leak"
 		regexes = [
 			'''\w+?username\w+=''',
