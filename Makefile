@@ -17,7 +17,7 @@ INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
 
 HOMEBREW_PREFIX=$(shell brew config | grep HOMEBREW_PREFIX | awk '{print $$2}')
 
-.PHONY: clean audit global_hooks
+.PHONY: clean audit test global_hooks
 
 install: $(INSTALL_TARGETS) global_hooks
 
@@ -26,6 +26,9 @@ audit: ${HOMEBREW_PREFIX}/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
 	@echo ${CAULKING_VERSION}
 	@echo "${ME} / ${NOW}"
 	${BATS} -p caulked.bats
+
+test:
+	${BATS} -p development.bats
 
 clean:
 	/bin/rm -rf ${GIT_SUPPORT_PATH}
