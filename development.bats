@@ -283,7 +283,7 @@ END
 
 @test "it fails a generic yaml password" {
   cat > $REPO_PATH/password.yaml <<END
-    "password": "password"
+    "password": "adgi3asdfkljhjsad"
 END
     run testCommit $REPO_PATH
     assert_failure

@@ -34,17 +34,6 @@ useDefault = true
 	path = '''(?i)s3cfg$'''
 
 [[rules]]
-	id = "yaml-secrets"
-	description = "yaml secrets"
-	regex = '''(?i)(password|enc.key|auth.pass)"?:\s+(.*)'''
-	path = '''(?i)(\.yml|\.yaml)'''
-	tags = ["yaml"]
-	secretGroup = 2
-	[[rules.allowlists]]
-		description = "ignore substituted values and examples"
-		regexes = ['''(\(\(.*\)\)|\{\{.*\}\})''']
-
-[[rules]]
 	id = "email"
 	description = "Email except non-pii business email"
 	regex = '''(.{0,48}?)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})'''
