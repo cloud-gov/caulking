@@ -27,7 +27,7 @@ audit: ${HOMEBREW_PREFIX}/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
 	@echo "${ME} / ${NOW}"
 	${BATS} -p caulked.bats
 
-test:
+test: ${PATTERNS}
 	${BATS} -p development.bats
 
 clean:

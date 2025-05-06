@@ -6,16 +6,12 @@ useDefault = true
 [[allowlists]]
 	description = "general allowlists"
 	paths = [
-		'''(.*?)(jpg|gif|doc|pdf|bin|svg)$''',
+		'''(.*?)(jpg|gif|doc|pdf|bin|svg|png)$''',
 		'''development.bats''',
 		'''caulked.bats''',
 		'''local.toml'''
 	]
 	regexes	= ['''CHANGEME|changeme|feedabee|not-actually-secret|EXAMPLE|23.22.13.113|1234567890''']
-
-# Rules borrowed from GSA
-# https://github.com/GSA/odp-code-repository-commit-rules/blob/master/gitleaks/rules.toml
-# and customized for TTS
 
 # If IPv4 is overbroad, cloud.gov external IPs may all be nonsensitive
 # and we can change match to (10|172|192). in the first octet.
@@ -40,9 +36,10 @@ useDefault = true
 [[rules]]
 	id = "yaml-secrets"
 	description = "yaml secrets"
-	regex = '''(?i)(password|enc.key|auth.pass):\s+(.*)'''
+	regex = '''(?i)(password|enc.key|auth.pass)"?:\s+(.*)'''
 	path = '''(?i)(\.yml|\.yaml)'''
 	tags = ["yaml"]
+	secretGroup = 2
 	[[rules.allowlists]]
 		description = "ignore substituted values and examples"
 		regexes = ['''(\(\(.*\)\)|\{\{.*\}\})''']
@@ -51,24 +48,31 @@ useDefault = true
 	id = "email"
 	description = "Email except non-pii business email"
 	regex = '''(.{0,48}?)([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})'''
+	secretGroup = 2
 	tags = ["email"]
 	[[rules.allowlists]]
-		regexes = [
-			'''(?i)@(cloud.gov|gsa.gov|github.com)''',
-			'''(?i)(Author|Copyright|Contact)'''
-			]
+		regexes = ['''(?i)@(cloud.gov|gsa.gov|github.com)''']
 		paths = [
 			'''Godeps._workspace''',
 			'''(composer.lock)$'''
 		]
+	[[rules.allowlists]]
+		regexTarget = "match"
+		regexes = ['''(?i)(Author|Copyright|Contact)''']
+
+[[rules]]
+	id = "generic-api-key"
+	regex = '''(?i)[\w.-]{0,50}?(?:access|auth|(?-i:[Aa]pi|API)|credential|creds|key|passw(?:or)?d|secret|token)(?:[ \t\w.-]{0,20})[\s'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60('"\s=]*([^\x60'"]{10,150}|[a-z0-9][a-z0-9+\/]{11,}={0,3})(?:[\x60'"\s;]|\\[nr]|$)'''
+	entropy = 3.25
 
 [[rules]]
 	id = "generic-username"
 	description = "Generic Username"
-	regex = '''(?i)(dbuser|user)(.{0,20})?['"]([0-9a-zA-Z-_\\+!{}@\./=]{4,120})['"]'''
+	regex = '''(?i)(?:dbuser|user)(?:.{0,20})?['"]([0-9a-zA-Z-_\\+!{}@\./=]{4,120})['"]'''
 	tags = ["key", "username", "generic"]
 	[[rules.allowlists]]
 		description = "A username in a terraform file and programs is not a leak"
+		regexTarget = "match"
 		regexes = [
 			'''\w+?username\w+=''',
 			# ignore username properties set in templates. for example:
@@ -79,8 +83,14 @@ useDefault = true
 			"user_agent"
 		]
 		paths = [
-			'''\.(tf|rb|go|py|js)$'''
+			'''\.(tf|tfvars|rb|go|py|js)$'''
 		]
+
+[[rules]]
+	id = "generic-hostname"
+	description = "Rules to find hostnames"
+	regex = '''(?i)[\w.-]{0,50}?(?:dbname|hostname)(?:[ \t\w.-]{0,20})[\s'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60('"\s=]*([^\x60'"]{1,150}|[a-z0-9][a-z0-9+\/]{11,}={0,3})(?:[\x60'"\s;]|\\[nr]|$)'''
+	tags = ["hostname", "generic"]
 
 [[rules]]
 	id = "suspicious-file-extensions"

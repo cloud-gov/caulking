@@ -281,7 +281,7 @@ END
     assert_success
 }
 
-@test "it fails a generic password" {
+@test "it fails a generic yaml password" {
   cat > $REPO_PATH/password.yaml <<END
     "password": "password"
 END
@@ -299,6 +299,14 @@ END
     assert_success
 }
 
+@test "it fails a generic hostname" {
+  cat > $REPO_PATH/config.yml <<END
+    hostname: "host-1"
+END
+    run testCommit $REPO_PATH
+    assert_failure
+}
+
 @test "it allows keyword as a JSON property value" {
   cat > $REPO_PATH/test.json <<END
     { "type": "keyword" }
@@ -309,7 +317,7 @@ END
 
 @test "it fails JSON with keyword as property value but including another generic credential" {
   cat > $REPO_PATH/test.json <<END
-    { "type": "keyword", "password": "password" }
+    { "type": "keyword", "password": "adgi3asdfkljhjsad" }
 END
     run testCommit $REPO_PATH
     assert_failure
