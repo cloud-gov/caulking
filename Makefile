@@ -35,6 +35,7 @@ clean:
 	git config --global --unset hooks.gitleaks
 	git config --global --unset core.hooksPath
 	/bin/rm -rf ${GITLEAKS}
+	@echo "Run 'make install' to restore git hooks"
 
 hook pre-commit: ${GIT_SUPPORT_PATH}/hooks/pre-commit
 
@@ -64,7 +65,7 @@ ${GITLEAKS}:
 	rm -rf ${GITLEAKS_DOWNLOAD_DIR}
 	chmod 755 $@
 
-upgrade:
+upgrade update:
 	brew uninstall gitleaks || rm -f ${GITLEAKS} && rm -f ${HOME}/bin/gitleaks
 	make ${GITLEAKS}
 
