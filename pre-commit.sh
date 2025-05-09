@@ -16,7 +16,7 @@ fi
 #   10: user entered no
 #
 prompt_yn() {
-  prompt ans
+  local prompt ans
   if [ $# -ge 1 ]; then
     prompt="$1"
   else
