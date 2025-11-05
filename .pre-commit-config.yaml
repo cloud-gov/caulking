@@ -1,0 +1,56 @@
+ci:
+  autofix_prs: false
+
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.3
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.29.0
+    hooks:
+      - id: gitleaks
+        name: gitleaks (cloud-gov rules)
+        args:
+          - --no-banner
+          - --no-color
+          - --log-level=error # quiets the “stderr is not empty” noise
+          - --redact
+          - --config=rules/gitleaks.toml
+        pass_filenames: false
+        stages: [pre-commit]
+        exclude: |
+          (?x)
+          ^tests/corpus/.*     # test corpora are scanned by pytest, not by pre-commit
+          |^\.refactor-backup/
+
+  - repo: local
+    hooks:
+      - id: detect-secrets
+        name: detect-secrets (baseline)
+        entry: detect-secrets-hook
+        language: system
+        pass_filenames: false
+        args: ["--baseline", "rules/detect-secrets.baseline"]
+        exclude: |
+          (?x)
+          ^tests/corpus/.*|^\.refactor-backup/
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.6
+    hooks:
+      - id: bandit
+        args: ["-q", "-c", "pyproject.toml", "-r", "src"]

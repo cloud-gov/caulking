@@ -1,9 +1,9 @@
 [submodule "test/bats"]
-	path = test/bats
+	path = .refactor-backup/20251105-132153/test/bats
 	url = https://github.com/bats-core/bats-core.git
 [submodule "test/bats-support"]
-	path = test/bats-support
+	path = .refactor-backup/20251105-132153/test/bats-support
 	url = https://github.com/bats-core/bats-support.git
 [submodule "test/bats-assert"]
-	path = test/bats-assert
+	path = .refactor-backup/20251105-132153/test/bats-assert
 	url = https://github.com/bats-core/bats-assert.git

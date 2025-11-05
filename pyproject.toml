@@ -1,0 +1,67 @@
+[project]
+name = "caulking"
+version = "0.1.0"
+description = "Cloud.gov secret scanning + hygiene tooling bundle"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "CC0-1.0" }
+authors = [{ name = "cloud.gov" }]
+dependencies = ["typer>=0.12.5", "pydantic>=2.9.2", "pyyaml>=6.0.2"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+    "bandit>=1.7.10",
+    "detect-secrets>=1.5.0",
+    "pre-commit>=4.0.1",
+    "types-PyYAML>=6.0.12.20240808",
+]
+
+
+[project.scripts]
+caulking = "caulking.cli:app"
+
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+# uv will respect the standard pyproject. This block allows future uv settings if needed.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    "tests/corpus/*",     # corpora may intentionally contain patterns that look like secrets
+    ".refactor-backup/*",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "UP", "SIM", "PL", "RUF"]
+ignore = ["E203"]                                       # keep Black/PEP8 harmony if ever used
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+exclude = "(^tests/corpus/|^\\.refactor-backup/)"
+files = ["src/caulking"]                          # ← add this line
+
+
+[tool.bandit]
+skips = ["B101"]                               # assert used in tests is fine
+exclude = ["tests/corpus", ".refactor-backup"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/caulking"]

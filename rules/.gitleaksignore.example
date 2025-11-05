@@ -1,0 +1,5 @@
+# Example fingerprint ignore. Copy to project root as `.gitleaksignore` and
+# paste the fingerprint from a finding you want to silence surgically.
+# Format: <FINGERPRINT> # optional comment
+#
+# 123e4567-e89b-12d3-a456-426614174000 # test fixture false positive in X

@@ -1,0 +1,4 @@
+# This file intentionally contains strings that *look like* secrets for test purposes.
+# It lives under tests/corpus/positive and is excluded from pre-commit scanning.
+AKIAABCDEFGHIJKLMNOP
+aws_secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"

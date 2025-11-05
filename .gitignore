@@ -1,2 +1,27 @@
+# Python / build
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.pytest_cache/
+.pytype/
+
+# uv / venvs
+.venv/
+.uv/
+
+# tools & artifacts
+.refactor-backup/
+.out/
+out/
+artifacts/
+
+# OS/editor
 .DS_Store
-.vscode
+.vscode/
+.idea/
+
+# test corpora may include fixture blobs
+tests/corpus/**/.cache/

@@ -1,0 +1,31 @@
+title = "cloud-gov gitleaks rules"
+# Start conservative; expand as you tune. Uses upstream defaults plus a few extras.
+# You can include defaults via:
+# [extend]
+# useDefault = true
+
+[allowlist]
+# Common test fixture paths
+paths = ['''^tests/corpus/''', '''^\.refactor-backup/''']
+
+[[rules]]
+id = "cg-generic-credential"
+description = "Generic credential patterns (user/pass style)"
+regex = '''(?i)(password|pass|pwd|secret|token)\s*[:=]\s*['"]?[^\s'"]{8,}['"]?'''
+tags = ["generic", "cred"]
+entropy = 0.0
+
+# Example composite-ish constraint via regex: look for key-ish pairs near suspicious words
+[[rules]]
+id = "cg-aws-access-key"
+description = "AWS Access Key ID"
+regex = '''\b(A3T|AKIA|ASIA)[A-Z0-9]{16}\b'''
+tags = ["key", "aws"]
+
+[[rules]]
+id = "cg-aws-secret"
+description = "AWS Secret Access Key"
+regex = '''(?i)aws(.{0,20})?(secret|sk|access)?.{0,5}['"][A-Za-z0-9/+=]{40}['"]'''
+tags = ["key", "aws"]
+
+# Fingerprint-based exceptions belong in .gitleaksignore (in repo roots using these rules).
