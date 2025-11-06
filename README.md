@@ -1,160 +1,150 @@
-# Caulking stops leaks
+# Caulking
 
-![caulking gun with grey caulk oozing out](https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Caulking.jpg/757px-Caulking.jpg)
+A small utility that keeps your Git repositories from leaking secrets, skipping hooks, or silently drifting out of compliance.
+It’s designed to be boring, fast, and hard to screw up.
 
-Goals:
+---
 
-* Simplify installation of git leak prevention and rules with `make install`
-* Simplify auditing local systems for leak prevention with `make audit`
-* Support adding and testing rules
+## What It Does
 
-## Installation notes
+Caulking provides:
 
-Clone the repository with the `--recurse-submodules` flag. Or, if you have already cloned the repository without the flag, run `git submodule update --init --recursive` from the root of the repository to initialize all submodules.
+- **A proper Python CLI** (`caulking`) built with [Typer](https://typer.tiangolo.com/) — no brittle shell glue.
+- **Pre-commit integration** that enforces:
+  - [`ruff`](https://docs.astral.sh/ruff) formatting and linting first (because style is cheap to fix)
+  - [`mypy`](https://mypy.readthedocs.io) strict typing
+  - [`bandit`](https://bandit.readthedocs.io) security checks
+  - [`gitleaks`](https://github.com/gitleaks/gitleaks) scans without the ancient `--source` flag
+  - [`detect-secrets`](https://github.com/Yelp/detect-secrets) baseline validation
+- **A “Doctor” mode** that inspects your local environment and pre-commit configuration for sanity.
+- **A transition path** away from legacy global hooks — no black magic hiding in `/usr/local`.
 
-`make install` will install `gitleaks`. The install will:
+You can think of it as a lightweight self-defense mechanism for engineers who actually care about not shipping accidents.
 
-* install `gitleaks`
-  * **Note:** Only `gitleaks` version 8 is currently supported.
-* add a global `pre-commit` hook to `$HOME/.git-support/hooks/pre-commit`
-* add the configuration with patterns to `$HOME/.git-support/gitleaks.toml`
+---
 
-You now have the gitleaks pre-commit hook enabled globally.
+## Philosophy
 
-## Bug warning
+- If something breaks, it should **fail loudly and immediately**.
+- Every tool should run the same way on every developer’s machine.
+- Security and hygiene checks are not optional.
+- A good hook is one you can trust to run silently when it should, and shout when it must.
 
-If you get the error `reference not found` on a new repository, be sure you've run `brew upgrade gitleaks` to install version 4.1.1 or later.
+If you like fiddling with YAML until it barely works, this is not your tool.
 
-## Auditing notes - how to test if this is working
+---
 
-> **Please note:** You will need to use a `gsa.gov` email address for your commits in order for the audit tests to pass. See [the GitHub documentation on how to set your commit email](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-user-account/managing-email-preferences/setting-your-commit-email-address#setting-your-commit-email-address-in-git).
+## Quick Start
 
-The `make audit` target installs prerequisites then runs the test harness `bats caulked.bats` and outputs whether the tests pass or fail. All tests must pass to be considered a successful install/audit.
+You’ll need [uv](https://docs.astral.sh/uv) installed.
+Then:
 
-The tests check for a working `gitleaks` setup, and that you haven't inadvertently disabled `gitleaks` in your repositories. It checks:
-
-* that common patterns of secrets cause a commit to fail
-* that `hooks.gitleaks` is set to true underneath $HOME to $MAXDEPTH setting
-* that any custom `/.git/hooks/pre-commit` scripts also still call `gitleaks`
-
-These assume a compliant engineer who wants to abide by use of `gitleaks`,and  doesn't deliberately subvert that intent.
-
-## What now?
-
-You have installed gitleaks and our patterns, and you've verified that all of your repositories are not inadvertently sidestepping the caulking. Continue on with your day. We may periodically ask you to run `make patterns` and `make audit` to update your rules and test that you are still protected from committing known secret patterns.
-
-If you get a `git commit` error message like this:
-
-```json
-{
-    "line": "Juana M. is at juana@example.com",
-    "offender": "javier@example.com",
-    "commit": "0000000000000000000000000000000000000000",
-    "repo": "gittest.ffqOwg",
-    "rule": "Email",
-    "commitMessage": "***STAGED CHANGES***",
-    "author": "",
-    "email": "",
-    "file": "secretsfile.md",
-    "date": "1970-01-01T00:00:00Z",
-    "tags": "email"
-}
+```bash
+make bootstrap
 ```
 
-Then, remove or fix the offending line.
+That installs dependencies, syncs the dev environment, and installs pre-commit hooks.
 
-### But what if the "offending line" isn't a secret?
+You can confirm everything’s healthy with:
 
-You have a couple of choices:
-
-* Submit a PR to improve our patterns (guidance forthcoming)
-* Submit an issue to this repo, and then ignore `gitleaks` for the commit with:
-
-    ```shell
-    SKIP=gitleaks git commit -m "message"
-    ```
-
-    Then type `y` when you see this prompt:
-
-    ```shell
-    Do you want to SKIP gitleaks? [y/n] y
-    ```
-
-## Development tips
-
-To work on patterns, add test cases to `development.bats`, update patterns in `local.toml` then
-run `bats development.bats`.  Here are some shortcuts:
-
-* `make hook`: update `~/.git-support/hooks/pre-commit` from local `pre-commit.sh`
-* `make patterns`: update the `gitleaks` configuration in `~/.git-support/gitleaks.toml` from local `local.toml`
-* `make audit`: see that everything work together.
-
-## Running bats tests
-
-To run a file of bats tests:
-
-```shell
-./test/bats/bin/bats -p caulked.bats
+```bash
+make hooks.doctor
 ```
 
-To run a specific test or set of tests, pass in a `--filter` argument with a regular expression matching the test(s) you want to run:
+If you see a green checkmark, you’re fine. If you see red, fix it before committing.
 
-```shell
-./test/bats/bin/bats -p caulked.bats --filter "leak prevention.*"
+---
+
+## Typical Workflow
+
+| Command                 | What it does                                                             |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `make qa`               | Run the full quality gate: format, lint, type-check, security-scan, test |
+| `make fmt`              | Format code with Ruff                                                    |
+| `make lint`             | Run Ruff linting                                                         |
+| `make type`             | Run strict typing via mypy                                               |
+| `make sec`              | Run Bandit, Gitleaks, and Detect-Secrets                                 |
+| `make test`             | Run pytest                                                               |
+| `make hooks.install`    | Install local pre-commit and pre-push hooks                              |
+| `make hooks.update`     | Update hook versions to match the latest stable                          |
+| `make hooks.clean`      | Clear cached hook environments and reinstall                             |
+| `make hooks.run`        | Run all hooks across all files                                           |
+| `make uninstall.legacy` | Remove old global Caulking hook setups (safe preview by default)         |
+
+If you’re the type who can’t resist skipping hooks, at least be explicit about it:
+
+```bash
+git commit -n
 ```
 
-## Rule sets
+But remember — if your code leaks a secret, that’s on you.
 
-The following rule sets helped inform our gitleaks.toml:
+---
 
-* <https://github.com/GSA/odp-code-repository-commit-rules/blob/master/gitleaks/rules.toml> - used for guidance
-* <https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml> - default gitleaks configuration that our configuration extends from
+## Philosophy on Dependencies
 
-## What about other hooks? Will they still run?
+We keep them minimal, pinned, and reproducible.
+Everything runs inside the `uv` environment, so there’s no need to pollute your system Python.
+If you add dependencies, **justify them** and document why.
 
-Yes. Caulking runs your other pre-commit hooks automatically.
+---
 
-### pre-commit.com
+## CI/CD
 
-**Note:** if you're using [pre-commit](https://pre-commit.com/) to manage pre-commit hooks, you'll likely get an error like this when running `pre-commit install`:
+If you really must run this in CI, just do:
 
-```shell
-[ERROR] Cowardly refusing to install hooks with `core.hooksPath` set.
-hint: `git config --unset-all core.hooksPath`
+```bash
+make qa
 ```
 
-You can work around this by running:
+That’ll give you the same checks developers see locally.
+If you disable something in CI, you’d better have a written reason.
 
-```shell
-hookspath=$(git config core.hookspath)
-git config --global --unset-all core.hookspath
-pre-commit install
-git config --global core.hookspath "${hookspath}"
+---
+
+## Troubleshooting
+
+- **`pre-commit` complaining about missing environments:**
+  Run `make hooks.clean`.
+
+- **`gitleaks` yelling about `--source`:**
+  You’re using an old version. Run `make hooks.update`.
+
+- **`ruff` flagging hundreds of style issues:**
+  Just run `make fmt`. Don’t argue with the linter; it’s faster.
+
+- **`doctor` says something is missing:**
+  Read the message. It’s probably right.
+
+---
+
+## Uninstalling Old Caulking Hooks
+
+If you’re migrating from the pre-Python era:
+
+```bash
+make uninstall.legacy
+# or, to actually apply changes:
+make uninstall.legacy APPLY=1
 ```
 
-[See the GitHub issue for the related discussion.](https://github.com/pre-commit/pre-commit/issues/1198).
+This removes global hooks, stray symlinks, and random rc-file snippets.
+You’ll thank yourself later.
 
-## Incompatible gitleaks changes
+---
 
-Sometimes gitleaks updates will have breaking changes, and you'll need to compare gitleaks
-between the current version and an older version. To install an older gitleaks version with `brew`:
+## Project Goals
 
-* Browse the [brew history for the gitleaks formula](https://github.com/Homebrew/homebrew-core/commits/master/Formula/gitleaks.rb)
-* Find the commit that matches the older version you want to roll back to
-* Then run:
+1. Be maintainable by adults.
+2. Fail predictably.
+3. Prefer clarity over cleverness.
+4. Require no extra explanation.
 
-    ```shell
-    wget https://raw.githubusercontent.com/Homebrew/homebrew-core/<commit>/Formula/gitleaks.rb
-    brew unlink gitleaks
-    brew install ./gitleaks.rb
-    ```
+---
 
-* You'll now have the older version.
+## Author’s Note
 
-## Public domain
+This project exists because security shouldn’t depend on people remembering to do the right thing.
+It should be automatic, quiet when happy, and honest when broken.
 
-This project is in the worldwide public domain. As stated in CONTRIBUTING:
-
-> This project is in the public domain within the United States, and copyright and related rights in the work worldwide are waived through the CC0 1.0 Universal public domain dedication.
->
-> All contributions to this project will be released under the CC0 dedication. By submitting a pull request, you are agreeing to comply with this waiver of copyright interest.
+That’s what Caulking does.

@@ -1,0 +1,12 @@
+repos:
+  - repo: local
+    hooks:
+      - id: node-husky-bridge
+        name: husky bridge -> run pre-commit
+        entry: bash
+        language: system
+        args:
+          [
+            "-c",
+            "command -v pre-commit >/dev/null && pre-commit run --hook-stage=pre-commit || true",
+          ]
