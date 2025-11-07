@@ -26,3 +26,7 @@ artifacts/
 
 # test corpora may include fixture blobs
 tests/corpus/**/.cache/
+
+# test artifacts
+.coverage
+htmlcov/
