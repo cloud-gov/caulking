@@ -1,5 +1,9 @@
 # Caulking
 
+<p align="center">
+  <img src="./Caulking.png" alt="Caulking gun" width="50%">
+</p>
+
 A small utility that keeps your Git repositories from leaking secrets, skipping hooks, or quietly drifting out of compliance.
 It’s designed to be boring, fast, and hard to screw up.
 
