@@ -1,0 +1,28 @@
+# Go add-on template
+repos:
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: go fmt
+        entry: bash -c 'command -v go >/dev/null || exit 0; files=$(git ls-files "*.go"); [ -z "$files" ] && exit 0; go fmt ./... >/dev/null || exit 1'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: go-vet
+        name: go vet
+        entry: bash -c 'command -v go >/dev/null || exit 0; go vet ./...'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: golangci-lint
+        name: golangci-lint (if present)
+        entry: bash -c 'command -v golangci-lint >/dev/null || exit 0; golangci-lint run'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

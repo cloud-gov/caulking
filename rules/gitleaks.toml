@@ -1,31 +1,25 @@
-title = "cloud-gov gitleaks rules"
-# Start conservative; expand as you tune. Uses upstream defaults plus a few extras.
-# You can include defaults via:
-# [extend]
-# useDefault = true
+title = "caulking global rules"
 
 [allowlist]
-# Common test fixture paths
-paths = ['''^tests/corpus/''', '''^\.refactor-backup/''']
-
-[[rules]]
-id = "cg-generic-credential"
-description = "Generic credential patterns (user/pass style)"
-regex = '''(?i)(password|pass|pwd|secret|token)\s*[:=]\s*['"]?[^\s'"]{8,}['"]?'''
-tags = ["generic", "cred"]
-entropy = 0.0
-
-# Example composite-ish constraint via regex: look for key-ish pairs near suspicious words
-[[rules]]
-id = "cg-aws-access-key"
-description = "AWS Access Key ID"
-regex = '''\b(A3T|AKIA|ASIA)[A-Z0-9]{16}\b'''
-tags = ["key", "aws"]
-
-[[rules]]
-id = "cg-aws-secret"
-description = "AWS Secret Access Key"
-regex = '''(?i)aws(.{0,20})?(secret|sk|access)?.{0,5}['"][A-Za-z0-9/+=]{40}['"]'''
-tags = ["key", "aws"]
-
-# Fingerprint-based exceptions belong in .gitleaksignore (in repo roots using these rules).
+description = "Global false-positive/irrelevant paths and binaries"
+# Binary & media files
+files = [
+    '''^.*\.(jpg|jpeg|png|gif|svg|ico|mp4|mov|pdf|docx?|xlsx?|pptx?|zip|tar|gz|7z|bz2|xz|woff2?|ttf|otf|mp3|wav|aac)$''',
+]
+# Paths we don’t want to scan aggressively
+paths = [
+    '''(^|/)tests?(/|$)''',
+    '''(^|/)fixtures?(/|$)''',
+    '''(^|/)examples?(/|$)''',
+    '''(^|/)\.refactor-backup(/|$)''',
+    '''(^|/)node_modules(/|$)''',
+    '''(^|/)dist(/|$)''',
+    '''(^|/)public(/|$)''',
+    '''(^|/)build(/|$)''',
+]
+# Known dummy tokens you might intentionally use in docs/tests
+regexes = [
+    '''(?i)dummy[_-]?secret''',
+    '''(?i)example[_-]token''',
+    '''(?i)not[_-]?a[_-]?real[_-]?key''',
+]

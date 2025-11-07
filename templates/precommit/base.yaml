@@ -1,7 +1,8 @@
-# Pre-commit configuration for caulking
-# - Modern stages (no deprecated 'commit' stage).
-# - Gitleaks runs on pre-commit and pre-push.
-# - Detect-secrets is advisory: it only runs if .secrets.baseline exists.
+# Base pre-commit template used by caulking
+# - Modern stages only (pre-commit, pre-push)
+# - Gitleaks protects without a baseline
+# - detect-secrets is advisory (only runs if baseline exists)
+# - Shellcheck runs only if present
 
 minimum_pre_commit_version: "3.6.0"
 
@@ -9,7 +10,6 @@ ci:
   autoupdate_schedule: monthly
 
 repos:
-  # --- Generic hygiene hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -29,19 +29,6 @@ repos:
         stages: [pre-commit]
         args: ["--maxkb=2048"]
 
-  # --- Ruff: lint + format (Python)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.2
-    hooks:
-      - id: ruff
-        name: ruff (lint)
-        args: ["--fix"]
-        stages: [pre-commit]
-      - id: ruff-format
-        name: ruff (format)
-        stages: [pre-commit]
-
-  # --- Gitleaks: secrets scanner (no baseline required)
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.4
     hooks:
@@ -50,8 +37,6 @@ repos:
         stages: [pre-commit, pre-push]
         args: ["protect", "--staged", "--verbose", "--redact"]
 
-  # --- Detect-secrets (advisory): only runs when a baseline exists
-  #     We use a local wrapper so that teams without a baseline aren't blocked.
   - repo: local
     hooks:
       - id: detect-secrets-advisory
@@ -61,12 +46,11 @@ repos:
         pass_filenames: true
         stages: [pre-commit]
 
-  # --- Shellcheck (optional; runs if shellcheck is present)
   - repo: local
     hooks:
       - id: shellcheck
         name: shellcheck
-        entry: bash -c 'command -v shellcheck >/dev/null || exit 0; shellcheck -S warning -x $(git ls-files "*.sh")'
+        entry: bash -c 'command -v shellcheck >/dev/null || exit 0; files=$(git ls-files "*.sh"); [ -z "$files" ] && exit 0; shellcheck -S warning -x $files'
         language: system
         pass_filenames: false
         stages: [pre-commit]

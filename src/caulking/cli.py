@@ -1,118 +1,120 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Annotated
 
 import typer
-import yaml
 
-from .detector import detect_repo
-from .installer import plan_merge, write_precommit
+from caulking.audit import audit
+from caulking.doctor import format_preflight, preflight
+from caulking.installer import (  # re-exports
+    GlobalMode,
+    apply_smart_install,
+    plan_smart_install,
+    read_precommit,
+)
+from caulking.installer import _format_plan as fmt  # keep API tidy, avoid PLC0415
 
 app = typer.Typer(help="Caulking: enforce blocking secret scans + ecosystem guardrails.")
 
 
+@app.command("preflight")
+def preflight_cmd(path: str = typer.Argument(".", help="Repository path")) -> None:
+    """Quick environment sanity: tools, PATH, hooksPath, config presence."""
+    root = Path(path).resolve()
+    checks = preflight(root)
+    typer.echo(format_preflight(checks))
+
+
 @app.command("smart-install")
 def smart_install(
-    config_path: str = typer.Option(".pre-commit-config.yaml", "--config", "-c"),
+    path: str = typer.Argument(".", help="Repository path (must contain .git)"),
+    apply: bool = typer.Option(False, "--apply", help="Actually perform changes."),
+    global_mode: Annotated[
+        GlobalMode,
+        typer.Option(
+            "--global-mode",
+            help=(
+                "Set global core.hooksPath: off|advisory|enforce "
+                "(behavior identical; policy decides)."
+            ),
+        ),
+    ] = "advisory",
 ) -> None:
-    """
-    Install or augment pre-commit config with:
-      - mandatory secrets scanning (gitleaks + detect-secrets baseline)
-      - language-aware optional hooks (ruff/bandit, tflint, shellcheck, etc.)
-    """
-    root = Path(".").resolve()
-    current: dict[str, Any] = {}
-    cfg_file = Path(config_path)
+    root = Path(path).resolve()
+    plan = plan_smart_install(root, global_mode=global_mode)
 
-    if cfg_file.exists():
-        current = yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}
-        if not isinstance(current, dict):
-            raise typer.Exit(code=2)
+    if not apply:
+        typer.echo("Plan (dry-run):\n-------------")
+        typer.echo(fmt(plan))
+        typer.echo("\nNothing applied. Re-run with --apply to make changes.")
+        raise SystemExit(0)
 
-    d = detect_repo(root)
-    merged, changes = plan_merge(
-        current,
-        python=d.python,
-        node=d.node,
-        go=d.go,
-        terraform=d.terraform,
-        docker=d.docker,
-        has_shell=d.has_shell,
+    log_path = (
+        (root / ".git" / "caulking.log") if (root / ".git").exists() else (root / ".caulking.log")
     )
-    write_precommit(cfg_file, merged)
+    results = apply_smart_install(plan, log_path=log_path)
 
-    if not changes:
-        typer.echo("No changes. Your hooks already meet baseline expectations.")
-        raise typer.Exit(code=0)
+    typer.echo("Applied:\n--------")
+    for kind, rc, note in results:
+        status = "OK" if rc == 0 else f"RC={rc}"
+        typer.echo(f"- [{kind}] {status}: {note}")
 
-    typer.echo("Applied changes:")
-    for change in changes:
-        note = ""
-        if "gitleaks" in change or "detect-secrets" in change:
-            note = "[SEC][SI-3/SI-7][CM-6]: blocking secret scans"
-        elif "ruff" in change:
-            note = "[CS][style+lint]: fast feedback"
-        elif "bandit" in change:
-            note = "[SEC][SA]: basic static analysis"
-        elif "tflint" in change:
-            note = "[IaC]: terraform lint"
-        elif "shellcheck" in change:
-            note = "[shell]: static analysis"
-        elif "hadolint" in change:
-            note = "[docker]: Dockerfile lint"
-        typer.echo(f"- {change} {note}".rstrip())
+    typer.echo(f"\nLog: {log_path}")
+    typer.echo("Hints:")
+    typer.echo("  - Open a new shell or 'source' your rc file(s) if PATH was updated.")
+    typer.echo("  - If gitleaks was missing, install it (e.g., 'brew install gitleaks' on macOS).")
 
 
 @app.command("explain")
-def explain(config_path: str = typer.Option(".pre-commit-config.yaml", "--config", "-c")) -> None:
-    """
-    Print a short explanation of what will run and why, based on config content.
-    """
-    cfg_file = Path(config_path)
-    if not cfg_file.exists():
-        typer.echo("No pre-commit config found.")
-        raise typer.Exit(code=1)
+def explain(path: str = typer.Argument(".", help="Path with .pre-commit-config.yaml")) -> None:
+    data = read_precommit(Path(path).resolve() / ".pre-commit-config.yaml")
 
-    data = yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}
-    repos = data.get("repos") or []
-
-    def has_entry(text: str) -> bool:
+    def has_any(substrs: list[str]) -> bool:
+        repos = data.get("repos", [])
         for repo in repos:
-            repo_val = str(repo.get("repo", ""))
-            hooks = repo.get("hooks") or []
-            if text in repo_val:
+            repo_str = str(repo.get("repo", ""))
+            if any(s in repo_str for s in substrs):
                 return True
-            for h in hooks:
-                # look in id/name/entry fields
-                if any(text in str(h.get(k, "")) for k in ("id", "name", "entry")):
+            for h in repo.get("hooks", []):
+                if any(s in str(h.get("id", "")) for s in substrs):
                     return True
         return False
 
-    lines: list[str] = []
-    if has_entry("gitleaks"):
-        lines.append(
-            "- gitleaks: blocks secrets before they become a ticket. You'll thank me later."
-        )
-    if has_entry("detect-secrets"):
-        lines.append("- detect-secrets: baseline comparisons to prevent regressions.")
-    if has_entry("ruff-pre-commit"):
-        lines.append("- ruff: fast style + lint. If it's noisy, fix the code, not the tool.")
-    if has_entry("PyCQA/bandit") or has_entry(" bandit"):
-        lines.append("- bandit: cheap guardrails. If it fires, you probably deserved it.")
-    if has_entry("tflint"):
-        lines.append("- tflint: IaC linting for Terraform.")
-    if has_entry("shellcheck"):
-        lines.append("- shellcheck: stop shipping bash foot-guns.")
-    if has_entry("hadolint"):
-        lines.append("- hadolint: lint Dockerfiles so prod doesn't yell at you.")
-
+    checks: list[tuple[list[str], str]] = [
+        (["gitleaks"], "- gitleaks: blocks secrets; safer excludes via rules/gitleaks.toml"),
+        (["detect-secrets"], "- detect-secrets: baseline safety net"),
+        (["ruff", "ruff-pre-commit"], "- ruff: fast lint/format for Python"),
+        (["PyCQA/bandit", "bandit"], "- bandit: cheap guardrails"),
+        (["tflint"], "- tflint: terraform lint"),
+        (["terraform-fmt"], "- terraform fmt: formatting as policy"),
+        (["shellcheck"], "- shellcheck: sh hygiene"),
+        (["hadolint"], "- hadolint: Dockerfile lint"),
+        (["golangci-lint"], "- golangci-lint + gofmt for Go"),
+        (["cargo"], "- cargo fmt/clippy for Rust"),
+        (["maven-verify", "gradle-check"], "- Maven/Gradle sanity"),
+        (["rubocop"], "- rubocop for Ruby"),
+        (["php-lint"], "- php -l for PHP"),
+        (["dotnet-format"], "- dotnet format for .NET"),
+        (["eslint", "prettier", "stylelint"], "- web: eslint/prettier/stylelint (if present)"),
+        (["check-yaml", "check-json"], "- basics: YAML/JSON/whitespace/merge-conflicts"),
+    ]
+    lines = [msg for keys, msg in checks if has_any(keys)]
     typer.echo("What runs and why:\n-------------------")
-    for line in lines:
+    for line in lines or ["Your config is empty. At minimum, enable secrets scanning."]:
         typer.echo(line)
-    if not lines:
-        typer.echo("Your config is oddly empty. That's brave. Add secrets scanning at minimum.")
+
+
+@app.command("audit")
+def audit_cmd() -> None:
+    res = audit(strict=False)
+    typer.echo(res.report_text)
+    raise SystemExit(0 if res.ok else 2)
+
+
+def main() -> None:
+    app()
 
 
 if __name__ == "__main__":
-    app()
+    main()

@@ -1,0 +1,10 @@
+# Ruby add-on template
+repos:
+  - repo: local
+    hooks:
+      - id: rubocop
+        name: rubocop (if present)
+        entry: bash -c 'command -v rubocop >/dev/null || exit 0; rubocop --format clang'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

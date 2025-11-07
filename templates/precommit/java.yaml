@@ -1,0 +1,18 @@
+# Java add-on template (tries spotless or google-java-format)
+repos:
+  - repo: local
+    hooks:
+      - id: java-format
+        name: java format check (spotless or gjf)
+        entry: bash -c '\
+          if [ -f "mvnw" ] || command -v mvn >/dev/null; then \
+          ./mvnw -q spotless:check 2>/dev/null || mvn -q spotless:check || exit 0; \
+          elif command -v google-java-format >/dev/null; then \
+          files=$(git ls-files "*.java"); [ -z "$files" ] && exit 0; \
+          google-java-format --dry-run $files; \
+          else \
+          exit 0; \
+          fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

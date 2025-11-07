@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    name: Lint • Type • Sec • Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('uv.lock','poetry.lock','requirements.txt','requirements/*.txt') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: Sync environment (dev)
+        run: uv sync --all-extras --dev
+
+      - name: Ruff (lint + format check)
+        run: uv run ruff check . && uv run ruff format --check
+
+      - name: Mypy (strict)
+        run: uv run mypy --strict .
+
+      - name: Bandit (security)
+        run: uv run bandit -q -c pyproject.toml -r src || uv run bandit -q -r src
+
+      - name: Pytest
+        run: uv run pytest -q

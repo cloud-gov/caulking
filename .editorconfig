@@ -1,0 +1,34 @@
+# Keep editors sane and consistent across contributors.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+max_line_length = 100
+
+# Prevent “smart quotes” and other locale weirdness in most IDEs.
+# (Some editors honor this via extensions/settings; include anyway for clarity.)
+ij_editorconfig_compatibility = true
+
+[*.{py,toml,yaml,yml,md,sh}]
+indent_size = 2
+
+[*.py]
+# Align with Ruff target-version=py39 and our style
+indent_size = 4
+
+[Makefile]
+indent_style = tab
+indent_size = 4
+
+[*.md]
+# Don’t strip trailing spaces in markdown (they can be line-breaks)
+trim_trailing_whitespace = false
+
+[*.sh]
+# Encourage POSIX sh where possible; if you need bash-specific features, set shell explicitly in scripts.
+# Many editors pick this up for shellcheck integrations.

@@ -1,0 +1,19 @@
+# PHP add-on template
+repos:
+  - repo: local
+    hooks:
+      - id: php-lint
+        name: php -l
+        entry: bash -c 'command -v php >/dev/null || exit 0; files=$(git ls-files "*.php"); [ -z "$files" ] && exit 0; for f in $files; do php -l "$f" || exit 1; done'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: php-cs-fixer
+        name: php-cs-fixer (dry-run if present)
+        entry: bash -c 'command -v php-cs-fixer >/dev/null || exit 0; php-cs-fixer fix --dry-run --diff'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

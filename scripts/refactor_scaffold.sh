@@ -74,8 +74,10 @@ done
 
 # --- seed minimal scaffolding files (empty/safe) ------------------------------
 seed() {
+  # content is intentionally unused here (placeholder for future expansion)
+  # shellcheck disable=SC2034
   local path="$1" content="$2"
-  if [[ ! -e "$path" ]]; then
+    if [[ ! -e "$path" ]]; then
     doit "printf \"%s\" > \"$path\""
     say "Created: $path"
   fi

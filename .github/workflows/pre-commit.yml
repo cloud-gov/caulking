@@ -1,0 +1,38 @@
+name: pre-commit
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('uv.lock','poetry.lock','requirements.txt','requirements/*.txt') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: Install pre-commit
+        run: uv run pip install pre-commit
+
+      - name: Run hooks (all files)
+        run: uv run pre-commit run --all-files

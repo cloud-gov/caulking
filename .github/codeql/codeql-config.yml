@@ -1,0 +1,10 @@
+# .github/codeql/codeql-config.yml
+name: "caulking codeql config"
+paths:
+  - src/ # python
+  - .github/workflows # workflows for the Actions analyzer
+  - .github/actions # composite actions (if you have any)
+paths-ignore:
+  - tests/** # optional
+  - artifacts/**
+  - .refactor-backup/**

@@ -1,0 +1,28 @@
+# Node/JS/TS add-on template (guards on presence)
+repos:
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint (if present)
+        entry: bash -c 'command -v npm >/dev/null || exit 0; npx --yes eslint .'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier (if present)
+        entry: bash -c 'command -v npm >/dev/null || exit 0; npx --yes prettier --check .'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: tsc
+        name: typescript compile check (if present)
+        entry: bash -c 'command -v npm >/dev/null || exit 0; npx --yes tsc -v >/dev/null 2>&1 || exit 0; npx --yes tsc --noEmit'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

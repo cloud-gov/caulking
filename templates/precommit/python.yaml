@@ -1,0 +1,30 @@
+# Python add-on template
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.2
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        args: ["--fix"]
+        stages: [pre-commit]
+      - id: ruff-format
+        name: ruff (format)
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (if present)
+        entry: bash -c 'command -v mypy >/dev/null || exit 0; mypy --strict .'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  - repo: local
+    hooks:
+      - id: bandit
+        name: bandit (if present)
+        entry: bash -c 'command -v bandit >/dev/null || exit 0; bandit -q -c pyproject.toml -r src || bandit -q -r src'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

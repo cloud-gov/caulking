@@ -1,0 +1,57 @@
+name: codeql
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: "37 3 * * 6" # weekly safety run
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (CodeQL - Python)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # Keep CodeQL focused on Python. This avoids the "GitHub Actions code detected"
+      # error and speeds up the run.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python
+
+      # If the repo needs a build step for extraction, do it here.
+      # For pure Python you generally don't. We still install deps so queries with imports behave.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: uv-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('uv.lock','poetry.lock','requirements.txt','requirements/*.txt') }}
+          restore-keys: |
+            uv-${{ runner.os }}-
+
+      - name: Sync deps (non-fatal)
+        run: |
+          uv sync --all-extras --dev || true
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:python"
