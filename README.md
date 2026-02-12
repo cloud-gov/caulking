@@ -6,7 +6,7 @@ This repo is intentionally boring:
 
 - deterministic install
 - predictable layout (XDG)
-- easy verify/audit
+- easy verify / audit
 - tests that prove it works
 
 ---
@@ -22,7 +22,7 @@ Installed into:
 - `~/.config/git/hooks/pre-commit`
 - `~/.config/git/hooks/pre-push`
 
-And Git is configured to use that directory globally:
+Git is configured to use that directory globally:
 
 - `git config --global core.hooksPath ~/.config/git/hooks`
 
@@ -32,27 +32,24 @@ Installed into:
 
 - `~/.config/gitleaks/config.toml`
 
-**Important:** the global config must **extend defaults** (`[extend] useDefault = true`).  
-If you don’t extend defaults, you silently drop core detectors and your “protection” becomes theater.
+**Important:** the global config must **extend defaults**:
+
+```toml
+[extend]
+useDefault = true
+```
+
+If you don’t extend defaults, you drop core detectors and your protection becomes theater.
 
 ---
 
 ## Quick start
 
-### Clone (with submodules)
-
-This repo uses Bats via submodules.
+### Clone
 
 ```bash
-git clone --recurse-submodules <repo-url>
+git clone <repo-url>
 cd caulking
-```
-
-If you already cloned without submodules:
-
-```bash
-git submodule sync --recursive
-git submodule update --init --recursive
 ```
 
 ### Install
@@ -61,12 +58,12 @@ git submodule update --init --recursive
 make install
 ```
 
-What install does:
+Install does:
 
 - ensures `gitleaks` exists (Homebrew best-effort on macOS)
-- installs the global hook wrapper as `~/.config/git/hooks/pre-commit` and `pre-push`
+- installs global hook wrappers into `~/.config/git/hooks/`
 - sets `core.hooksPath` globally to the XDG hook directory
-- writes `~/.config/gitleaks/config.toml` (or upgrades it) to extend defaults
+- writes or upgrades `~/.config/gitleaks/config.toml` to extend defaults
 
 ### Verify
 
@@ -74,181 +71,178 @@ What install does:
 make verify
 ```
 
-This validates:
+Verify checks:
 
 - `gitleaks` runs
-- `core.hooksPath` is set to the expected global hook dir
+- `core.hooksPath` is set correctly
 - hooks exist and are executable
-- the global gitleaks config extends defaults
+- global gitleaks config extends defaults
 - functional behavior:
   - committing a known fake secret is blocked
   - committing a clean file succeeds
 
 ---
 
-## Audit (policy checks + tests)
+## Audit
 
 ```bash
 make audit
 ```
 
-Audit does:
+Audit is intentionally boring. It proves enforcement works:
 
-- ensures tools
-- runs `selftest.sh` (repo-specific checks)
-- runs Bats tests in `caulked.bats`
+- ensures required tools exist
+- runs verification checks
+- performs functional tests that show secrets are blocked
 
-Some audit checks assume you’re using a `@gsa.gov` email for Git config, because the repo asserts a “GSA developer baseline.”
+Some audit checks assume a `@gsa.gov` email in Git config because this repo enforces a GSA developer baseline.
 
 ---
 
 ## How it works
 
-### The hook wrapper
+### Enforcement model
 
-The enforcement point is:
+Enforcement is done via:
 
 - global `core.hooksPath`
-- wrapper script installed at `~/.config/git/hooks/<stage>`
+- a hook wrapper installed at `~/.config/git/hooks/<stage>`
 
-Hook wrapper responsibilities:
+The hook wrapper:
 
-- run `gitleaks` using the global config at `~/.config/gitleaks/config.toml`
-- respect `SKIP=gitleaks` if the user insists (don’t prompt in a hook)
-- attempt to run any repo-local hook at `.git/hooks/<stage>` (best-effort), without recursion
+- runs `gitleaks` using the global config at `~/.config/gitleaks/config.toml`
+- optionally merges a repo allowlist (`.gitleaks.repo.toml`) if present
+- respects `SKIP=gitleaks` if the user explicitly sets it
+- attempts to run any repo-local hook at `.git/hooks/<stage>` (best-effort), without recursion
 
-### What about `hooks.gitleaks`?
+### About `hooks.gitleaks`
 
-Treat `hooks.gitleaks` as **legacy/policy toggle**, not enforcement.
-
-Enforcement is:
+Treat `hooks.gitleaks` as legacy.
+Enforcement comes from:
 
 - the global hook path
-- the hook wrapper actually running `gitleaks`
+- the wrapper actually running `gitleaks`
 
-If a repo sets `core.hooksPath` locally, it can bypass global hooks. That’s why the audit includes checks to detect local overrides.
+If a repo sets `core.hooksPath` locally, it can bypass global hooks.
+The audit tooling checks for this.
 
 ---
 
-## Skipping gitleaks (when you must)
+## Skipping gitleaks (break-glass only)
 
-If you’re doing something truly intentional and you accept the risk, you can skip for a single operation:
+If you accept the risk for a single operation:
 
 ```bash
 SKIP=gitleaks git commit -m "..."
 ```
 
-This is a last resort. Prefer fixing the pattern, updating allowlists, or adjusting rules.
-
----
-
-## Running tests manually
-
-### Bats (core tests)
-
-```bash
-./test/bats/bin/bats -p caulked.bats
-```
-
-Filter tests:
-
-```bash
-./test/bats/bin/bats -p caulked.bats --filter "leak prevention.*"
-```
-
-### Development tests
-
-```bash
-./test/bats/bin/bats -p development.bats
-```
-
----
-
-## Keeping Bats submodules updated
-
-This repo pins submodules to specific commits. To force your working tree to match the pinned commits:
-
-```bash
-git submodule sync --recursive
-git submodule update --init --recursive
-```
-
-If you intend to **bump** the pinned versions (and commit that change), do:
-
-```bash
-git submodule update --remote --merge --recursive
-git status
-# review changes, then commit the updated submodule SHAs
-```
+This is a last resort. Prefer fixing patterns, allowlists, or rules.
 
 ---
 
 ## Repository hygiene
 
-If you’ve been iterating hard and want to remove junk + normalize permissions:
+To remove junk and normalize permissions (safe by default):
 
 ```bash
 ./scripts/cleanup-vestigial.sh --apply
 ```
 
-If you want it to also update submodules to pinned commits:
+This:
 
-```bash
-./scripts/cleanup-vestigial.sh --apply --update-submodules
-```
+- removes common untracked cruft
+- normalizes executable bits on scripts
+- refuses to run if the repo is already messy
+
+It does **not** rewrite tracked files unless explicitly asked.
+
+---
+
+## CI behavior
+
+GitHub Actions runs:
+
+- install
+- verify
+- audit
+
+This ensures:
+
+- hooks install cleanly
+- enforcement works
+- regressions are caught before merge
 
 ---
 
 ## Security reporting
 
-Please do not file security issues in public GitHub issues.
+Do **not** report security issues in public GitHub issues.
 
-Use the reporting instructions in `SECURITY.md` and cloud.gov’s `security.txt`.
+Use the instructions in `SECURITY.md` and cloud.gov’s security.txt:
 
----
-
-## Public domain
-
-This project is in the worldwide public domain (CC0).
-See `LICENSE.md`.
+- [https://cloud.gov/.well-known/security.txt](https://cloud.gov/.well-known/security.txt)
 
 ---
 
-## “If it breaks”
+## Contribution policy
 
-Common failure modes:
+This project is operated by GSA to support federal missions.
 
-### `make install` fails with permission denied
+We accept contributions from:
 
-Fix executable bits:
+- U.S. federal employees
+- contractors under a current U.S. government agreement
+- GSA-approved collaborators
+
+We do **not** accept unsolicited external contributions.
+
+If you have ideas, open an issue first so we can discuss and port them internally if appropriate.
+
+---
+
+## Uninstall
 
 ```bash
-chmod +x install.sh scripts/*.sh hooks/*.sh || true
+make uninstall
 ```
 
-### Hooks installed but don’t run
+This:
 
-Check:
+- unsets `core.hooksPath` globally
+- removes installed hooks from `~/.config/git/hooks/`
+- leaves your global gitleaks config in place
+
+---
+
+## Troubleshooting
+
+### Hooks installed but not running
 
 ```bash
 git config --global --get core.hooksPath
 ls -la ~/.config/git/hooks
 ```
 
-### Bats doesn’t output anything / returns rc=0 instantly
-
-Usually you’re invoking the wrong bats entrypoint or you have submodule mismatch.
-Use the repo’s bats binary:
+### Install fails with permission errors
 
 ```bash
-./test/bats/bin/bats --version
-./test/bats/bin/bats --list-tests caulked.bats
-./test/bats/bin/bats -p caulked.bats
+chmod +x install.sh scripts/*.sh hooks/*.sh
 ```
 
-If needed:
+### Verify fails
+
+Run:
 
 ```bash
-git submodule sync --recursive
-git submodule update --init --recursive
+./verify.sh
 ```
+
+The output is explicit about what is broken and how to fix it.
+
+---
+
+## Public domain
+
+This project is in the worldwide public domain (CC0).
+
+See `LICENSE.md`.

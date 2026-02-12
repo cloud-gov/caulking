@@ -150,6 +150,51 @@ EOF
   add_summary "clean commit allowed"
 }
 
+functional_test_uninstall_restores_previous_hookspath_isolated() {
+  print_header "Functional test: uninstall restores previous hooksPath (isolated)"
+
+  # This test MUST NOT touch the user's real global git config.
+  # We isolate by setting GIT_CONFIG_GLOBAL and HOME.
+  local iso
+  iso="$(mktemp -d "${TMPDIR:-/tmp}/caulking.hookspath.XXXXXX")"
+
+  local iso_home="$iso/home"
+  local iso_xdg="$iso/xdg"
+  local iso_gitconfig="$iso/gitconfig"
+  local prev_hookspath="$iso/prev-hooks"
+
+  mkdir -p "$iso_home" "$iso_xdg" "$prev_hookspath"
+  : > "$iso_gitconfig"
+
+  (
+    export HOME="$iso_home"
+    export XDG_CONFIG_HOME="$iso_xdg"
+    export GIT_CONFIG_GLOBAL="$iso_gitconfig"
+
+    # Set a "previous" hookspath that is NOT Caulking's target.
+    git config --global core.hooksPath "$prev_hookspath"
+
+    # Run install (should store previous and set to XDG hooks dir)
+    "$ROOT_DIR/install.sh" >/dev/null
+
+    local after_install
+    after_install="$(git config --global --get core.hooksPath || true)"
+    [[ "$after_install" == "$iso_xdg/git/hooks" ]] || die "install did not set core.hooksPath as expected (got: $after_install)"
+
+    # Run uninstall (should restore prior value)
+    "$ROOT_DIR/uninstall.sh" >/dev/null
+
+    local after_uninstall
+    after_uninstall="$(git config --global --get core.hooksPath || true)"
+    [[ "$after_uninstall" == "$prev_hookspath" ]] || die "uninstall did not restore previous core.hooksPath (got: $after_uninstall)"
+  )
+
+  rm -rf "$iso" || true
+
+  status_line "hooksPath restore" "restored previous value (isolated)" "$GREEN"
+  add_summary "uninstall restores previous core.hooksPath (isolated)"
+}
+
 main() {
   print_header "Caulking verify"
   date
@@ -159,6 +204,7 @@ main() {
   check_gitleaks_config
   functional_test_secret_commit_blocked
   functional_test_clean_commit_allowed
+  functional_test_uninstall_restores_previous_hookspath_isolated
 
   printf '\n'
   {

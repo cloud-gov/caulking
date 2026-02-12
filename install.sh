@@ -8,6 +8,9 @@ HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
 GITLEAKS_DIR="$XDG_CONFIG_HOME/gitleaks"
 GITLEAKS_CFG="$GITLEAKS_DIR/config.toml"
 
+STATE_DIR="$XDG_CONFIG_HOME/caulking"
+PREV_HOOKSPATH_FILE="$STATE_DIR/previous_hookspath"
+
 HOOK_WRAPPER_SRC="$ROOT_DIR/hooks/hook-wrapper.sh"
 
 say() { printf "%s\n" "$*"; }
@@ -31,7 +34,6 @@ install_gitleaks() {
 write_global_gitleaks_config() {
   mkdir -p "$GITLEAKS_DIR"
 
-  # If file exists and extends defaults, keep it.
   if [[ -f "$GITLEAKS_CFG" ]]; then
     if grep -qE '^\[extend\]' "$GITLEAKS_CFG" && grep -qE '^\s*useDefault\s*=\s*true\s*$' "$GITLEAKS_CFG"; then
       say "Global gitleaks config exists and extends defaults: $GITLEAKS_CFG"
@@ -65,8 +67,20 @@ paths = []
 EOF
 }
 
+store_previous_hookspath_if_needed() {
+  mkdir -p "$STATE_DIR"
+
+  local current
+  current="$(git config --global --get core.hooksPath || true)"
+
+  if [[ -n "$current" && "$current" != "$HOOK_DIR" ]]; then
+    say "Saving previous core.hooksPath: $current"
+    printf '%s\n' "$current" > "$PREV_HOOKSPATH_FILE"
+  fi
+}
+
 write_hook() {
-  local stage="$1"         # pre-commit, pre-push
+  local stage="$1"
   local dst="$HOOK_DIR/$stage"
 
   mkdir -p "$HOOK_DIR"
@@ -75,7 +89,6 @@ write_hook() {
 }
 
 cleanup_legacy_hooks() {
-  # Remove hook files that can conflict with the new approach
   rm -f "$HOOK_DIR/commit-msg" || true
 }
 
@@ -84,7 +97,6 @@ configure_git_hookspath() {
   git config --global core.hooksPath "$HOOK_DIR"
   say "Configured: git config --global core.hooksPath $HOOK_DIR"
 
-  # Optional: keep legacy var OFF (don’t rely on it)
   git config --global --unset hooks.gitleaks >/dev/null 2>&1 || true
 }
 
@@ -97,6 +109,8 @@ main() {
 
   install_gitleaks
   write_global_gitleaks_config
+
+  store_previous_hookspath_if_needed
 
   cleanup_legacy_hooks
   write_hook pre-commit
