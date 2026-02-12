@@ -6,7 +6,6 @@ cd "$ROOT"
 
 say() { printf "%s\n" "$*"; }
 die() { printf "ERROR: %s\n" "$*" >&2; exit 2; }
-have() { command -v "$1" >/dev/null 2>&1; }
 
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not in a git repo"
 
@@ -41,9 +40,8 @@ done
 say "== Repo cleanup (safe) =="
 say "Root: $ROOT"
 
-# Guardrail: if repo already has a ton of changes, refuse to run unless user really means it.
 existing_changes="$(git status --porcelain | wc -l | tr -d ' ')"
-if [[ "$existing_changes" -gt 20 ]]; then
+if [[ "$existing_changes" -gt 50 ]]; then
   die "refusing to run: repo already has $existing_changes changes. Reset/clean first."
 fi
 
@@ -51,7 +49,6 @@ if [[ "$PRUNE_UNTRACKED" -eq 1 ]]; then
   say ""
   say "== Pruning common cruft (UNTRACKED only) =="
 
-  # list untracked files, then delete if they match common cruft patterns
   git ls-files --others --exclude-standard -z | while IFS= read -r -d '' f; do
     case "$f" in
       *.swp|*.swo|*.tmp|*.bak) ;;
@@ -73,11 +70,11 @@ if [[ "$FIX_EXEC" -eq 1 ]]; then
     "install.sh"
     "uninstall.sh"
     "verify.sh"
-    "selftest.sh"
     "check_repos.sh"
     "hooks/hook-wrapper.sh"
     "scripts/ensure-tools.sh"
     "scripts/cleanup-repo.sh"
+    "scripts/repo-doctor.sh"
   )
 
   for f in "${files[@]}"; do
@@ -92,13 +89,9 @@ if [[ "$REWRITE_TRACKED" -eq 1 ]]; then
   say ""
   say "== Normalizing CRLF -> LF for TRACKED files (explicit) =="
 
-  have perl || die "perl not found; cannot rewrite tracked files safely"
+  command -v perl >/dev/null 2>&1 || die "perl not found; cannot rewrite tracked files safely"
 
-  # Only rewrite files git considers text-ish; skip obvious binaries by NUL check.
   git ls-files -z | while IFS= read -r -d '' f; do
-    if LC_ALL=C grep -q $'\x00' "$f" 2>/dev/null; then
-      continue
-    fi
     perl -pi -e 's/\r\n/\n/g' "$f" 2>/dev/null || true
   done
 fi

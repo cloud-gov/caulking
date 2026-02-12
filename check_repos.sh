@@ -1,72 +1,71 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 set -euo pipefail
 
 MAXDEPTH=5
 USER_DOMAIN=gsa.gov
 
-# MAXDEPTH 5 assumes a home directory structure that's no deeper than this:
-#       $HOME/(projects)/(organization)/(repository)/(another_dir)/(yet_another_dir)
-# Depth 0   / 1         / 2           / 3           / 4           / 5
+XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+EXPECTED_HOOKS_PATH="${XDG_CONFIG_HOME}/git/hooks"
 
 fail() {
-    echo "$@"
-    echo "Usage: $0 root_dir (check_hooks_path | check_hooks_gitleak | check_user_email)"
-    exit 2
+  echo "$@" >&2
+  echo "Usage: $0 root_dir (check_hooks_path | check_hooks_gitleaks | check_user_email)" >&2
+  exit 2
 }
 
 [ $# = 2 ] || fail "need two args"
 if [ ! -d "$1" ]; then
-    fail "first argument must be a directory"
+  fail "first argument must be a directory"
 else
-    root=$1
+  root=$1
 fi
 
 case $2 in
-   check_hooks_gitleaks|check_hooks_path|check_user_email)
-        option=$2
-        :;;
-   *) fail "invalid second argument";;
+  check_hooks_gitleaks|check_hooks_path|check_user_email)
+    option=$2
+    ;;
+  *) fail "invalid second argument" ;;
 esac
 
 exit_status=0
 
 check_hooks_gitleaks() {
-    hooks_gitleak=$(cd "$gitrepo"; git config --bool hooks.gitleaks)
-    if [ "$hooks_gitleak" = "true" ]; then
-        return 0
-    else
-        return 1
-    fi
+  local hooks_gitleaks
+  hooks_gitleaks="$(cd "$gitrepo" && git config --bool hooks.gitleaks || true)"
+  [[ "$hooks_gitleaks" == "true" ]]
 }
 
 check_hooks_path() {
-    # ensure that repos are not overriding the hookspath
-    hooks_path_origin=$(cd "$gitrepo"; git config --show-origin core.hooksPath | awk '{print $2}')
-    if [[ "$hooks_path_origin" != "${HOME}/.git-support/hooks" ]]; then
-        return 1
-    fi
-    return 0
+  # Ensure repos are not overriding the hookspath.
+  # We care about the effective local value (not the origin), because local overrides are the issue.
+  local hooks_path
+  hooks_path="$(cd "$gitrepo" && git config --get core.hooksPath || true)"
+  if [[ -n "$hooks_path" ]]; then
+    return 1
+  fi
+
+  # Ensure the global hookspath points to our expected XDG location.
+  local global_hooks_path
+  global_hooks_path="$(git config --global --get core.hooksPath || true)"
+  [[ "$global_hooks_path" == "$EXPECTED_HOOKS_PATH" ]]
 }
 
 check_user_email() {
-    user_domain=$(cd "$gitrepo"; git config user.email | cut -d @ -f 2)
-    if [ "$user_domain" = "$USER_DOMAIN" ]; then
-        return 0
-    else
-        return 1
-    fi
+  local user_email user_domain
+  user_email="$(cd "$gitrepo" && git config --get user.email || true)"
+  user_domain="$(printf "%s" "$user_email" | awk -F@ '{print $2}')"
+  [[ "$user_domain" == "$USER_DOMAIN" ]]
 }
 
-# read gitrepo list from `find` using Process Substitution
-# so exit_status isn't in a subshell
+# read gitrepo list from `find` using process substitution so exit_status isn't in a subshell
 while read -r gitrepo; do
-    if ! eval "$option" "$gitrepo"; then
-        echo "FAIL $option for repository: $gitrepo" 1>&2
-        exit_status=1
-    fi
-done <<< "$( find "$root" -name '.git' -type d -maxdepth $MAXDEPTH 2>/dev/null )"
+  # find returns .git directories; we want repo root
+  gitrepo="$(dirname "$gitrepo")"
 
-if [ $exit_status -ne 0 ]; then
-    exit $exit_status
-fi
+  if ! eval "$option"; then
+    echo "FAIL $option for repository: $gitrepo" >&2
+    exit_status=1
+  fi
+done <<<"$( find "$root" -name '.git' -type d -maxdepth "$MAXDEPTH" 2>/dev/null )"
+
+exit "$exit_status"

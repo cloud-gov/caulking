@@ -20,12 +20,11 @@ if [[ "$changes" -gt 0 ]]; then
   git status --porcelain | head -n 25
 fi
 
-# Detect suspicious duplicate paths: tracked file + untracked file same basename in new dirs
 say ""
 say "Untracked files (first 25):"
 git ls-files --others --exclude-standard | head -n 25 || true
 
 say ""
-say "If you see massive deletions/modifications unexpectedly:"
+say "If you see massive unexpected changes:"
 say "  git reset --hard HEAD"
 say "  git clean -fd"
