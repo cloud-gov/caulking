@@ -48,20 +48,71 @@ else
     repo_cfg="$repo_root/.gitleaks.repo.toml"
   fi
 
-  # pre-commit: staged scan
-  if [[ "$stage" == "pre-commit" ]]; then
+  # Helper: run gitleaks git with the right config set + optional log opts
+  run_gitleaks_git() {
+    # Usage: run_gitleaks_git <extra args...>
     if [[ -n "$repo_cfg" ]]; then
-      gitleaks git --staged --config "$GITLEAKS_CFG" --config "$repo_cfg" --verbose
+      gitleaks git --config "$GITLEAKS_CFG" --config "$repo_cfg" --verbose "$@"
     else
-      gitleaks git --staged --config "$GITLEAKS_CFG" --verbose
+      gitleaks git --config "$GITLEAKS_CFG" --verbose "$@"
     fi
+  }
+
+  if [[ "$stage" == "pre-commit" ]]; then
+    # Staged-only scan: fast + precise.
+    run_gitleaks_git --staged
   else
-    # pre-push: scan current repo history changes relative to upstream.
-    # This is intentionally conservative; if it’s too noisy, we can tune.
-    if [[ -n "$repo_cfg" ]]; then
-      gitleaks git --config "$GITLEAKS_CFG" --config "$repo_cfg" --verbose
-    else
-      gitleaks git --config "$GITLEAKS_CFG" --verbose
+    # pre-push: scan ONLY what is being pushed (avoid scanning entire repo history).
+    #
+    # Git provides lines on stdin:
+    #   <local_ref> <local_sha> <remote_ref> <remote_sha>
+    #
+    # We compute a rev-list range for each ref and pass it via --log-opts.
+    #
+    # - Normal update:    remote_sha..local_sha
+    # - New branch push:  remote_sha is all zeros; scan commits reachable from local_sha
+    #                    but not already in the remote-tracking refs for that remote.
+
+    remote_name="${1:-origin}"
+    remote_url="${2:-}"
+
+    # Read all updates from stdin and scan each one.
+    # If stdin is empty (rare), fall back to scanning commits not on remotes.
+    had_input=0
+
+    while IFS=' ' read -r local_ref local_sha remote_sha; do
+      [[ -n "${local_ref:-}" ]] || continue
+      had_input=1
+
+      # Deletions: local_sha is all zeros
+      if [[ "$local_sha" =~ ^0{40}$ ]]; then
+        continue
+      fi
+
+      if [[ "$remote_sha" =~ ^0{40}$ ]]; then
+        # New branch / new ref on remote.
+        # Scan commits reachable from local_sha that are NOT already on remote-tracking refs.
+        #
+        # Use git rev-list syntax in --log-opts:
+        #   <local_sha> --not --remotes=<remote_name>
+        #
+        # If remote tracking refs don't exist yet, this still safely scans the "new work" set.
+        run_gitleaks_git --log-opts="$local_sha --not --remotes=$remote_name"
+      else
+        # Update existing ref: scan only the range being pushed.
+        run_gitleaks_git --log-opts="$remote_sha..$local_sha"
+      fi
+    done
+
+    if [[ "$had_input" -eq 0 ]]; then
+      # Extremely defensive fallback: scan commits not on any remotes.
+      # (Still much better than scanning full history.)
+      _remote="${remote_name:-origin}"
+      head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
+      if [[ -n "$head_sha" ]]; then
+        run_gitleaks_git --log-opts="$head_sha --not --remotes=$_remote"
+      fi
+      : "${remote_url:=}"
     fi
   fi
 fi
