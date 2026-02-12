@@ -76,11 +76,10 @@ else
     remote_name="${1:-origin}"
     remote_url="${2:-}"
 
-    # Read all updates from stdin and scan each one.
-    # If stdin is empty (rare), fall back to scanning commits not on remotes.
     had_input=0
 
-    while IFS=' ' read -r local_ref local_sha remote_sha; do
+    # NOTE: Must read 4 fields (remote_ref is present); discard it with "_".
+    while IFS=' ' read -r local_ref local_sha _ remote_sha; do
       [[ -n "${local_ref:-}" ]] || continue
       had_input=1
 
@@ -96,7 +95,9 @@ else
         # Use git rev-list syntax in --log-opts:
         #   <local_sha> --not --remotes=<remote_name>
         #
-        # If remote tracking refs don't exist yet, this still safely scans the "new work" set.
+        # This avoids invalid ranges like:
+        #   0000000000..<sha>
+        #
         run_gitleaks_git --log-opts="$local_sha --not --remotes=$remote_name"
       else
         # Update existing ref: scan only the range being pushed.
@@ -105,12 +106,11 @@ else
     done
 
     if [[ "$had_input" -eq 0 ]]; then
-      # Extremely defensive fallback: scan commits not on any remotes.
+      # Extremely defensive fallback: scan commits not on the remote.
       # (Still much better than scanning full history.)
-      _remote="${remote_name:-origin}"
       head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
       if [[ -n "$head_sha" ]]; then
-        run_gitleaks_git --log-opts="$head_sha --not --remotes=$_remote"
+        run_gitleaks_git --log-opts="$head_sha --not --remotes=$remote_name"
       fi
       : "${remote_url:=}"
     fi
