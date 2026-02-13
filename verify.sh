@@ -197,7 +197,6 @@ functional_test_uninstall_restores_previous_hookspath_isolated() {
 
 main() {
   print_header "Caulking verify"
-  date
   check_binaries
   check_global_git_config
   check_installed_hooks
@@ -209,12 +208,14 @@ main() {
   printf '\n'
   {
     printf '%s\n' "All checks passed."
+    printf '%s\n' "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
     printf '\n'
     local l=""
     for l in "${SUMMARY_LINES[@]}"; do
       printf '%s\n' "- $l"
     done
   } | pretty_box "Caulking Audit [OK]" "$GREEN"
+
 }
 
 main "$@"
