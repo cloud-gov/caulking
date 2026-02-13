@@ -60,9 +60,7 @@ make install
 make verify
 ```
 
-That’s it.
-
-If `make verify` fails, it will tell you exactly what is wrong and what to do next. Read the output. It’s not poetry, but it is honest.
+If `make verify` fails, it will tell you what is broken and how to fix it. The output is not lyrical, but it is correct.
 
 ---
 
@@ -70,39 +68,113 @@ If `make verify` fails, it will tell you exactly what is wrong and what to do ne
 
 Once installed, you don’t “run” Caulking.
 
-You just do normal work:
+You just work:
 
 ```bash
 git commit -m "..."
 git push
 ```
 
-If you stage or push something that looks like a secret, gitleaks blocks it.
+If you stage or push something that looks like a secret, gitleaks blocks it. That is the whole point.
+
+---
+
+## Ignoring false positives (do this properly)
+
+False positives happen. The correct fix is to teach the scanner, not to train yourself to ignore warnings.
+
+### Per-repo allowlist (preferred)
+
+Add a file named `.gitleaks.repo.toml` at the root of your repository:
+
+```toml
+title = "Repo allowlist"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allow known-safe patterns for this repo"
+
+regexes = [
+  # Example: fake test secret used in fixtures
+  "FAKE_TEST_SECRET_12345",
+]
+
+paths = [
+  # Example: allow generated artifacts or fixtures
+  "fixtures/.*",
+]
+```
+
+This is the **right default** for:
+
+- test fixtures
+- fake credentials
+- intentionally embedded example tokens
+- generated files you do not control
+
+It keeps the global policy strict while allowing local exceptions where they make sense.
+
+### Global allowlist (use sparingly)
+
+The global gitleaks config lives at:
+
+```text
+~/.config/gitleaks/config.toml
+```
+
+It contains a small allowlist section:
+
+```toml
+[allowlist]
+regexes = [
+  "(?i)example(_|-)?key",
+  "(?i)dummy(_|-)?secret",
+]
+```
+
+Only put patterns here that are:
+
+- universally safe across _all_ repos you work in
+- genuinely non-secret examples
+
+If you find yourself wanting to add lots of entries here, you are probably doing the wrong thing. Move them into a per-repo allowlist instead.
+
+### One-time break-glass (last resort)
+
+If you need to bypass gitleaks for a single operation:
+
+```bash
+SKIP=gitleaks git commit -m "..."
+SKIP=gitleaks git push
+```
+
+This is an escape hatch, not a workflow.
+If you use it often, your rules are wrong and you should fix them.
 
 ---
 
 ## Linting this repo (contributors)
 
-This repo also includes a local `.pre-commit-config.yaml` for formatting/linting the repo itself.
-
-Run it with:
+This repo includes a local `.pre-commit-config.yaml` for formatting and linting itself.
 
 ```bash
 make lint
 ```
 
-It uses:
+Uses:
 
 - `prek` if available
 - otherwise `pre-commit`
 
-If neither is installed, it fails with a clear message. That’s intentional.
+If neither is installed, it fails loudly. This is deliberate.
 
 ---
 
 ## Verify / Audit
 
-Verify proves the hook setup works and that enforcement actually blocks a known fake secret.
+Verify proves that enforcement actually works:
 
 ```bash
 make verify
@@ -114,7 +186,7 @@ Audit is intentionally boring and currently aliases verify:
 make audit
 ```
 
-If you’re looking for a 40-page compliance narrative, you’re again in the wrong repo.
+If you want pretty dashboards, write one. This tool is about not leaking secrets.
 
 ---
 
@@ -133,26 +205,9 @@ Gitleaks config:
 
 State:
 
-- `~/.config/caulking/previous_hookspath` (used to restore your prior `core.hooksPath` on uninstall)
+- `~/.config/caulking/previous_hookspath`
 
----
-
-## Skipping gitleaks (break-glass)
-
-If you _really_ need to bypass gitleaks for a single operation:
-
-```bash
-SKIP=gitleaks git commit -m "..."
-SKIP=gitleaks git push
-```
-
-This is not a feature. It’s an escape hatch. Use it like a fire extinguisher: rarely, and with regret.
-
-If you’re hitting false positives, the right fix is:
-
-- adjust the pattern (best)
-- add a **repo** allowlist in `.gitleaks.repo.toml` (acceptable)
-- bloating global allowlists (usually a mistake)
+This exists solely to restore your previous `core.hooksPath` on uninstall. It is not a feature. It is housekeeping.
 
 ---
 
@@ -165,7 +220,7 @@ git config --global --get core.hooksPath
 ls -la ~/.config/git/hooks
 ```
 
-You want `core.hooksPath` to be `~/.config/git/hooks` and the hook files to be executable.
+If that path is wrong or the files aren’t executable, your hooks won’t run. This is not subtle.
 
 ### Install fails with permission issues
 
@@ -173,17 +228,23 @@ You want `core.hooksPath` to be `~/.config/git/hooks` and the hook files to be e
 chmod +x install.sh uninstall.sh verify.sh hooks/*.sh scripts/*.sh tests/*.sh
 ```
 
-Then retry `make install`.
+Then rerun:
+
+```bash
+make install
+```
 
 ### Someone bypassed hooks
 
 If a repo sets a **local** `core.hooksPath`, it can override the global one.
 
-You can check a directory tree of repos with:
+Check a tree of repos with:
 
 ```bash
 ./check_repos.sh <root_dir> check_hooks_path
 ```
+
+Fix the offenders. Don’t normalize bypassing guardrails.
 
 ---
 
@@ -195,20 +256,22 @@ make uninstall
 
 This:
 
-- removes installed hook scripts from `~/.config/git/hooks/`
-- restores your previous `core.hooksPath` if Caulking recorded one
+- removes installed hook scripts
+- restores your previous `core.hooksPath` if recorded
 - leaves your global gitleaks config in place (on purpose)
+
+If you want to fully nuke state, you can remove the XDG directories yourself. That is your call.
 
 ---
 
 ## Security reporting
 
-Please don’t report vulnerabilities in public GitHub issues.
+Do **not** report security issues in public GitHub issues.
 
-Follow the instructions in [`SECURITY.md`](SECURITY.md) and Cloud.gov’s security.txt.
+Follow `SECURITY.md` and cloud.gov’s security.txt.
 
 ---
 
 ## License
 
-This project is public domain (CC0). See [`LICENSE.md`](LICENSE.md).
+This project is public domain (CC0). See `LICENSE.md`.
