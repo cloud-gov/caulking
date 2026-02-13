@@ -12,7 +12,7 @@ die() {
   exit 2
 }
 
-have() { command -v "$1" >/dev/null 2>&1; }
+have() { command -v "$1" > /dev/null 2>&1; }
 
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
@@ -43,13 +43,13 @@ check_binaries() {
 
   # Optional: prek
   if have prek; then
-    add_summary "prek: $(prek --version 2>/dev/null || echo 'present')"
+    add_summary "prek: $(prek --version 2> /dev/null || echo 'present')"
   else
     add_summary "prek: not installed (optional)"
   fi
 
-  gitleaks version >/dev/null 2>&1 || die "gitleaks failed to run"
-  add_summary "gitleaks: $(gitleaks version 2>/dev/null | tail -n 1)"
+  gitleaks version > /dev/null 2>&1 || die "gitleaks failed to run"
+  add_summary "gitleaks: $(gitleaks version 2> /dev/null | tail -n 1)"
 }
 
 check_global_git_config() {
@@ -106,7 +106,7 @@ git_init_test_repo() {
 attempt_commit() {
   local msg="$1"
   (cd "$repo" && git add -A)
-  (cd "$repo" && git commit -m "$msg" >/dev/null 2>&1)
+  (cd "$repo" && git commit -m "$msg" > /dev/null 2>&1)
 }
 
 functional_test_secret_commit_blocked() {
@@ -114,12 +114,12 @@ functional_test_secret_commit_blocked() {
 
   git_init_test_repo
 
-  cat >"$repo/secrets.md" <<'EOF'
+  cat > "$repo/secrets.md" << 'EOF'
 aws_secret_access_key = WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp
 EOF
 
   set +e
-  attempt_commit "should fail" >/dev/null 2>&1
+  attempt_commit "should fail" > /dev/null 2>&1
   local rc=$?
   set -e
 
@@ -135,12 +135,12 @@ functional_test_clean_commit_allowed() {
   rm -rf "$repo" || true
   git_init_test_repo
 
-  cat >"$repo/ok.md" <<'EOF'
+  cat > "$repo/ok.md" << 'EOF'
 Just a plain old file.
 EOF
 
   set +e
-  attempt_commit "clean commit" >/dev/null 2>&1
+  attempt_commit "clean commit" > /dev/null 2>&1
   local rc=$?
   set -e
 
@@ -175,14 +175,14 @@ functional_test_uninstall_restores_previous_hookspath_isolated() {
     git config --global core.hooksPath "$prev_hookspath"
 
     # Run install (should store previous and set to XDG hooks dir)
-    "$ROOT_DIR/install.sh" >/dev/null
+    "$ROOT_DIR/install.sh" > /dev/null
 
     local after_install
     after_install="$(git config --global --get core.hooksPath || true)"
     [[ "$after_install" == "$iso_xdg/git/hooks" ]] || die "install did not set core.hooksPath as expected (got: $after_install)"
 
     # Run uninstall (should restore prior value)
-    "$ROOT_DIR/uninstall.sh" >/dev/null
+    "$ROOT_DIR/uninstall.sh" > /dev/null
 
     local after_uninstall
     after_uninstall="$(git config --global --get core.hooksPath || true)"
@@ -195,6 +195,23 @@ functional_test_uninstall_restores_previous_hookspath_isolated() {
   add_summary "uninstall restores previous core.hooksPath (isolated)"
 }
 
+check_precommit_runner() {
+  print_header "Checking pre-commit runner (prek / pre-commit)"
+
+  if [[ ! -f "$ROOT_DIR/.pre-commit-config.yaml" ]]; then
+    status_line "pre-commit config" "not present (skipped)" "$GRAY"
+    add_summary "pre-commit runner: skipped (no config)"
+    return 0
+  fi
+
+  if "$ROOT_DIR/scripts/verify-precommit-runner.sh" > /dev/null 2>&1; then
+    status_line "pre-commit runner" "callable (prek/pre-commit OK)" "$GREEN"
+    add_summary "pre-commit runner callable"
+  else
+    "$ROOT_DIR/scripts/verify-precommit-runner.sh" || die "pre-commit runner validation failed"
+  fi
+}
+
 main() {
   print_header "Caulking verify"
   check_binaries
@@ -204,6 +221,7 @@ main() {
   functional_test_secret_commit_blocked
   functional_test_clean_commit_allowed
   functional_test_uninstall_restores_previous_hookspath_isolated
+  check_precommit_runner
 
   printf '\n'
   {

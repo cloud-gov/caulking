@@ -31,6 +31,8 @@ help:
 	@echo "  - Hooks install to:  $${XDG_CONFIG_HOME:-$$HOME/.config}/git/hooks"
 	@echo "  - gitleaks config:   $${XDG_CONFIG_HOME:-$$HOME/.config}/gitleaks/config.toml"
 	@echo ""
+test:
+	@./tests/run.sh
 
 ensure-tools:
 	@MIN_GITLEAKS_VERSION="$(MIN_GITLEAKS_VERSION)" ./scripts/ensure-tools.sh

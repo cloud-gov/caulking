@@ -2,9 +2,12 @@
 set -euo pipefail
 
 say() { printf "%s\n" "$*"; }
-die() { printf "ERROR: %s\n" "$*" >&2; exit 2; }
+die() {
+  printf "ERROR: %s\n" "$*" >&2
+  exit 2
+}
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not in a git repo"
+git rev-parse --is-inside-work-tree > /dev/null 2>&1 || die "not in a git repo"
 root="$(git rev-parse --show-toplevel)"
 cd "$root"
 

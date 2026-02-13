@@ -5,9 +5,12 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 say() { printf "%s\n" "$*"; }
-die() { printf "ERROR: %s\n" "$*" >&2; exit 2; }
+die() {
+  printf "ERROR: %s\n" "$*" >&2
+  exit 2
+}
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not in a git repo"
+git rev-parse --is-inside-work-tree > /dev/null 2>&1 || die "not in a git repo"
 
 REWRITE_TRACKED=0
 FIX_EXEC=1
@@ -18,8 +21,8 @@ while [[ $# -gt 0 ]]; do
     --rewrite-tracked) REWRITE_TRACKED=1 ;;
     --no-exec) FIX_EXEC=0 ;;
     --no-prune) PRUNE_UNTRACKED=0 ;;
-    -h|--help)
-      cat <<'EOF'
+    -h | --help)
+      cat << 'EOF'
 Usage: scripts/cleanup-repo.sh [--rewrite-tracked] [--no-exec] [--no-prune]
 
 Default behavior (SAFE):
@@ -51,10 +54,10 @@ if [[ "$PRUNE_UNTRACKED" -eq 1 ]]; then
 
   git ls-files --others --exclude-standard -z | while IFS= read -r -d '' f; do
     case "$f" in
-      *.swp|*.swo|*.tmp|*.bak) ;;
-      .DS_Store|**/.DS_Store) ;;
-      ._*|**/._*) ;;
-      **/__pycache__/**|**/__pycache__) ;;
+      *.swp | *.swo | *.tmp | *.bak) ;;
+      .DS_Store | **/.DS_Store) ;;
+      ._* | **/._*) ;;
+      **/__pycache__/** | **/__pycache__) ;;
       *) continue ;;
     esac
     say "delete: $f"
@@ -89,10 +92,10 @@ if [[ "$REWRITE_TRACKED" -eq 1 ]]; then
   say ""
   say "== Normalizing CRLF -> LF for TRACKED files (explicit) =="
 
-  command -v perl >/dev/null 2>&1 || die "perl not found; cannot rewrite tracked files safely"
+  command -v perl > /dev/null 2>&1 || die "perl not found; cannot rewrite tracked files safely"
 
   git ls-files -z | while IFS= read -r -d '' f; do
-    perl -pi -e 's/\r\n/\n/g' "$f" 2>/dev/null || true
+    perl -pi -e 's/\r\n/\n/g' "$f" 2> /dev/null || true
   done
 fi
 

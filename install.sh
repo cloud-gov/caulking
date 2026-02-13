@@ -14,10 +14,13 @@ PREV_HOOKSPATH_FILE="$STATE_DIR/previous_hookspath"
 HOOK_WRAPPER_SRC="$ROOT_DIR/hooks/hook-wrapper.sh"
 
 say() { printf "%s\n" "$*"; }
-die() { printf "ERROR: %s\n" "$*" >&2; exit 1; }
+die() {
+  printf "ERROR: %s\n" "$*" >&2
+  exit 1
+}
 
-need_cmd() { command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"; }
-have_cmd() { command -v "$1" >/dev/null 2>&1; }
+need_cmd() { command -v "$1" > /dev/null 2>&1 || die "Missing required command: $1"; }
+have_cmd() { command -v "$1" > /dev/null 2>&1; }
 
 install_gitleaks() {
   if have_cmd gitleaks; then
@@ -25,7 +28,7 @@ install_gitleaks() {
   fi
   if have_cmd brew; then
     say "Installing gitleaks via Homebrew..."
-    brew install gitleaks >/dev/null 2>&1 || true
+    brew install gitleaks > /dev/null 2>&1 || true
     return 0
   fi
   die "gitleaks not found. Install it and re-run install.sh"
@@ -48,7 +51,7 @@ write_global_gitleaks_config() {
     say "Creating global gitleaks config: $GITLEAKS_CFG"
   fi
 
-  cat >"$GITLEAKS_CFG" <<'EOF'
+  cat > "$GITLEAKS_CFG" << 'EOF'
 title = "Global Developer Default (gitleaks)"
 
 [extend]
@@ -97,7 +100,7 @@ configure_git_hookspath() {
   git config --global core.hooksPath "$HOOK_DIR"
   say "Configured: git config --global core.hooksPath $HOOK_DIR"
 
-  git config --global --unset hooks.gitleaks >/dev/null 2>&1 || true
+  git config --global --unset hooks.gitleaks > /dev/null 2>&1 || true
 }
 
 main() {

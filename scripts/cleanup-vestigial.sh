@@ -24,9 +24,12 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 say() { printf "%s\n" "$*"; }
-die() { printf "ERROR: %s\n" "$*" >&2; exit 2; }
+die() {
+  printf "ERROR: %s\n" "$*" >&2
+  exit 2
+}
 
-git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not in a git repo"
+git rev-parse --is-inside-work-tree > /dev/null 2>&1 || die "not in a git repo"
 
 APPLY=0
 REMOVE_LEGACY_TRACKED=0
@@ -37,8 +40,8 @@ while [[ $# -gt 0 ]]; do
     --apply) APPLY=1 ;;
     --remove-legacy-tracked) REMOVE_LEGACY_TRACKED=1 ;;
     --aggressive-untracked) AGGRESSIVE_UNTRACKED=1 ;;
-    -h|--help)
-      cat <<'EOF'
+    -h | --help)
+      cat << 'EOF'
 Usage: scripts/cleanup-vestigial.sh [options]
 
 Options:
@@ -90,10 +93,10 @@ untracked_list="$(git ls-files --others --exclude-standard -z || true)"
 if [[ -n "$untracked_list" ]]; then
   while IFS= read -r -d '' f; do
     case "$f" in
-      .DS_Store|**/.DS_Store|._*|**/._*|*.swp|*.swo|*.tmp|*.bak) ;;
-      .idea/**|.vscode/**|.pytest_cache/**|**/__pycache__/**) ;;
-      .coverage|coverage/**|dist/**|build/**|node_modules/**) ;;
-      .terraform/**|.terragrunt-cache/**|.cache/**) ;;
+      .DS_Store | **/.DS_Store | ._* | **/._* | *.swp | *.swo | *.tmp | *.bak) ;;
+      .idea/** | .vscode/** | .pytest_cache/** | **/__pycache__/**) ;;
+      .coverage | coverage/** | dist/** | build/** | node_modules/**) ;;
+      .terraform/** | .terragrunt-cache/** | .cache/**) ;;
       *.log) ;;
       *) continue ;;
     esac
@@ -101,7 +104,7 @@ if [[ -n "$untracked_list" ]]; then
     # Only delete if truly untracked.
     say "delete (untracked): $f"
     run rm -rf -- "$f"
-  done <<<"$untracked_list"
+  done <<< "$untracked_list"
 else
   say "No untracked files."
 fi
@@ -121,12 +124,12 @@ if [[ "$AGGRESSIVE_UNTRACKED" -eq 1 ]]; then
     # only remove if untracked
     while IFS= read -r f; do
       [[ -n "$f" ]] || continue
-      if git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+      if git ls-files --error-unmatch "$f" > /dev/null 2>&1; then
         continue
       fi
       say "delete (untracked aggressive): $f"
       run rm -rf -- "$f"
-    done < <(find "$ROOT" -maxdepth 2 -name "$p" -print 2>/dev/null || true)
+    done < <(find "$ROOT" -maxdepth 2 -name "$p" -print 2> /dev/null || true)
   done
 fi
 

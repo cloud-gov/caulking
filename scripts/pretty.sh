@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# =====================================================================
+# FILE: scripts/pretty.sh
+# =====================================================================
+
 set -euo pipefail
 
 is_tty() { [[ -t 1 ]]; }
@@ -52,9 +56,9 @@ init_pretty() {
 init_pretty
 
 p_info() { printf '%b\n' "${CYAN}ℹ${RESET} $*"; }
-p_ok()   { printf '%b\n' "${GREEN}✔${RESET} $*"; }
+p_ok() { printf '%b\n' "${GREEN}✔${RESET} $*"; }
 p_warn() { printf '%b\n' "${YELLOW}⚠${RESET} $*"; }
-p_err()  { printf '%b\n' "${RED}✖${RESET} $*"; }
+p_err() { printf '%b\n' "${RED}✖${RESET} $*"; }
 
 status_line() {
   local label="$1"
@@ -82,7 +86,7 @@ _draw_rule() {
 
   printf '%s%s' "$color" "$left"
   local i=0
-  for ((i=0; i<width; i++)); do
+  for ((i = 0; i < width; i++)); do
     printf '%s' "$hz"
   done
   printf '%s%s\n' "$right" "$RESET"
@@ -94,8 +98,8 @@ _draw_rule() {
 _disp_width() {
   local s="$1"
 
-  if command -v python3 >/dev/null 2>&1; then
-    python3 - "$s" <<'PY'
+  if command -v python3 > /dev/null 2>&1; then
+    python3 - "$s" << 'PY'
 import sys, unicodedata
 
 s = sys.argv[1]
@@ -141,11 +145,11 @@ PY
 _pad_to() {
   local current="$1"
   local target="$2"
-  local n=$(( target - current ))
-  if (( n < 0 )); then n=0; fi
+  local n=$((target - current))
+  if ((n < 0)); then n=0; fi
 
   local i=0
-  for ((i=0; i<n; i++)); do
+  for ((i = 0; i < n; i++)); do
     printf ' '
   done
 }
@@ -154,9 +158,12 @@ _pad_to() {
 #   - key  : value
 # Non "key: value" lines are emitted as:
 #   - line
+#
+# NOTE: printf %-*s pads by character count, not terminal display width.
+# We therefore pad manually using _disp_width to better align emoji/CJK keys.
 kv_list() {
   local max=0 line key val is_kv
-  local -a keys=() vals=() kv=()
+  local -a keys=() vals=() kv=() keyw=()
 
   while IFS= read -r line; do
     # Preserve blank lines.
@@ -164,6 +171,7 @@ kv_list() {
       keys+=("")
       vals+=("")
       kv+=(0)
+      keyw+=(0)
       continue
     fi
 
@@ -175,7 +183,9 @@ kv_list() {
       # treat as KV only if there's something on the right side
       if [[ -n "$val" ]]; then
         is_kv=1
-        ((${#key} > max)) && max=${#key}
+        local w
+        w="$(_disp_width "$key")"
+        ((w > max)) && max=$w
       fi
     fi
 
@@ -183,10 +193,12 @@ kv_list() {
       keys+=("$key")
       vals+=("$val")
       kv+=(1)
+      keyw+=("$(_disp_width "$key")")
     else
       keys+=("$line")
       vals+=("")
       kv+=(0)
+      keyw+=(0)
     fi
   done
 
@@ -198,13 +210,15 @@ kv_list() {
     fi
 
     if [[ "${kv[$i]}" -eq 1 ]]; then
-      printf -- "- %-*s : %s\n" "$max" "${keys[$i]}" "${vals[$i]}"
+      # "- " + key + padding + " : " + value
+      printf -- "- %s" "${keys[$i]}"
+      _pad_to "${keyw[$i]}" "$max"
+      printf ' : %s\n' "${vals[$i]}"
     else
       printf -- "- %s\n" "${keys[$i]}"
     fi
   done
 }
-
 
 pretty_box() {
   local title="${1:-}"
@@ -214,11 +228,23 @@ pretty_box() {
   local tl tr bl br hz vt
   local sep_l sep_r
   if use_unicode; then
-    tl="╭"; tr="╮"; bl="╰"; br="╯"; hz="─"; vt="│"
-    sep_l="├"; sep_r="┤"
+    tl="╭"
+    tr="╮"
+    bl="╰"
+    br="╯"
+    hz="─"
+    vt="│"
+    sep_l="├"
+    sep_r="┤"
   else
-    tl="+"; tr="+"; bl="+"; br="+"; hz="-"; vt="|"
-    sep_l="+"; sep_r="+"
+    tl="+"
+    tr="+"
+    bl="+"
+    br="+"
+    hz="-"
+    vt="|"
+    sep_l="+"
+    sep_r="+"
   fi
 
   local lines=()
@@ -233,20 +259,20 @@ pretty_box() {
   local l=""
   for l in "${lines[@]}"; do
     lw="$(_disp_width "$l")"
-    if (( lw > max )); then
+    if ((lw > max)); then
       max=$lw
     fi
   done
 
   # width = max content width + 2 spaces padding (left+right) + optional extra pad
-  local width=$(( max + 2 + extra_pad ))
+  local width=$((max + 2 + extra_pad))
 
   # Title may require a wider box: " " + title + " "
   if [[ -n "$title" ]]; then
     local tw
     tw="$(_disp_width "$title")"
-    local title_needed=$(( tw + 2 + extra_pad ))
-    if (( title_needed > width )); then
+    local title_needed=$((tw + 2 + extra_pad))
+    if ((title_needed > width)); then
       width=$title_needed
     fi
   fi
@@ -259,13 +285,13 @@ pretty_box() {
 
     # Inside content width available between the two spaces:
     # width columns total; we print: " " + title + pad + " "
-    local inner=$(( width - 2 ))
-    local pad=$(( inner - tw ))
-    if (( pad < 0 )); then pad=0; fi
+    local inner=$((width - 2))
+    local pad=$((inner - tw))
+    if ((pad < 0)); then pad=0; fi
 
     printf '%s%s%s ' "$color" "$vt" "$RESET"
     printf '%s%s%s' "$BOLD" "$title" "$RESET"
-    _pad_to "$tw" "$(( tw + pad ))"
+    _pad_to "$tw" "$((tw + pad))"
     printf ' %s%s%s\n' "$color" "$vt" "$RESET"
 
     _draw_rule "$color" "$sep_l" "$hz" "$sep_r" "$width"
@@ -274,13 +300,13 @@ pretty_box() {
   for l in "${lines[@]}"; do
     local cw
     cw="$(_disp_width "$l")"
-    local inner=$(( width - 2 ))
-    local pad=$(( inner - cw ))
-    if (( pad < 0 )); then pad=0; fi
+    local inner=$((width - 2))
+    local pad=$((inner - cw))
+    if ((pad < 0)); then pad=0; fi
 
     printf '%s%s%s ' "$color" "$vt" "$RESET"
     printf '%s' "$l"
-    _pad_to "$cw" "$(( cw + pad ))"
+    _pad_to "$cw" "$((cw + pad))"
     printf ' %s%s%s\n' "$color" "$vt" "$RESET"
   done
 

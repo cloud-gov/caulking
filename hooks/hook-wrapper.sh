@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# =====================================================================
+# FILE: hooks/hook-wrapper.sh
+# =====================================================================
+
 set -euo pipefail
 
 # Caulking hook wrapper (XDG layout)
@@ -9,8 +13,9 @@ set -euo pipefail
 # - Run gitleaks with the global XDG config
 # - Optionally merge a repo allowlist config (.gitleaks.repo.toml) if present
 # - Respect SKIP=gitleaks if the user insists
+# - Optionally run repo-level pre-commit/pre-push suite (.pre-commit-config.yaml) via prek/pre-commit
 # - Attempt to run any repo-local hook at .git/hooks/<stage> (best-effort)
-#   without recursion
+#   without recursion or double-running
 
 stage="$(basename "$0")"
 
@@ -19,8 +24,34 @@ say() { printf "%s\n" "$*"; }
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 GITLEAKS_CFG="$XDG_CONFIG_HOME/gitleaks/config.toml"
 
+# Treat SKIP as a comma-separated list (common convention).
+skip_has() {
+  local want="$1"
+  local s="${SKIP:-}"
+  [[ -z "$s" ]] && return 1
+  s="${s// /}"
+  case ",$s," in
+    *",$want,"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# For pre-push, git provides ref update lines on stdin.
+# We must preserve stdin so repo-local hooks still work.
+push_input=""
+# shellcheck disable=SC2329 # invoked via trap
+cleanup_push_input() {
+  [[ -n "${push_input:-}" && -f "${push_input:-}" ]] && rm -f "$push_input" || true
+}
+trap cleanup_push_input EXIT
+
+if [[ "$stage" == "pre-push" ]]; then
+  push_input="$(mktemp "${TMPDIR:-/tmp}/caulking.prepush.XXXXXX")"
+  cat > "$push_input" || true
+fi
+
 print_false_positive_hint() {
-  cat <<'EOF'
+  cat << 'EOF'
 gitleaks blocked this operation.
 
 If you think this is a false positive:
@@ -34,7 +65,7 @@ EOF
 }
 
 print_forbidden_file_hint() {
-  cat <<'EOF'
+  cat << 'EOF'
 Caulking blocked a forbidden file from being committed.
 
 Why:
@@ -58,90 +89,70 @@ enforce_forbidden_staged_files() {
 
   # Get staged additions/modifications/renames (exclude deletions)
   local staged
-  staged="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
+  staged="$(git diff --cached --name-only --diff-filter=ACMR 2> /dev/null || true)"
   [[ -n "$staged" ]] || return 0
 
-# Denylist patterns (regex)
-# Purpose: block committing files that *almost always* contain credentials,
-# key material, or secret stores. This is intentionally content-agnostic.
-# Keep this list small and brutally high-signal to avoid “security theater”.
-local -a deny_patterns=(
-  # ------------------------------------------------------------------
-  # Private keys / keystores / cert blobs (almost never OK in git)
-  # ------------------------------------------------------------------
-  '\.pem$'
-  '\.key$'
-  '\.der$'
-  '\.p12$'
-  '\.pfx$'
-  '\.pkcs8$'
-  '\.jks$'
-  '\.keystore$'
-  '\.kdbx$'     # KeePass DB
-  '\.agekey$'   # age identity key file
+  # Denylist patterns (regex)
+  # Purpose: block committing files that *almost always* contain credentials,
+  # key material, or secret stores. This is intentionally content-agnostic.
+  # Keep this list small and brutally high-signal to avoid “security theater”.
+  local -a deny_patterns=(
+    # Private keys / keystores / cert blobs
+    '\.pem$'
+    '\.key$'
+    '\.der$'
+    '\.p12$'
+    '\.pfx$'
+    '\.pkcs8$'
+    '\.jks$'
+    '\.keystore$'
+    '\.kdbx$'
+    '\.agekey$'
 
-  # ------------------------------------------------------------------
-  # SSH keys (user + host keys)
-  # NOTE: we deny host *.pub too, because people often commit the pair together.
-  # ------------------------------------------------------------------
-  '(^|/)id_rsa$'
-  '(^|/)id_dsa$'
-  '(^|/)id_ecdsa$'
-  '(^|/)id_ed25519$'
-  '(^|/)ssh_host_.*_key$'
-  '(^|/)ssh_host_.*_key\.pub$'
+    # SSH keys (user + host keys)
+    '(^|/)id_rsa$'
+    '(^|/)id_dsa$'
+    '(^|/)id_ecdsa$'
+    '(^|/)id_ed25519$'
+    '(^|/)ssh_host_.*_key$'
+    '(^|/)ssh_host_.*_key\.pub$'
 
-  # ------------------------------------------------------------------
-  # “dotenv” / auth helper files that frequently contain secrets
-  # ------------------------------------------------------------------
-  '(^|/)\.env(\..*)?$'
-  '(^|/)\.envrc$'
-  '(^|/)\.netrc$'
-  '(^|/)\.git-credentials$'
+    # dotenv / auth helper files
+    '(^|/)\.env(\..*)?$'
+    '(^|/)\.envrc$'
+    '(^|/)\.netrc$'
+    '(^|/)\.git-credentials$'
 
-  # ------------------------------------------------------------------
-  # Cloud / CLI credential stores
-  # ------------------------------------------------------------------
-  '(^|/)\.aws/credentials$'
-  '(^|/)\.aws/config$'
-  '(^|/)\.aws-vault/keys/.*$'
-  '(^|/)\.cf/config\.json$'         # CF CLI access tokens can land here
-  '(^|/)\.flyrc$'                   # Concourse fly tokens/targets
-  '(^|/)\.docker/config\.json$'     # registry auth
+    # Cloud / CLI credential stores
+    '(^|/)\.aws/credentials$'
+    '(^|/)\.aws/config$'
+    '(^|/)\.aws-vault/keys/.*$'
+    '(^|/)\.cf/config\.json$'
+    '(^|/)\.flyrc$'
+    '(^|/)\.docker/config\.json$'
 
-  # ------------------------------------------------------------------
-  # Kubernetes client config (often embeds certs/tokens)
-  # ------------------------------------------------------------------
-  '(^|/)\.kube/config$'
-  '(^|/)kubeconfig(\..*)?$'
+    # Kubernetes client config
+    '(^|/)\.kube/config$'
+    '(^|/)kubeconfig(\..*)?$'
 
-  # ------------------------------------------------------------------
-  # Terraform state + CLI creds (state commonly contains live secrets)
-  # ------------------------------------------------------------------
-  '\.tfstate$'
-  '\.tfstate\.backup$'
-  '(^|/)terraform\.tfstate\.d/.*$'
-  '(^|/)\.terraform/.*$'
-  '(^|/)\.terraformrc$'
-  '(^|/)credentials\.tfrc\.json$'
+    # Terraform state + CLI creds
+    '\.tfstate$'
+    '\.tfstate\.backup$'
+    '(^|/)terraform\.tfstate\.d/.*$'
+    '(^|/)\.terraform/.*$'
+    '(^|/)\.terraformrc$'
+    '(^|/)credentials\.tfrc\.json$'
 
-  # ------------------------------------------------------------------
-  # “Oops I committed system account files”
-  # ------------------------------------------------------------------
-  '(^|/)(shadow|passwd|group|gshadow)$'
+    # system account files
+    '(^|/)(shadow|passwd|group|gshadow)$'
 
-  # ------------------------------------------------------------------
-  # Package manager tokens (commonly contain auth)
-  # ------------------------------------------------------------------
-  '(^|/)\.npmrc$'
-  '(^|/)\.pypirc$'
+    # package manager tokens
+    '(^|/)\.npmrc$'
+    '(^|/)\.pypirc$'
 
-  # ------------------------------------------------------------------
-  # Optional: Vault local token file (only keep if relevant in your org)
-  # ------------------------------------------------------------------
-  '(^|/)\.vault-token$'
-)
-
+    # optional: Vault local token file
+    '(^|/)\.vault-token$'
+  )
 
   local f pat
   while IFS= read -r f; do
@@ -153,7 +164,7 @@ local -a deny_patterns=(
         exit 1
       fi
     done
-  done <<<"$staged"
+  done <<< "$staged"
 }
 
 # Prevent recursion if repo-local hook calls into the global hook path
@@ -167,11 +178,10 @@ export CAULKING_HOOK_ACTIVE="1"
 enforce_forbidden_staged_files
 
 # If user explicitly asked to skip gitleaks for this commit/push, allow it.
-# (No prompting in a hook wrapper — prompting breaks automation.)
-if [[ "${SKIP:-}" == "gitleaks" ]]; then
-  say "SKIP=gitleaks set; skipping gitleaks scan."
+if skip_has "gitleaks"; then
+  say "SKIP includes gitleaks; skipping gitleaks scan."
 else
-  if ! command -v gitleaks >/dev/null 2>&1; then
+  if ! command -v gitleaks > /dev/null 2>&1; then
     say "ERROR: gitleaks not found in PATH"
     exit 2
   fi
@@ -183,15 +193,13 @@ else
   fi
 
   # Optional repo-specific allowlist config (keeps global conservative).
-  repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  repo_root="$(git rev-parse --show-toplevel 2> /dev/null || true)"
   repo_cfg=""
   if [[ -n "$repo_root" && -f "$repo_root/.gitleaks.repo.toml" ]]; then
     repo_cfg="$repo_root/.gitleaks.repo.toml"
   fi
 
-  # Helper: run gitleaks git with the right config set + optional log opts
   run_gitleaks_git() {
-    # Usage: run_gitleaks_git <extra args...>
     if [[ -n "$repo_cfg" ]]; then
       gitleaks git --config "$GITLEAKS_CFG" --config "$repo_cfg" --verbose "$@"
     else
@@ -199,9 +207,7 @@ else
     fi
   }
 
-  # Run gitleaks and print a short false-positive / break-glass hint on failure.
   run_gitleaks_or_hint() {
-    # Usage: run_gitleaks_or_hint <extra args...>
     if ! run_gitleaks_git "$@"; then
       print_false_positive_hint
       exit 1
@@ -209,26 +215,13 @@ else
   }
 
   if [[ "$stage" == "pre-commit" ]]; then
-    # Staged-only scan: fast + precise.
     run_gitleaks_or_hint --staged
   else
-    # pre-push: scan ONLY what is being pushed (avoid scanning entire repo history).
-    #
-    # Git provides lines on stdin:
-    #   <local_ref> <local_sha> <remote_ref> <remote_sha>
-    #
-    # We compute a rev-list range for each ref and pass it via --log-opts.
-    #
-    # - Normal update:    remote_sha..local_sha
-    # - New branch push:  remote_sha is all zeros; scan commits reachable from local_sha
-    #                    but not already in the remote-tracking refs for that remote.
-
     remote_name="${1:-origin}"
     remote_url="${2:-}"
 
     had_input=0
 
-    # NOTE: Must read 4 fields (remote_ref is present); discard it with "_".
     while IFS=' ' read -r local_ref local_sha _ remote_sha; do
       [[ -n "${local_ref:-}" ]] || continue
       had_input=1
@@ -239,26 +232,14 @@ else
       fi
 
       if [[ "$remote_sha" =~ ^0{40}$ ]]; then
-        # New branch / new ref on remote.
-        # Scan commits reachable from local_sha that are NOT already on remote-tracking refs.
-        #
-        # Use git rev-list syntax in --log-opts:
-        #   <local_sha> --not --remotes=<remote_name>
-        #
-        # This avoids invalid ranges like:
-        #   0000000000..<sha>
-        #
         run_gitleaks_or_hint --log-opts="$local_sha --not --remotes=$remote_name"
       else
-        # Update existing ref: scan only the range being pushed.
         run_gitleaks_or_hint --log-opts="$remote_sha..$local_sha"
       fi
-    done
+    done < "${push_input:-/dev/stdin}"
 
     if [[ "$had_input" -eq 0 ]]; then
-      # Extremely defensive fallback: scan commits not on the remote.
-      # (Still much better than scanning full history.)
-      head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
+      head_sha="$(git rev-parse HEAD 2> /dev/null || true)"
       if [[ -n "$head_sha" ]]; then
         run_gitleaks_or_hint --log-opts="$head_sha --not --remotes=$remote_name"
       fi
@@ -267,17 +248,59 @@ else
   fi
 fi
 
-# Run repo-local hook if present (best effort), avoiding recursion:
-# - We only run .git/hooks/<stage> if core.hooksPath is set (it is)
-# - We must not call ourselves again, so only run if it's a different file
-git_dir="$(git rev-parse --git-dir 2>/dev/null || true)"
-if [[ -n "$git_dir" ]]; then
+# Track whether we ran the repo pre-commit suite so we don't double-run repo-local hooks.
+export CAULKING_RAN_REPO_SUITE="${CAULKING_RAN_REPO_SUITE:-0}"
+
+run_repo_precommit_suite() {
+  local repo_root
+  repo_root="$(git rev-parse --show-toplevel 2> /dev/null || true)"
+  [[ -n "$repo_root" ]] || return 0
+  [[ -f "$repo_root/.pre-commit-config.yaml" ]] || return 0
+
+  # Explicit caulking knob to skip repo lint/format suite.
+  if [[ "${CAULKING_SKIP_REPO_HOOKS:-}" == "1" ]]; then
+    say "CAULKING_SKIP_REPO_HOOKS=1; skipping repo pre-commit suite."
+    return 0
+  fi
+
+  # Honor SKIP list semantics as an escape hatch.
+  if skip_has "pre-commit" || skip_has "prek"; then
+    say "SKIP includes pre-commit/prek; skipping repo pre-commit suite."
+    return 0
+  fi
+
+  if command -v prek > /dev/null 2>&1; then
+    prek run --hook-stage "$stage" --show-diff-on-failure || exit $?
+    export CAULKING_RAN_REPO_SUITE="1"
+    return 0
+  fi
+
+  if command -v pre-commit > /dev/null 2>&1; then
+    pre-commit run --hook-stage "$stage" --show-diff-on-failure || exit $?
+    export CAULKING_RAN_REPO_SUITE="1"
+    return 0
+  fi
+
+  say "NOTE: .pre-commit-config.yaml present, but neither prek nor pre-commit is installed."
+  return 0
+}
+
+run_repo_precommit_suite
+
+# Run repo-local hook if present (best effort), avoiding recursion and double-running:
+# - If we already ran the suite via prek/pre-commit, don't also run repo-local hooks.
+# - For pre-push, feed the preserved stdin back into the local hook.
+git_dir="$(git rev-parse --git-dir 2> /dev/null || true)"
+if [[ -n "$git_dir" && "${CAULKING_RAN_REPO_SUITE:-0}" != "1" ]]; then
   local_hook="$git_dir/hooks/$stage"
   if [[ -f "$local_hook" && -x "$local_hook" ]]; then
-    # If the local hook is literally this wrapper, don't recurse.
     local_hook_abs="$(cd "$(dirname "$local_hook")" && pwd)/$(basename "$local_hook")"
     if [[ "$local_hook_abs" != "$0" ]]; then
-      "$local_hook" "$@" || exit $?
+      if [[ "$stage" == "pre-push" && -n "${push_input:-}" ]]; then
+        "$local_hook" "$@" < "$push_input" || exit $?
+      else
+        "$local_hook" "$@" || exit $?
+      fi
     fi
   fi
 fi

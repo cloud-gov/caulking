@@ -6,15 +6,24 @@ set -euo pipefail
 MIN_GITLEAKS_VERSION="${MIN_GITLEAKS_VERSION:-8.18.0}"
 
 say() { printf "%s\n" "$*"; }
-die() { printf "ERROR: %s\n" "$*" >&2; exit 2; }
-have() { command -v "$1" >/dev/null 2>&1; }
+die() {
+  printf "ERROR: %s\n" "$*" >&2
+  exit 2
+}
+have() { command -v "$1" > /dev/null 2>&1; }
 
 version_ge() {
   local v="$1" min="$2"
   local v_ma v_mi v_pa min_ma min_mi min_pa rest
 
-  v_ma="${v%%.*}"; rest="${v#*.}"; v_mi="${rest%%.*}"; v_pa="${rest#*.}"
-  min_ma="${min%%.*}"; rest="${min#*.}"; min_mi="${rest%%.*}"; min_pa="${rest#*.}"
+  v_ma="${v%%.*}"
+  rest="${v#*.}"
+  v_mi="${rest%%.*}"
+  v_pa="${rest#*.}"
+  min_ma="${min%%.*}"
+  rest="${min#*.}"
+  min_mi="${rest%%.*}"
+  min_pa="${rest#*.}"
 
   if [[ "$v_ma" -gt "$min_ma" ]]; then return 0; fi
   if [[ "$v_ma" -lt "$min_ma" ]]; then return 1; fi
@@ -29,8 +38,8 @@ ensure_gitleaks() {
   else
     if have brew; then
       say "Installing gitleaks via Homebrew (best-effort)..."
-      brew upgrade gitleaks >/dev/null 2>&1 || true
-      brew install gitleaks >/dev/null 2>&1 || true
+      brew upgrade gitleaks > /dev/null 2>&1 || true
+      brew install gitleaks > /dev/null 2>&1 || true
     else
       die "gitleaks not found and Homebrew is not available. Install gitleaks v8+."
     fi
@@ -61,7 +70,7 @@ ensure_prek_optional() {
 
   if ! have prek && have brew; then
     say "Installing prek via Homebrew..."
-    brew install prek >/dev/null 2>&1 || true
+    brew install prek > /dev/null 2>&1 || true
   fi
 
   if have prek; then

@@ -10,7 +10,7 @@ jobs:
   install_and_verify:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           submodules: "false"
 

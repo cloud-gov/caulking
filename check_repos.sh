@@ -21,7 +21,7 @@ else
 fi
 
 case $2 in
-  check_hooks_gitleaks|check_hooks_path|check_user_email)
+  check_hooks_gitleaks | check_hooks_path | check_user_email)
     option=$2
     ;;
   *) fail "invalid second argument" ;;
@@ -66,6 +66,6 @@ while read -r gitrepo; do
     echo "FAIL $option for repository: $gitrepo" >&2
     exit_status=1
   fi
-done <<<"$( find "$root" -name '.git' -type d -maxdepth "$MAXDEPTH" 2>/dev/null )"
+done <<< "$(find "$root" -name '.git' -type d -maxdepth "$MAXDEPTH" 2> /dev/null)"
 
 exit "$exit_status"
