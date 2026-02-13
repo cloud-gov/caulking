@@ -61,21 +61,87 @@ enforce_forbidden_staged_files() {
   staged="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
   [[ -n "$staged" ]] || return 0
 
-  # Denylist patterns (regex). Keep this small + high-signal.
-  local -a deny_patterns=(
-    '\.pem$'
-    '\.key$'
-    '\.p12$'
-    '\.pfx$'
-    '\.kdbx$'
-    '(^|/)id_rsa$'
-    '(^|/)id_dsa$'
-    '(^|/)id_ecdsa$'
-    '(^|/)id_ed25519$'
-    '(^|/)\.env(\..*)?$'
-    '(^|/)ssh_host_.*_key$'
-    '(^|/)ssh_host_.*_key\.pub$'
-  )
+# Denylist patterns (regex)
+# Purpose: block committing files that *almost always* contain credentials,
+# key material, or secret stores. This is intentionally content-agnostic.
+# Keep this list small and brutally high-signal to avoid “security theater”.
+local -a deny_patterns=(
+  # ------------------------------------------------------------------
+  # Private keys / keystores / cert blobs (almost never OK in git)
+  # ------------------------------------------------------------------
+  '\.pem$'
+  '\.key$'
+  '\.der$'
+  '\.p12$'
+  '\.pfx$'
+  '\.pkcs8$'
+  '\.jks$'
+  '\.keystore$'
+  '\.kdbx$'     # KeePass DB
+  '\.agekey$'   # age identity key file
+
+  # ------------------------------------------------------------------
+  # SSH keys (user + host keys)
+  # NOTE: we deny host *.pub too, because people often commit the pair together.
+  # ------------------------------------------------------------------
+  '(^|/)id_rsa$'
+  '(^|/)id_dsa$'
+  '(^|/)id_ecdsa$'
+  '(^|/)id_ed25519$'
+  '(^|/)ssh_host_.*_key$'
+  '(^|/)ssh_host_.*_key\.pub$'
+
+  # ------------------------------------------------------------------
+  # “dotenv” / auth helper files that frequently contain secrets
+  # ------------------------------------------------------------------
+  '(^|/)\.env(\..*)?$'
+  '(^|/)\.envrc$'
+  '(^|/)\.netrc$'
+  '(^|/)\.git-credentials$'
+
+  # ------------------------------------------------------------------
+  # Cloud / CLI credential stores
+  # ------------------------------------------------------------------
+  '(^|/)\.aws/credentials$'
+  '(^|/)\.aws/config$'
+  '(^|/)\.aws-vault/keys/.*$'
+  '(^|/)\.cf/config\.json$'         # CF CLI access tokens can land here
+  '(^|/)\.flyrc$'                   # Concourse fly tokens/targets
+  '(^|/)\.docker/config\.json$'     # registry auth
+
+  # ------------------------------------------------------------------
+  # Kubernetes client config (often embeds certs/tokens)
+  # ------------------------------------------------------------------
+  '(^|/)\.kube/config$'
+  '(^|/)kubeconfig(\..*)?$'
+
+  # ------------------------------------------------------------------
+  # Terraform state + CLI creds (state commonly contains live secrets)
+  # ------------------------------------------------------------------
+  '\.tfstate$'
+  '\.tfstate\.backup$'
+  '(^|/)terraform\.tfstate\.d/.*$'
+  '(^|/)\.terraform/.*$'
+  '(^|/)\.terraformrc$'
+  '(^|/)credentials\.tfrc\.json$'
+
+  # ------------------------------------------------------------------
+  # “Oops I committed system account files”
+  # ------------------------------------------------------------------
+  '(^|/)(shadow|passwd|group|gshadow)$'
+
+  # ------------------------------------------------------------------
+  # Package manager tokens (commonly contain auth)
+  # ------------------------------------------------------------------
+  '(^|/)\.npmrc$'
+  '(^|/)\.pypirc$'
+
+  # ------------------------------------------------------------------
+  # Optional: Vault local token file (only keep if relevant in your org)
+  # ------------------------------------------------------------------
+  '(^|/)\.vault-token$'
+)
+
 
   local f pat
   while IFS= read -r f; do
