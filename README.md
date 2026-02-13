@@ -1,216 +1,158 @@
 # Caulking
 
-Caulking installs **global Git hooks** that run **gitleaks** to prevent secrets from being committed or pushed.
+Caulking installs **global Git hooks** that run **gitleaks** so you don’t accidentally commit or push secrets.
 
-This repo is intentionally boring:
+It’s intentionally boring:
 
 - deterministic install
-- predictable layout (XDG)
-- easy verify / audit
-- tests that prove it works
+- predictable XDG layout
+- explicit verify/audit
+- minimal moving parts
+
+If you want fancy, you’re in the wrong repo. If you want “it works the same every time,” welcome.
 
 ---
 
-## What you get
+## What it does
 
-After `make install`, you’ll have:
+After install, Git will use a global hooks directory:
 
-### Global hooks (XDG)
+- Hooks live at: `~/.config/git/hooks/`
+  - `pre-commit` (scans staged changes)
+  - `pre-push` (scans the pushed range)
+- Git is set to use it globally:
+  - `git config --global core.hooksPath ~/.config/git/hooks`
 
-Installed into:
-
-- `~/.config/git/hooks/pre-commit`
-- `~/.config/git/hooks/pre-push`
-
-Git is configured to use that directory globally:
-
-- `git config --global core.hooksPath ~/.config/git/hooks`
-
-### Global gitleaks config (XDG)
-
-Installed into:
+Caulking also writes a global gitleaks config:
 
 - `~/.config/gitleaks/config.toml`
 
-**Important:** the global config must **extend defaults**:
+**Important:** the global config must extend defaults, or you’ve built security theater:
 
 ```toml
 [extend]
 useDefault = true
 ```
 
-If you don’t extend defaults, you drop core detectors and your protection becomes theater.
+---
+
+## Prerequisites
+
+Required:
+
+- `git`
+- `bash`
+- `gitleaks` v8+ (Caulking will try to install/upgrade via Homebrew on macOS)
+
+Optional (but useful):
+
+- `brew` (macOS install helper)
+- `prek` **or** `pre-commit` (only needed if you want to run repo lint/format hooks via `make lint`)
 
 ---
 
 ## Quick start
 
-### Clone
-
 ```bash
 git clone <repo-url>
 cd caulking
+make install
+make verify
 ```
 
-### Install
+That’s it.
+
+If `make verify` fails, it will tell you exactly what is wrong and what to do next. Read the output. It’s not poetry, but it is honest.
+
+---
+
+## Daily use
+
+Once installed, you don’t “run” Caulking.
+
+You just do normal work:
 
 ```bash
-make install
+git commit -m "..."
+git push
 ```
 
-Install does:
+If you stage or push something that looks like a secret, gitleaks blocks it.
 
-- ensures `gitleaks` exists (Homebrew best-effort on macOS)
-- installs global hook wrappers into `~/.config/git/hooks/`
-- sets `core.hooksPath` globally to the XDG hook directory
-- writes or upgrades `~/.config/gitleaks/config.toml` to extend defaults
+---
 
-### Verify
+## Linting this repo (contributors)
+
+This repo also includes a local `.pre-commit-config.yaml` for formatting/linting the repo itself.
+
+Run it with:
+
+```bash
+make lint
+```
+
+It uses:
+
+- `prek` if available
+- otherwise `pre-commit`
+
+If neither is installed, it fails with a clear message. That’s intentional.
+
+---
+
+## Verify / Audit
+
+Verify proves the hook setup works and that enforcement actually blocks a known fake secret.
 
 ```bash
 make verify
 ```
 
-Verify checks:
-
-- `gitleaks` runs
-- `core.hooksPath` is set correctly
-- hooks exist and are executable
-- global gitleaks config extends defaults
-- functional behavior:
-  - committing a known fake secret is blocked
-  - committing a clean file succeeds
-
----
-
-## Audit
+Audit is intentionally boring and currently aliases verify:
 
 ```bash
 make audit
 ```
 
-Audit is intentionally boring. It proves enforcement works:
-
-- ensures required tools exist
-- runs verification checks
-- performs functional tests that show secrets are blocked
-
-Some audit checks assume a `@gsa.gov` email in Git config because this repo enforces a GSA developer baseline.
+If you’re looking for a 40-page compliance narrative, you’re again in the wrong repo.
 
 ---
 
-## How it works
+## Install details
 
-### Enforcement model
+### Where things go (XDG)
 
-Enforcement is done via:
+Hooks:
 
-- global `core.hooksPath`
-- a hook wrapper installed at `~/.config/git/hooks/<stage>`
+- `~/.config/git/hooks/pre-commit`
+- `~/.config/git/hooks/pre-push`
 
-The hook wrapper:
+Gitleaks config:
 
-- runs `gitleaks` using the global config at `~/.config/gitleaks/config.toml`
-- optionally merges a repo allowlist (`.gitleaks.repo.toml`) if present
-- respects `SKIP=gitleaks` if the user explicitly sets it
-- attempts to run any repo-local hook at `.git/hooks/<stage>` (best-effort), without recursion
+- `~/.config/gitleaks/config.toml`
 
-### About `hooks.gitleaks`
+State:
 
-Treat `hooks.gitleaks` as legacy.
-Enforcement comes from:
-
-- the global hook path
-- the wrapper actually running `gitleaks`
-
-If a repo sets `core.hooksPath` locally, it can bypass global hooks.
-The audit tooling checks for this.
+- `~/.config/caulking/previous_hookspath` (used to restore your prior `core.hooksPath` on uninstall)
 
 ---
 
-## Skipping gitleaks (break-glass only)
+## Skipping gitleaks (break-glass)
 
-If you accept the risk for a single operation:
+If you _really_ need to bypass gitleaks for a single operation:
 
 ```bash
 SKIP=gitleaks git commit -m "..."
+SKIP=gitleaks git push
 ```
 
-This is a last resort. Prefer fixing patterns, allowlists, or rules.
+This is not a feature. It’s an escape hatch. Use it like a fire extinguisher: rarely, and with regret.
 
----
+If you’re hitting false positives, the right fix is:
 
-## Repository hygiene
-
-To remove junk and normalize permissions (safe by default):
-
-```bash
-./scripts/cleanup-vestigial.sh --apply
-```
-
-This:
-
-- removes common untracked cruft
-- normalizes executable bits on scripts
-- refuses to run if the repo is already messy
-
-It does **not** rewrite tracked files unless explicitly asked.
-
----
-
-## CI behavior
-
-GitHub Actions runs:
-
-- install
-- verify
-- audit
-
-This ensures:
-
-- hooks install cleanly
-- enforcement works
-- regressions are caught before merge
-
----
-
-## Security reporting
-
-Do **not** report security issues in public GitHub issues.
-
-Use the instructions in `SECURITY.md` and cloud.gov’s security.txt:
-
-- [https://cloud.gov/.well-known/security.txt](https://cloud.gov/.well-known/security.txt)
-
----
-
-## Contribution policy
-
-This project is operated by GSA to support federal missions.
-
-We accept contributions from:
-
-- U.S. federal employees
-- contractors under a current U.S. government agreement
-- GSA-approved collaborators
-
-We do **not** accept unsolicited external contributions.
-
-If you have ideas, open an issue first so we can discuss and port them internally if appropriate.
-
----
-
-## Uninstall
-
-```bash
-make uninstall
-```
-
-This:
-
-- unsets `core.hooksPath` globally
-- removes installed hooks from `~/.config/git/hooks/`
-- leaves your global gitleaks config in place
+- adjust the pattern (best)
+- add a **repo** allowlist in `.gitleaks.repo.toml` (acceptable)
+- bloating global allowlists (usually a mistake)
 
 ---
 
@@ -223,26 +165,50 @@ git config --global --get core.hooksPath
 ls -la ~/.config/git/hooks
 ```
 
-### Install fails with permission errors
+You want `core.hooksPath` to be `~/.config/git/hooks` and the hook files to be executable.
+
+### Install fails with permission issues
 
 ```bash
-chmod +x install.sh scripts/*.sh hooks/*.sh
+chmod +x install.sh uninstall.sh verify.sh hooks/*.sh scripts/*.sh tests/*.sh
 ```
 
-### Verify fails
+Then retry `make install`.
 
-Run:
+### Someone bypassed hooks
+
+If a repo sets a **local** `core.hooksPath`, it can override the global one.
+
+You can check a directory tree of repos with:
 
 ```bash
-./verify.sh
+./check_repos.sh <root_dir> check_hooks_path
 ```
-
-The output is explicit about what is broken and how to fix it.
 
 ---
 
-## Public domain
+## Uninstall
 
-This project is in the worldwide public domain (CC0).
+```bash
+make uninstall
+```
 
-See `LICENSE.md`.
+This:
+
+- removes installed hook scripts from `~/.config/git/hooks/`
+- restores your previous `core.hooksPath` if Caulking recorded one
+- leaves your global gitleaks config in place (on purpose)
+
+---
+
+## Security reporting
+
+Please don’t report vulnerabilities in public GitHub issues.
+
+Follow the instructions in [`SECURITY.md`](SECURITY.md) and Cloud.gov’s security.txt.
+
+---
+
+## License
+
+This project is public domain (CC0). See [`LICENSE.md`](LICENSE.md).
