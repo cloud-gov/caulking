@@ -35,8 +35,6 @@ hook="$tmp/pre-commit"
 cp -f "$WRAPPER_SRC" "$hook"
 chmod +x "$hook"
 
-# Put a real-looking secret in an UNSTAGED file.
-# Since pre-commit runs gitleaks with --staged, this should NOT block.
 cat > unstaged_secret.txt << 'EOF'
 aws_secret_access_key = WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp
 EOF

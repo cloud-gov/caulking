@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=/dev/null
+source "$ROOT/scripts/lib.sh"
+
+on_err_trap
+enable_xtrace_if_debug
+
 # scripts/cleanup-vestigial.sh
 #
 # Purpose:
@@ -20,15 +27,9 @@ set -euo pipefail
 #   --aggressive-untracked  Also remove more untracked junk patterns.
 #   -h|--help               Show help.
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-say() { printf "%s\n" "$*"; }
-die() {
-  printf "ERROR: %s\n" "$*" >&2
-  exit 2
-}
-
+need_cmd git
 git rev-parse --is-inside-work-tree > /dev/null 2>&1 || die "not in a git repo"
 
 APPLY=0
@@ -62,9 +63,9 @@ EOF
   shift
 done
 
-say "== Cleanup vestigial content =="
-say "Root: $ROOT"
-say "Mode: $([[ "$APPLY" -eq 1 ]] && echo APPLY || echo DRY-RUN)"
+info "== Cleanup vestigial content =="
+info "Root: $ROOT"
+info "Mode: $([[ "$APPLY" -eq 1 ]] && echo APPLY || echo DRY-RUN)"
 
 # Bail out if repo is already messy — you don't want “cleanup” buried in unrelated diffs.
 changes="$(git status --porcelain | wc -l | tr -d ' ')"
@@ -86,8 +87,8 @@ run() {
 # -------------------------------------------------------------------
 # 1) UNTRACKED CRUFT REMOVAL (SAFE)
 # -------------------------------------------------------------------
-say ""
-say "== Prune untracked cruft (safe) =="
+printf '\n'
+info "== Prune untracked cruft (safe) =="
 
 untracked_list="$(git ls-files --others --exclude-standard -z || true)"
 if [[ -n "$untracked_list" ]]; then
@@ -101,18 +102,17 @@ if [[ -n "$untracked_list" ]]; then
       *) continue ;;
     esac
 
-    # Only delete if truly untracked.
-    say "delete (untracked): $f"
+    info "delete (untracked): $f"
     run rm -rf -- "$f"
   done <<< "$untracked_list"
 else
-  say "No untracked files."
+  info "No untracked files."
 fi
 
 if [[ "$AGGRESSIVE_UNTRACKED" -eq 1 ]]; then
-  say ""
-  say "== Aggressive untracked prune =="
-  # Things that are commonly generated locally but sometimes appear during dev.
+  printf '\n'
+  info "== Aggressive untracked prune =="
+
   patterns=(
     "repomix-output.*"
     "*.nessus"
@@ -121,13 +121,12 @@ if [[ "$AGGRESSIVE_UNTRACKED" -eq 1 ]]; then
     "*.tar.gz"
   )
   for p in "${patterns[@]}"; do
-    # only remove if untracked
     while IFS= read -r f; do
       [[ -n "$f" ]] || continue
       if git ls-files --error-unmatch "$f" > /dev/null 2>&1; then
         continue
       fi
-      say "delete (untracked aggressive): $f"
+      info "delete (untracked aggressive): $f"
       run rm -rf -- "$f"
     done < <(find "$ROOT" -maxdepth 2 -name "$p" -print 2> /dev/null || true)
   done
@@ -136,8 +135,8 @@ fi
 # -------------------------------------------------------------------
 # 2) ENSURE EXECUTABLE BITS FOR SCRIPTS
 # -------------------------------------------------------------------
-say ""
-say "== Ensure executable bits =="
+printf '\n'
+info "== Ensure executable bits =="
 
 exec_files=(
   "install.sh"
@@ -147,13 +146,16 @@ exec_files=(
   "hooks/hook-wrapper.sh"
   "scripts/ensure-tools.sh"
   "scripts/repo-doctor.sh"
-  "scripts/cleanup-repo.sh"
   "scripts/cleanup-vestigial.sh"
+  "scripts/pretty.sh"
+  "scripts/verify-precommit-runner.sh"
+  "scripts/lint.sh"
+  "tests/run.sh"
 )
 
 for f in "${exec_files[@]}"; do
   if [[ -f "$f" ]]; then
-    say "chmod +x $f"
+    info "chmod +x $f"
     run chmod +x "$f"
   fi
 done
@@ -161,31 +163,27 @@ done
 # -------------------------------------------------------------------
 # 3) OPTIONAL: REMOVE LEGACY TRACKED FILES
 # -------------------------------------------------------------------
-# These are “vestigial” given the new architecture (global hook wrapper in hooks/).
-# Keeping them isn't harmful, but they confuse readers and can diverge.
-#
 if [[ "$REMOVE_LEGACY_TRACKED" -eq 1 ]]; then
-  say ""
-  say "== Remove legacy tracked files (dangerous) =="
-  say "This will modify the repo and produce diffs."
+  printf '\n'
+  warn "== Remove legacy tracked files (dangerous) =="
+  warn "This will modify the repo and produce diffs."
 
   legacy_tracked=(
-    # Legacy per-repo hook logic (interactive; doesn't belong in a global hook path)
     "pre-commit.sh"
+    "scripts/cleanup-repo.sh"
   )
 
   for f in "${legacy_tracked[@]}"; do
     if [[ -f "$f" ]]; then
-      say "remove tracked: $f"
+      info "remove tracked: $f"
       run git rm -f "$f"
     fi
   done
 fi
 
-say ""
-say "== Summary =="
+printf '\n'
+info "== Summary =="
 git status --porcelain || true
-say ""
-say "Done."
-say ""
-say "Tip: if you want this to actually change the repo, re-run with --apply"
+printf '\n'
+info "Done."
+info "Tip: if you want this to actually change the repo, re-run with --apply"

@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# verify.sh - sanity checks for Caulking (XDG layout)
-
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$ROOT_DIR/scripts/lib.sh"
 # shellcheck source=/dev/null
 source "$ROOT_DIR/scripts/pretty.sh"
 
-die() {
+on_err_trap
+enable_xtrace_if_debug
+
+die_pretty() {
   p_err "$*"
   exit 2
 }
 
-have() { command -v "$1" > /dev/null 2>&1; }
+have_local() { command -v "$1" > /dev/null 2>&1; }
 
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
@@ -37,18 +40,17 @@ add_summary() { SUMMARY_LINES+=("$1"); }
 check_binaries() {
   print_header "Checking binaries"
 
-  if ! have gitleaks; then
-    die "gitleaks not found in PATH (run: make install)"
+  if ! have_local gitleaks; then
+    die_pretty "gitleaks not found in PATH (run: make install)"
   fi
 
-  # Optional: prek
-  if have prek; then
+  if have_local prek; then
     add_summary "prek: $(prek --version 2> /dev/null || echo 'present')"
   else
     add_summary "prek: not installed (optional)"
   fi
 
-  gitleaks version > /dev/null 2>&1 || die "gitleaks failed to run"
+  gitleaks version > /dev/null 2>&1 || die_pretty "gitleaks failed to run"
   add_summary "gitleaks: $(gitleaks version 2> /dev/null | tail -n 1)"
 }
 
@@ -58,8 +60,8 @@ check_global_git_config() {
   local hookspath=""
   hookspath="$(git config --global core.hooksPath || true)"
 
-  [[ -n "$hookspath" ]] || die "global core.hooksPath not set (expected: $HOOK_DIR). Run: make install"
-  [[ "$hookspath" == "$HOOK_DIR" ]] || die "global core.hooksPath is '$hookspath' (expected: $HOOK_DIR)"
+  [[ -n "$hookspath" ]] || die_pretty "global core.hooksPath not set (expected: $HOOK_DIR). Run: make install"
+  [[ "$hookspath" == "$HOOK_DIR" ]] || die_pretty "global core.hooksPath is '$hookspath' (expected: $HOOK_DIR)"
 
   status_line "Global hooksPath" "$hookspath" "$GREEN"
   add_summary "global core.hooksPath OK"
@@ -68,13 +70,13 @@ check_global_git_config() {
 check_installed_hooks() {
   print_header "Checking installed hook scripts"
 
-  [[ -d "$HOOK_DIR" ]] || die "hook dir missing: $HOOK_DIR"
+  [[ -d "$HOOK_DIR" ]] || die_pretty "hook dir missing: $HOOK_DIR"
 
   local h=""
   for h in pre-commit pre-push; do
     local p="$HOOK_DIR/$h"
-    [[ -f "$p" ]] || die "missing hook: $p"
-    [[ -x "$p" ]] || die "hook not executable: $p"
+    [[ -f "$p" ]] || die_pretty "missing hook: $p"
+    [[ -x "$p" ]] || die_pretty "hook not executable: $p"
     status_line "$h" "present + executable" "$GREEN"
   done
 
@@ -84,10 +86,10 @@ check_installed_hooks() {
 check_gitleaks_config() {
   print_header "Checking gitleaks global config"
 
-  [[ -f "$GITLEAKS_CFG" ]] || die "missing gitleaks config: $GITLEAKS_CFG"
+  [[ -f "$GITLEAKS_CFG" ]] || die_pretty "missing gitleaks config: $GITLEAKS_CFG"
 
-  grep -qE '^\[extend\]' "$GITLEAKS_CFG" || die "gitleaks config does not contain [extend]"
-  grep -qE '^\s*useDefault\s*=\s*true\s*$' "$GITLEAKS_CFG" || die "gitleaks config does not set useDefault = true"
+  grep -qE '^\[extend\]' "$GITLEAKS_CFG" || die_pretty "gitleaks config does not contain [extend]"
+  grep -qE '^\s*useDefault\s*=\s*true\s*$' "$GITLEAKS_CFG" || die_pretty "gitleaks config does not set useDefault = true"
 
   status_line "gitleaks config" "extends defaults" "$GREEN"
   add_summary "gitleaks config extends defaults"
@@ -123,7 +125,7 @@ EOF
   local rc=$?
   set -e
 
-  [[ "$rc" -ne 0 ]] || die "Secret commit was NOT blocked (expected non-zero exit)"
+  [[ "$rc" -ne 0 ]] || die_pretty "Secret commit was NOT blocked (expected non-zero exit)"
 
   status_line "Secret commit" "blocked (expected)" "$GREEN"
   add_summary "secret commit blocked"
@@ -144,7 +146,7 @@ EOF
   local rc=$?
   set -e
 
-  [[ "$rc" -eq 0 ]] || die "Clean commit was blocked (expected success). Run: git commit -m test (in any repo) to see hook output."
+  [[ "$rc" -eq 0 ]] || die_pretty "Clean commit was blocked (expected success). Run: git commit -m test (in any repo) to see hook output."
 
   status_line "Clean commit" "allowed (expected)" "$GREEN"
   add_summary "clean commit allowed"
@@ -153,8 +155,6 @@ EOF
 functional_test_uninstall_restores_previous_hookspath_isolated() {
   print_header "Functional test: uninstall restores previous hooksPath (isolated)"
 
-  # This test MUST NOT touch the user's real global git config.
-  # We isolate by setting GIT_CONFIG_GLOBAL and HOME.
   local iso
   iso="$(mktemp -d "${TMPDIR:-/tmp}/caulking.hookspath.XXXXXX")"
 
@@ -171,22 +171,19 @@ functional_test_uninstall_restores_previous_hookspath_isolated() {
     export XDG_CONFIG_HOME="$iso_xdg"
     export GIT_CONFIG_GLOBAL="$iso_gitconfig"
 
-    # Set a "previous" hookspath that is NOT Caulking's target.
     git config --global core.hooksPath "$prev_hookspath"
 
-    # Run install (should store previous and set to XDG hooks dir)
     "$ROOT_DIR/install.sh" > /dev/null
 
     local after_install
     after_install="$(git config --global --get core.hooksPath || true)"
-    [[ "$after_install" == "$iso_xdg/git/hooks" ]] || die "install did not set core.hooksPath as expected (got: $after_install)"
+    [[ "$after_install" == "$iso_xdg/git/hooks" ]] || die_pretty "install did not set core.hooksPath as expected (got: $after_install)"
 
-    # Run uninstall (should restore prior value)
     "$ROOT_DIR/uninstall.sh" > /dev/null
 
     local after_uninstall
     after_uninstall="$(git config --global --get core.hooksPath || true)"
-    [[ "$after_uninstall" == "$prev_hookspath" ]] || die "uninstall did not restore previous core.hooksPath (got: $after_uninstall)"
+    [[ "$after_uninstall" == "$prev_hookspath" ]] || die_pretty "uninstall did not restore previous core.hooksPath (got: $after_uninstall)"
   )
 
   rm -rf "$iso" || true
@@ -208,7 +205,7 @@ check_precommit_runner() {
     status_line "pre-commit runner" "callable (prek/pre-commit OK)" "$GREEN"
     add_summary "pre-commit runner callable"
   else
-    "$ROOT_DIR/scripts/verify-precommit-runner.sh" || die "pre-commit runner validation failed"
+    "$ROOT_DIR/scripts/verify-precommit-runner.sh" || die_pretty "pre-commit runner validation failed"
   fi
 }
 

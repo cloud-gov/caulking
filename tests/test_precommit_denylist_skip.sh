@@ -8,7 +8,6 @@ tmp="$(mktemp -d "${TMPDIR:-/tmp}/caulking.test.XXXXXX")"
 cleanup() { rm -rf "$tmp" || true; }
 trap cleanup EXIT
 
-# If gitleaks isn't installed, this repo can't really test its hook behavior.
 command -v gitleaks > /dev/null 2>&1 || {
   echo "SKIP: gitleaks not installed"
   exit 0
@@ -25,8 +24,6 @@ git init -q
 git config user.name "t"
 git config user.email "t@gsa.gov"
 
-# Provide minimal global gitleaks config (wrapper requires it even if SKIP=gitleaks,
-# but denylist should still block regardless).
 mkdir -p "$XDG_CONFIG_HOME/gitleaks"
 cat > "$XDG_CONFIG_HOME/gitleaks/config.toml" << 'EOF'
 title="test"
@@ -34,7 +31,6 @@ title="test"
 useDefault=true
 EOF
 
-# Run wrapper as if it were the pre-commit hook (argv0 matters)
 hook="$tmp/pre-commit"
 cp -f "$WRAPPER_SRC" "$hook"
 chmod +x "$hook"

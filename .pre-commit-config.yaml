@@ -25,21 +25,18 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=1024"]
 
-  # ShellCheck (portable: fetches shellcheck binary via wrapper)
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
     hooks:
       - id: shellcheck
         args: ["-x", "-S", "error"]
 
-  # shfmt (portable, correct tags)
   - repo: https://github.com/scop/pre-commit-shfmt
     rev: v3.12.0-2
     hooks:
       - id: shfmt
         args: ["-w", "-i", "2", "-ci", "-sr"]
 
-  # GitHub Actions workflow linting
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.10
     hooks:

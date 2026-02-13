@@ -5,6 +5,8 @@
 
 set -euo pipefail
 
+# Keep pretty self-contained. verify.sh sources it for nicer UX.
+
 is_tty() { [[ -t 1 ]]; }
 
 use_color() {
@@ -105,24 +107,21 @@ import sys, unicodedata
 s = sys.argv[1]
 
 def is_emoji(cp: int) -> bool:
-    # Common emoji blocks/ranges; not perfect, but good enough for alignment.
     return (
-        0x1F300 <= cp <= 0x1FAFF or  # Misc Symbols & Pictographs..Extended-A
-        0x2600  <= cp <= 0x26FF  or  # Misc symbols
-        0x2700  <= cp <= 0x27BF  or  # Dingbats
-        0xFE00  <= cp <= 0xFE0F      # Variation selectors (emoji presentation)
+        0x1F300 <= cp <= 0x1FAFF or
+        0x2600  <= cp <= 0x26FF  or
+        0x2700  <= cp <= 0x27BF  or
+        0xFE00  <= cp <= 0xFE0F
     )
 
 w = 0
 for ch in s:
     cp = ord(ch)
     if ch == "\t":
-        # Treat tab as 4 columns (reasonable default for our output)
         w += 4
         continue
-    if ch == "\n" or ch == "\r":
+    if ch in ("\n", "\r"):
         continue
-    # East Asian Width: W/F are double-width in terminals.
     eaw = unicodedata.east_asian_width(ch)
     if eaw in ("W", "F"):
         w += 2
@@ -136,12 +135,9 @@ PY
     return 0
   fi
 
-  # Fallback (may misalign for emoji/CJK, but better than nothing)
   printf '%s\n' "${#s}"
 }
 
-# Pad with spaces to reach a target display width.
-# Prints spaces only.
 _pad_to() {
   local current="$1"
   local target="$2"
@@ -154,19 +150,11 @@ _pad_to() {
   done
 }
 
-# Format stdin lines like "key: value" into aligned bullet lines:
-#   - key  : value
-# Non "key: value" lines are emitted as:
-#   - line
-#
-# NOTE: printf %-*s pads by character count, not terminal display width.
-# We therefore pad manually using _disp_width to better align emoji/CJK keys.
 kv_list() {
   local max=0 line key val is_kv
   local -a keys=() vals=() kv=() keyw=()
 
   while IFS= read -r line; do
-    # Preserve blank lines.
     if [[ -z "$line" ]]; then
       keys+=("")
       vals+=("")
@@ -179,8 +167,7 @@ kv_list() {
     if [[ "$line" == *:* ]]; then
       key="${line%%:*}"
       val="${line#*:}"
-      val="${val# }" # trim one leading space
-      # treat as KV only if there's something on the right side
+      val="${val# }"
       if [[ -n "$val" ]]; then
         is_kv=1
         local w
@@ -210,7 +197,6 @@ kv_list() {
     fi
 
     if [[ "${kv[$i]}" -eq 1 ]]; then
-      # "- " + key + padding + " : " + value
       printf -- "- %s" "${keys[$i]}"
       _pad_to "${keyw[$i]}" "$max"
       printf ' : %s\n' "${vals[$i]}"
@@ -253,7 +239,6 @@ pretty_box() {
     lines+=("$line")
   done
 
-  # Compute max display width across body lines
   local max=0
   local lw=0
   local l=""
@@ -264,10 +249,8 @@ pretty_box() {
     fi
   done
 
-  # width = max content width + 2 spaces padding (left+right) + optional extra pad
   local width=$((max + 2 + extra_pad))
 
-  # Title may require a wider box: " " + title + " "
   if [[ -n "$title" ]]; then
     local tw
     tw="$(_disp_width "$title")"
@@ -283,8 +266,6 @@ pretty_box() {
     local tw
     tw="$(_disp_width "$title")"
 
-    # Inside content width available between the two spaces:
-    # width columns total; we print: " " + title + pad + " "
     local inner=$((width - 2))
     local pad=$((inner - tw))
     if ((pad < 0)); then pad=0; fi

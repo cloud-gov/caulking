@@ -2,15 +2,12 @@
 # FILE: Makefile
 # =====================================================================
 
-# NOTE: Keep CAULKING_VERSION human-friendly if you want,
-# but consider moving SemVer to a VERSION file for release automation.
 CAULKING_VERSION := $(shell cat VERSION)
-
 MIN_GITLEAKS_VERSION := 8.18.0
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install uninstall verify audit clean ensure-tools
+.PHONY: help install uninstall verify audit clean ensure-tools test lint
 
 help:
 	@echo "Caulking ($(CAULKING_VERSION))"
@@ -25,14 +22,20 @@ help:
 	@echo "  verify       Verify install + run functional tests"
 	@echo "  audit        Alias for verify (intentionally boring)"
 	@echo "  uninstall    Remove installed hooks and restore prior core.hooksPath (if recorded)"
+	@echo "  lint         Run repo lint/format hooks over all files (prek/pre-commit)"
+	@echo "  test         Run repo tests (fast bash tests)"
 	@echo "  clean        Print manual reset instructions (does not delete ~/.config)"
 	@echo ""
 	@echo "Notes:"
 	@echo "  - Hooks install to:  $${XDG_CONFIG_HOME:-$$HOME/.config}/git/hooks"
 	@echo "  - gitleaks config:   $${XDG_CONFIG_HOME:-$$HOME/.config}/gitleaks/config.toml"
 	@echo ""
+
 test:
 	@./tests/run.sh
+
+lint:
+	@./scripts/lint.sh
 
 ensure-tools:
 	@MIN_GITLEAKS_VERSION="$(MIN_GITLEAKS_VERSION)" ./scripts/ensure-tools.sh
@@ -50,9 +53,6 @@ uninstall:
 verify:
 	@./verify.sh
 
-# Audit is intentionally boring: prove the enforcement works.
-# verify.sh includes a safe, isolated test confirming uninstall restores
-# a prior core.hooksPath value when present.
 audit: ensure-tools
 	@./verify.sh
 

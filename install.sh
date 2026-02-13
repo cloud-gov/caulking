@@ -2,6 +2,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$ROOT_DIR/scripts/lib.sh"
+
+on_err_trap
+enable_xtrace_if_debug
 
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
@@ -13,25 +18,16 @@ PREV_HOOKSPATH_FILE="$STATE_DIR/previous_hookspath"
 
 HOOK_WRAPPER_SRC="$ROOT_DIR/hooks/hook-wrapper.sh"
 
-say() { printf "%s\n" "$*"; }
-die() {
-  printf "ERROR: %s\n" "$*" >&2
-  exit 1
-}
-
-need_cmd() { command -v "$1" > /dev/null 2>&1 || die "Missing required command: $1"; }
-have_cmd() { command -v "$1" > /dev/null 2>&1; }
-
-install_gitleaks() {
-  if have_cmd gitleaks; then
+install_gitleaks_if_missing() {
+  if have gitleaks; then
+    debug "gitleaks present: $(command -v gitleaks)"
     return 0
   fi
-  if have_cmd brew; then
-    say "Installing gitleaks via Homebrew..."
+  if have brew; then
+    info "Installing gitleaks via Homebrew..."
     brew install gitleaks > /dev/null 2>&1 || true
-    return 0
   fi
-  die "gitleaks not found. Install it and re-run install.sh"
+  have gitleaks || die "gitleaks not found. Install it (gitleaks v8+) and re-run."
 }
 
 write_global_gitleaks_config() {
@@ -39,16 +35,16 @@ write_global_gitleaks_config() {
 
   if [[ -f "$GITLEAKS_CFG" ]]; then
     if grep -qE '^\[extend\]' "$GITLEAKS_CFG" && grep -qE '^\s*useDefault\s*=\s*true\s*$' "$GITLEAKS_CFG"; then
-      say "Global gitleaks config exists and extends defaults: $GITLEAKS_CFG"
+      info "Global gitleaks config exists and extends defaults: $GITLEAKS_CFG"
       return 0
     fi
 
     local backup
     backup="$GITLEAKS_CFG.bak.$(date +%Y%m%d%H%M%S)"
     cp -a "$GITLEAKS_CFG" "$backup"
-    say "Upgrading global gitleaks config to extend defaults (backup: $backup)"
+    warn "Upgrading global gitleaks config to extend defaults (backup: $backup)"
   else
-    say "Creating global gitleaks config: $GITLEAKS_CFG"
+    info "Creating global gitleaks config: $GITLEAKS_CFG"
   fi
 
   cat > "$GITLEAKS_CFG" << 'EOF'
@@ -76,9 +72,12 @@ store_previous_hookspath_if_needed() {
   local current
   current="$(git config --global --get core.hooksPath || true)"
 
+  # Only store if it's set and it's not already our intended path
   if [[ -n "$current" && "$current" != "$HOOK_DIR" ]]; then
-    say "Saving previous core.hooksPath: $current"
+    info "Saving previous core.hooksPath: $current"
     printf '%s\n' "$current" > "$PREV_HOOKSPATH_FILE"
+  else
+    debug "No previous core.hooksPath to store (current='$current')"
   fi
 }
 
@@ -88,18 +87,19 @@ write_hook() {
 
   mkdir -p "$HOOK_DIR"
   install -m 0755 "$HOOK_WRAPPER_SRC" "$dst"
-  say "Installed hook: $dst"
+  info "Installed hook: $dst"
 }
 
 cleanup_legacy_hooks() {
+  # If older versions used commit-msg or other stages, remove to avoid confusion.
   rm -f "$HOOK_DIR/commit-msg" || true
 }
 
 configure_git_hookspath() {
-  need_cmd git
   git config --global core.hooksPath "$HOOK_DIR"
-  say "Configured: git config --global core.hooksPath $HOOK_DIR"
+  info "Configured: git config --global core.hooksPath $HOOK_DIR"
 
+  # Treat hooks.gitleaks as legacy; ensure it's not set globally.
   git config --global --unset hooks.gitleaks > /dev/null 2>&1 || true
 }
 
@@ -110,7 +110,7 @@ main() {
 
   chmod +x "$HOOK_WRAPPER_SRC" || true
 
-  install_gitleaks
+  install_gitleaks_if_missing
   write_global_gitleaks_config
 
   store_previous_hookspath_if_needed
@@ -121,9 +121,9 @@ main() {
 
   configure_git_hookspath
 
-  say ""
-  say "Done."
-  say "Next: run ./verify.sh"
+  printf '\n'
+  info "Done."
+  info "Next: run ./verify.sh"
 }
 
 main "$@"

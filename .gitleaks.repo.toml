@@ -11,5 +11,4 @@ paths = ['''verify\.sh$''', '''repomix-output\..*$''']
 regexes = [
     # fake aws secret used in verify.sh
     '''WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp''',
-
 ]

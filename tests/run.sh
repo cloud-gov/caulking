@@ -6,8 +6,6 @@ cd "$ROOT"
 
 fail=0
 
-# Run a command with a timeout if available (macOS often has gtimeout via coreutils).
-# Fallback: run without timeout.
 run_with_timeout() {
   local seconds="$1"
   shift
@@ -28,8 +26,6 @@ run_with_timeout() {
 for t in tests/test_*.sh; do
   echo "== $t =="
 
-  # 30s is plenty for local repo init + a staged gitleaks scan.
-  # If this ever times out, it usually means a hook/test is accidentally waiting on stdin.
   if run_with_timeout 30 bash "$t"; then
     echo "PASS: $t"
   else
