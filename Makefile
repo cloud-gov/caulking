@@ -1,72 +1,64 @@
-CAULKING_VERSION=3.0.0 2025-05-06
-GITLEAKS_VERSION=8.25.1
-GITLEAKS_ARTIFACT="gitleaks_${GITLEAKS_VERSION}_darwin_x64.tar.gz"
-GITLEAKS_CHECKSUM=1ac8baf3424878c6990088fcf1129f870c3589461c3a99e9339b86d3d9608d40
-GITLEAKS_DOWNLOAD_DIR="${HOME}/bin/gitleaks-files"
-NOW=$(shell date)
-ME=$(shell whoami)
-BATS=./test/bats/bin/bats
+# =====================================================================
+# FILE: Makefile
+# =====================================================================
 
-GIT_SUPPORT_PATH=  ${HOME}/.git-support
-HOOKS=${GIT_SUPPORT_PATH}/hooks
-PRECOMMIT=${GIT_SUPPORT_PATH}/hooks/pre-commit
-PATTERNS=${GIT_SUPPORT_PATH}/gitleaks.toml
-GITLEAKS= ${HOME}/bin/gitleaks
+CAULKING_VERSION := $(shell cat VERSION)
+MIN_GITLEAKS_VERSION := 8.18.0
 
-INSTALL_TARGETS= ${PATTERNS} ${PRECOMMIT} ${GITLEAKS}
+.DEFAULT_GOAL := help
 
-HOMEBREW_PREFIX=$(shell brew config | grep HOMEBREW_PREFIX | awk '{print $$2}')
+.PHONY: help install uninstall verify audit clean ensure-tools test lint
 
-.PHONY: clean audit test global_hooks
+help:
+	@echo "Caulking ($(CAULKING_VERSION))"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make <target>"
+	@echo ""
+	@echo "Targets:"
+	@echo "  help         Show this help"
+	@echo "  ensure-tools Ensure required tools are installed (gitleaks required; prek optional)"
+	@echo "  install      Install global hooks + gitleaks config (XDG layout)"
+	@echo "  verify       Verify install + run functional tests"
+	@echo "  audit        Alias for verify (intentionally boring)"
+	@echo "  uninstall    Remove installed hooks and restore prior core.hooksPath (if recorded)"
+	@echo "  lint         Run repo lint/format hooks over all files (prek/pre-commit)"
+	@echo "  test         Run repo tests (fast bash tests)"
+	@echo "  clean        Print manual reset instructions (does not delete ~/.config)"
+	@echo ""
+	@echo "Notes:"
+	@echo "  - Hooks install to:  $${XDG_CONFIG_HOME:-$$HOME/.config}/git/hooks"
+	@echo "  - gitleaks config:   $${XDG_CONFIG_HOME:-$$HOME/.config}/gitleaks/config.toml"
+	@echo ""
 
-install: $(INSTALL_TARGETS) global_hooks
+test:
+	@./tests/run.sh
 
-audit: ${HOMEBREW_PREFIX}/bin/pcregrep ${GITLEAKS} $(INSTALL_TARGETS)
-	@test "$$(${GITLEAKS} version)" = "${GITLEAKS_VERSION}" || ( echo "ERROR -- RUN: 'make clean install'" && false )
-	@echo ${CAULKING_VERSION}
-	@echo "${ME} / ${NOW}"
-	${BATS} -p caulked.bats
+lint:
+	@./scripts/lint.sh
 
-test: ${PATTERNS}
-	${BATS} -p development.bats
+ensure-tools:
+	@MIN_GITLEAKS_VERSION="$(MIN_GITLEAKS_VERSION)" ./scripts/ensure-tools.sh
+
+install: ensure-tools
+	@echo "== Installing (XDG layout) =="
+	@./install.sh
+	@echo ""
+	@echo "Next: make verify"
+
+uninstall:
+	@echo "== Uninstalling (XDG layout) =="
+	@./uninstall.sh
+
+verify:
+	@./verify.sh
+
+audit: ensure-tools
+	@./verify.sh
 
 clean:
-	/bin/rm -rf ${GIT_SUPPORT_PATH}
-	git config --global --unset hooks.gitleaks
-	git config --global --unset core.hooksPath
-	/bin/rm -rf ${GITLEAKS}
-	@echo "Run 'make install' to restore git hooks"
-
-hook pre-commit: ${GIT_SUPPORT_PATH}/hooks/pre-commit
-
-global_hooks:
-	git config --global hooks.gitleaks true
-	git config --global core.hooksPath ${GIT_SUPPORT_PATH}/hooks
-
-config patterns rules: ${GIT_SUPPORT_PATH}/gitleaks.toml
-
-${PATTERNS}: local.toml ${GIT_SUPPORT_PATH}
-	cat $< > $@
-
-${PRECOMMIT}: pre-commit.sh ${HOOKS}
-	install -m 0755 -cv $< $@
-
-${GIT_SUPPORT_PATH} ${HOOKS}:
-	mkdir -p $@
-
-${HOMEBREW_PREFIX}/bin/pcregrep:
-	brew install pcre
-
-${GITLEAKS}:
-	mkdir -p ${GITLEAKS_DOWNLOAD_DIR}
-	curl -o ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} -L https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/${GITLEAKS_ARTIFACT}
-	tar -xvzf ${GITLEAKS_DOWNLOAD_DIR}/${GITLEAKS_ARTIFACT} --directory ${GITLEAKS_DOWNLOAD_DIR}
-	cp ${GITLEAKS_DOWNLOAD_DIR}/gitleaks ${GITLEAKS}
-	rm -rf ${GITLEAKS_DOWNLOAD_DIR}
-	chmod 755 $@
-
-upgrade update:
-	brew uninstall gitleaks || rm -f ${GITLEAKS} && rm -f ${HOME}/bin/gitleaks
-	make ${GITLEAKS}
-
-FORCE:
+	@echo "NOTE: clean no longer deletes ~/.config by default."
+	@echo "If you need to reset install state:"
+	@echo "  rm -rf '$${XDG_CONFIG_HOME:-$$HOME/.config}/git/hooks' '$${XDG_CONFIG_HOME:-$$HOME/.config}/gitleaks' '$${XDG_CONFIG_HOME:-$$HOME/.config}/caulking'"
+	@echo "  git config --global --unset core.hooksPath || true"
+	@echo "  git config --global --unset hooks.gitleaks || true"

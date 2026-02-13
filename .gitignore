@@ -1,2 +1,6 @@
 .DS_Store
-.vscode
+.vscode/
+pre-commit.sh
+repomix-output.*
+repomix-*.xml
+repomix-*.md

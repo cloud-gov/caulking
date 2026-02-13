@@ -1,0 +1,49 @@
+# .pre-commit-config.yaml
+#
+# Repo-local hygiene hooks (format/lint). Global Caulking hooks already enforce:
+# - forbidden-file denylist
+# - gitleaks scanning (staged for pre-commit; pushed range for pre-push)
+
+minimum_pre_commit_version: "3.6.0"
+default_stages: [pre-commit, pre-push]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: ["-x", "-S", "error"]
+
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.12.0-2
+    hooks:
+      - id: shfmt
+        args: ["-w", "-i", "2", "-ci", "-sr"]
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.10
+    hooks:
+      - id: actionlint
+        files: ^\.github/workflows/.*\.(yml|yaml)$
+
+  - repo: meta
+    hooks:
+      - id: check-useless-excludes
+      - id: check-hooks-apply
