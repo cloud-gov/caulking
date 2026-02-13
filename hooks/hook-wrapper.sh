@@ -5,6 +5,7 @@ set -euo pipefail
 # Installed as: ~/.config/git/hooks/{pre-commit,pre-push}
 #
 # Responsibilities:
+# - Block obviously-sensitive file types/names from being committed (high-signal DLP guardrail)
 # - Run gitleaks with the global XDG config
 # - Optionally merge a repo allowlist config (.gitleaks.repo.toml) if present
 # - Respect SKIP=gitleaks if the user insists
@@ -32,12 +33,72 @@ If you think this is a false positive:
 EOF
 }
 
+print_forbidden_file_hint() {
+  cat <<'EOF'
+Caulking blocked a forbidden file from being committed.
+
+Why:
+  These file types commonly contain private keys, certificates, credentials, or secret stores.
+
+What to do instead:
+  - Put secrets in an approved secret manager and reference them at runtime.
+  - If this is a legitimate test fixture, rename it to a safe extension and/or add it to an allowlist policy
+    (do NOT commit real keys).
+
+EOF
+}
+
+# -------------------------------------------------------------------
+# High-signal "forbidden files" guardrail (content-agnostic)
+# - Only runs for pre-commit (staged files)
+# - Intentionally narrow to avoid false positives
+# -------------------------------------------------------------------
+enforce_forbidden_staged_files() {
+  [[ "$stage" == "pre-commit" ]] || return 0
+
+  # Get staged additions/modifications/renames (exclude deletions)
+  local staged
+  staged="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)"
+  [[ -n "$staged" ]] || return 0
+
+  # Denylist patterns (regex). Keep this small + high-signal.
+  local -a deny_patterns=(
+    '\.pem$'
+    '\.key$'
+    '\.p12$'
+    '\.pfx$'
+    '\.kdbx$'
+    '(^|/)id_rsa$'
+    '(^|/)id_dsa$'
+    '(^|/)id_ecdsa$'
+    '(^|/)id_ed25519$'
+    '(^|/)\.env(\..*)?$'
+    '(^|/)ssh_host_.*_key$'
+    '(^|/)ssh_host_.*_key\.pub$'
+  )
+
+  local f pat
+  while IFS= read -r f; do
+    [[ -n "$f" ]] || continue
+    for pat in "${deny_patterns[@]}"; do
+      if [[ "$f" =~ $pat ]]; then
+        say "ERROR: forbidden file staged: $f"
+        print_forbidden_file_hint
+        exit 1
+      fi
+    done
+  done <<<"$staged"
+}
+
 # Prevent recursion if repo-local hook calls into the global hook path
 export CAULKING_HOOK_ACTIVE="${CAULKING_HOOK_ACTIVE:-}"
 if [[ "${CAULKING_HOOK_ACTIVE}" == "1" ]]; then
   exit 0
 fi
 export CAULKING_HOOK_ACTIVE="1"
+
+# Always enforce forbidden file guardrail on pre-commit (even if SKIP=gitleaks is used).
+enforce_forbidden_staged_files
 
 # If user explicitly asked to skip gitleaks for this commit/push, allow it.
 # (No prompting in a hook wrapper — prompting breaks automation.)
