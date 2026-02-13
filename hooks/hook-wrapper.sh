@@ -18,6 +18,20 @@ say() { printf "%s\n" "$*"; }
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 GITLEAKS_CFG="$XDG_CONFIG_HOME/gitleaks/config.toml"
 
+print_false_positive_hint() {
+  cat <<'EOF'
+gitleaks blocked this operation.
+
+If you think this is a false positive:
+  1) Prefer fixing the pattern or adding a repo allowlist in .gitleaks.repo.toml
+  2) Break-glass for a single operation:
+       SKIP=gitleaks git commit -m "..."
+       SKIP=gitleaks git push
+
+(Use break-glass sparingly; it bypasses secret scanning.)
+EOF
+}
+
 # Prevent recursion if repo-local hook calls into the global hook path
 export CAULKING_HOOK_ACTIVE="${CAULKING_HOOK_ACTIVE:-}"
 if [[ "${CAULKING_HOOK_ACTIVE}" == "1" ]]; then
@@ -58,9 +72,18 @@ else
     fi
   }
 
+  # Run gitleaks and print a short false-positive / break-glass hint on failure.
+  run_gitleaks_or_hint() {
+    # Usage: run_gitleaks_or_hint <extra args...>
+    if ! run_gitleaks_git "$@"; then
+      print_false_positive_hint
+      exit 1
+    fi
+  }
+
   if [[ "$stage" == "pre-commit" ]]; then
     # Staged-only scan: fast + precise.
-    run_gitleaks_git --staged
+    run_gitleaks_or_hint --staged
   else
     # pre-push: scan ONLY what is being pushed (avoid scanning entire repo history).
     #
@@ -98,10 +121,10 @@ else
         # This avoids invalid ranges like:
         #   0000000000..<sha>
         #
-        run_gitleaks_git --log-opts="$local_sha --not --remotes=$remote_name"
+        run_gitleaks_or_hint --log-opts="$local_sha --not --remotes=$remote_name"
       else
         # Update existing ref: scan only the range being pushed.
-        run_gitleaks_git --log-opts="$remote_sha..$local_sha"
+        run_gitleaks_or_hint --log-opts="$remote_sha..$local_sha"
       fi
     done
 
@@ -110,7 +133,7 @@ else
       # (Still much better than scanning full history.)
       head_sha="$(git rev-parse HEAD 2>/dev/null || true)"
       if [[ -n "$head_sha" ]]; then
-        run_gitleaks_git --log-opts="$head_sha --not --remotes=$remote_name"
+        run_gitleaks_or_hint --log-opts="$head_sha --not --remotes=$remote_name"
       fi
       : "${remote_url:=}"
     fi

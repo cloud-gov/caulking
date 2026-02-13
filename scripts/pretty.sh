@@ -7,8 +7,10 @@ use_color() {
   [[ -z "${NO_COLOR:-}" ]] && is_tty
 }
 
+# Use unicode box drawing only when interactive and not explicitly disabled.
+# Also avoid unicode when TERM=dumb (common in some CI/log contexts).
 use_unicode() {
-  [[ -z "${CAULKING_ASCII_BOX:-}" ]] && is_tty
+  [[ -z "${CAULKING_ASCII_BOX:-}" ]] && is_tty && [[ "${TERM:-}" != "dumb" ]]
 }
 
 RESET=""
@@ -147,6 +149,62 @@ _pad_to() {
     printf ' '
   done
 }
+
+# Format stdin lines like "key: value" into aligned bullet lines:
+#   - key  : value
+# Non "key: value" lines are emitted as:
+#   - line
+kv_list() {
+  local max=0 line key val is_kv
+  local -a keys=() vals=() kv=()
+
+  while IFS= read -r line; do
+    # Preserve blank lines.
+    if [[ -z "$line" ]]; then
+      keys+=("")
+      vals+=("")
+      kv+=(0)
+      continue
+    fi
+
+    is_kv=0
+    if [[ "$line" == *:* ]]; then
+      key="${line%%:*}"
+      val="${line#*:}"
+      val="${val# }" # trim one leading space
+      # treat as KV only if there's something on the right side
+      if [[ -n "$val" ]]; then
+        is_kv=1
+        ((${#key} > max)) && max=${#key}
+      fi
+    fi
+
+    if [[ "$is_kv" -eq 1 ]]; then
+      keys+=("$key")
+      vals+=("$val")
+      kv+=(1)
+    else
+      keys+=("$line")
+      vals+=("")
+      kv+=(0)
+    fi
+  done
+
+  local i
+  for i in "${!keys[@]}"; do
+    if [[ -z "${keys[$i]}" && "${kv[$i]}" -eq 0 ]]; then
+      printf '\n'
+      continue
+    fi
+
+    if [[ "${kv[$i]}" -eq 1 ]]; then
+      printf -- "- %-*s : %s\n" "$max" "${keys[$i]}" "${vals[$i]}"
+    else
+      printf -- "- %s\n" "${keys[$i]}"
+    fi
+  done
+}
+
 
 pretty_box() {
   local title="${1:-}"

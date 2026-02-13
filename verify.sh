@@ -208,14 +208,14 @@ main() {
   printf '\n'
   {
     printf '%s\n' "All checks passed."
+    printf '\n'
     printf '%s\n' "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
     printf '\n'
     local l=""
     for l in "${SUMMARY_LINES[@]}"; do
-      printf '%s\n' "- $l"
+      printf '%s\n' "$l"
     done
-  } | pretty_box "Caulking Audit [OK]" "$GREEN"
-
+  } | kv_list | pretty_box "Caulking Audit [OK]" "$GREEN"
 }
 
 main "$@"
