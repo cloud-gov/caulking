@@ -5,6 +5,13 @@ on:
     types: [opened, edited, reopened]
     branches: [main, master, develop]
 
+# Least-privilege token permissions:
+# - read PR metadata/body to validate the template section
+# - read repo contents is harmless and keeps defaults consistent across workflows
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   security-considerations:
     runs-on: ubuntu-latest
