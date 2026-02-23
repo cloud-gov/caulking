@@ -6,6 +6,11 @@ name: Install and verify
 on:
   pull_request:
 
+# Least-privilege token permissions.
+# actions/checkout recommends contents: read for standard usage.
+permissions:
+  contents: read
+
 jobs:
   install_and_verify:
     runs-on: macos-latest
