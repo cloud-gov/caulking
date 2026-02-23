@@ -1,0 +1,32 @@
+# =====================================================================
+# FILE: .github/workflows/run-tests.yml
+# =====================================================================
+name: Install and verify
+
+on:
+  pull_request:
+
+# Least-privilege token permissions.
+# actions/checkout recommends contents: read for standard usage.
+permissions:
+  contents: read
+
+jobs:
+  install_and_verify:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: "false"
+
+      - name: Install prerequisites (Homebrew)
+        run: |
+          brew update >/dev/null 2>&1 || true
+
+      - name: Install + verify + audit
+        run: |
+          export TERM=screen-256color
+          export CAULKING_AUDIT_ROOT="$GITHUB_WORKSPACE"
+          make install
+          make verify
+          make audit
