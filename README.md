@@ -42,12 +42,51 @@ Required:
 
 - `git`
 - `bash`
-- `gitleaks` v8+ (Caulking will try to install/upgrade via Homebrew on macOS)
+- `gitleaks` v8+
 
 Optional (but useful):
 
 - `brew` (macOS install helper)
 - `prek` **or** `pre-commit` (only needed if you want to run repo lint/format hooks via `make lint`)
+
+### Installing gitleaks
+
+**macOS (Homebrew):**
+
+```bash
+brew install gitleaks
+```
+
+Caulking will attempt to install gitleaks via Homebrew if not found.
+
+**Linux (manual):**
+
+```bash
+# Download latest release (adjust version and arch as needed)
+GITLEAKS_VERSION=8.30.1
+ARCH=x64  # or arm64 for ARM systems
+
+curl -sSfL -o /tmp/gitleaks.tar.gz \
+  "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz"
+
+sudo tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+rm /tmp/gitleaks.tar.gz
+
+# Verify installation
+gitleaks version
+```
+
+**Linux (package managers):**
+
+```bash
+# Arch Linux (AUR)
+yay -S gitleaks
+
+# NixOS
+nix-env -iA nixpkgs.gitleaks
+```
+
+For other distributions, see the [gitleaks releases page](https://github.com/gitleaks/gitleaks/releases).
 
 ---
 
@@ -179,6 +218,14 @@ Verify proves that enforcement actually works:
 ```bash
 make verify
 ```
+
+For a quick status check:
+
+```bash
+make status
+```
+
+This shows whether hooks are installed and gitleaks is working, without running the full functional test suite.
 
 Audit is intentionally boring and currently aliases verify:
 

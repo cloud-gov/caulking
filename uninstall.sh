@@ -8,11 +8,8 @@ source "$ROOT_DIR/scripts/lib.sh"
 on_err_trap
 enable_xtrace_if_debug
 
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
-
-STATE_DIR="$XDG_CONFIG_HOME/caulking"
-PREV_HOOKSPATH_FILE="$STATE_DIR/previous_hookspath"
+# Load standard XDG paths
+eval "$(caulking_export_paths)"
 
 need_cmd git
 

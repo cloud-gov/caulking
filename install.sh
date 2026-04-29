@@ -8,13 +8,8 @@ source "$ROOT_DIR/scripts/lib.sh"
 on_err_trap
 enable_xtrace_if_debug
 
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
-GITLEAKS_DIR="$XDG_CONFIG_HOME/gitleaks"
-GITLEAKS_CFG="$GITLEAKS_DIR/config.toml"
-
-STATE_DIR="$XDG_CONFIG_HOME/caulking"
-PREV_HOOKSPATH_FILE="$STATE_DIR/previous_hookspath"
+# Load standard XDG paths
+eval "$(caulking_export_paths)"
 
 HOOK_WRAPPER_SRC="$ROOT_DIR/hooks/hook-wrapper.sh"
 
@@ -25,7 +20,9 @@ install_gitleaks_if_missing() {
   fi
   if have brew; then
     info "Installing gitleaks via Homebrew..."
-    brew install gitleaks > /dev/null 2>&1 || true
+    if ! brew install gitleaks 2>&1; then
+      warn "Homebrew install encountered issues; checking if gitleaks exists anyway"
+    fi
   fi
   have gitleaks || die "gitleaks not found. Install it (gitleaks v8+) and re-run."
 }
