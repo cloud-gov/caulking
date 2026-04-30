@@ -59,11 +59,13 @@ See the [gitleaks rule list](https://github.com/gitleaks/gitleaks#rules) for det
 
 Caulking blocks commits containing high-risk file types regardless of content:
 
-- Private keys: `.pem`, `.key`, `.p12`, `.pfx`, `.jks`
-- SSH keys: `id_rsa`, `id_ed25519`, `id_ecdsa`, `ssh_host_*_key`
+- Private keys: `.pem`, `.key`, `.der`, `.p12`, `.pfx`, `.jks`, `.keystore`, `.kdbx`, `.agekey`
+- SSH keys: `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`, `ssh_host_*_key`
 - Credentials: `.env`, `.envrc`, `.netrc`, `.git-credentials`
-- Cloud configs: `.aws/credentials`, `.kube/config`, `.docker/config.json`
-- Terraform state: `.tfstate`, `.tfvars`
+- Cloud configs: `.aws/credentials`, `.kube/config`, `.docker/config.json`, `.cf/config.json`
+- Terraform: `.tfstate`, `.tfstate.backup`, `.terraform/`, `.terraformrc`
+- System files: `shadow`, `passwd`, `group`, `gshadow`
+- Package auth: `.npmrc`, `.pypirc`, `.vault-token`
 
 This denylist cannot be bypassed via allowlist. If you need to commit a `.pem` file, you are doing something wrong.
 
@@ -255,6 +257,26 @@ Uses:
 - otherwise `pre-commit`
 
 If neither is installed, it fails loudly. This is deliberate.
+
+---
+
+## Local testing
+
+Run the test suite:
+
+```bash
+make test           # macOS (native)
+make docker-test    # Linux (Ubuntu container)
+make docker-full    # Full install + verify + test in Linux
+```
+
+For cross-distro validation:
+
+```bash
+make docker-debian  # Debian 12
+make docker-alpine  # Alpine Linux (musl)
+make docker-all     # All distros
+```
 
 ---
 
