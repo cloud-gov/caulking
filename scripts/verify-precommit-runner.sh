@@ -55,7 +55,7 @@ fi
 # In CI environments without prek/pre-commit, this is acceptable since
 # pre-commit tooling is for developer workflow, not caulking's core functionality.
 # The .pre-commit-config.yaml is for linting THIS repo, not for caulking's users.
-if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+if [[ "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" || "${GITLAB_CI:-}" == "true" ]]; then
   warn "Repo has .pre-commit-config.yaml but neither prek nor pre-commit is installed (CI environment - skipping)"
   exit 0
 fi

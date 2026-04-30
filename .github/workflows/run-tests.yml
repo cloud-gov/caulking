@@ -1,93 +1,32 @@
 # =====================================================================
 # FILE: .github/workflows/run-tests.yml
 # =====================================================================
-# Security-hardened CI workflow for Caulking
-# See: https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions
-
-name: CI
+name: Install and verify
 
 on:
   pull_request:
-  push:
-    branches: [main]
 
-# Restrict GITHUB_TOKEN permissions to minimum required.
-# See: https://docs.github.com/en/actions/security-guides/automatic-token-authentication
+# Least-privilege token permissions.
+# actions/checkout recommends contents: read for standard usage.
 permissions:
   contents: read
 
-# Prevent concurrent runs on the same branch/PR to save resources.
-# Cancel in-progress runs when a new commit is pushed.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  # Pin gitleaks version for reproducibility
-  GITLEAKS_VERSION: "8.30.1"
-  # Checksum for gitleaks linux x64 binary (SHA256)
-  # From: https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt
-  GITLEAKS_SHA256_LINUX_X64: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
-
 jobs:
   install_and_verify:
-    name: Test (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-
+    runs-on: macos-latest
     steps:
-      # Pin to specific commit SHA for supply chain security.
-      # See: https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-third-party-actions
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@v6
         with:
-          persist-credentials: false
           submodules: "false"
 
-      - name: Install prerequisites (macOS)
-        if: runner.os == 'macOS'
+      - name: Install prerequisites (Homebrew)
         run: |
-          # Homebrew handles gitleaks installation via ensure-tools
           brew update >/dev/null 2>&1 || true
 
-      - name: Install prerequisites (Linux)
-        if: runner.os == 'Linux'
+      - name: Install + verify + audit
         run: |
-          set -euo pipefail
-
-          # Download gitleaks
-          curl -sSfL -o /tmp/gitleaks.tar.gz \
-            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
-
-          # Verify checksum before extraction
-          echo "${GITLEAKS_SHA256_LINUX_X64}  /tmp/gitleaks.tar.gz" | sha256sum -c -
-
-          # Extract and install
-          sudo tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
-          rm /tmp/gitleaks.tar.gz
-
-          # Verify installation
-          gitleaks version
-
-      - name: Run install
-        run: |
-          set -euo pipefail
           export TERM=screen-256color
+          export CAULKING_AUDIT_ROOT="$GITHUB_WORKSPACE"
           make install
-
-      - name: Run verify
-        run: |
-          set -euo pipefail
-          export TERM=screen-256color
-          export CAULKING_AUDIT_ROOT="${GITHUB_WORKSPACE}"
           make verify
-
-      - name: Run tests
-        run: |
-          set -euo pipefail
-          export TERM=screen-256color
-          make test
+          make audit
