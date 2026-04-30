@@ -1,0 +1,227 @@
+# docker-compose.yml
+# Local Linux testing environment for Caulking
+#
+# Usage:
+#   make docker-test        - Run bash unit tests (Ubuntu, fast)
+#   make docker-full        - Run full install + verify + test (Ubuntu)
+#   make docker-shell       - Interactive shell for debugging
+#
+# Multi-distro testing:
+#   make docker-debian      - Test on Debian 12
+#   make docker-alpine      - Test on Alpine Linux (musl)
+#   make docker-ci          - Simulate GitHub Actions CI environment
+#   make docker-fresh       - Test fresh install (no gitleaks pre-installed)
+#   make docker-all         - Run all distro tests
+#
+# macOS note: Docker cannot run macOS containers. Use native `make test` for macOS.
+# For CI-level macOS testing, use GitHub Actions (macos-latest runner).
+
+services:
+  # ---------------------------------------------------------------------------
+  # Ubuntu 24.04 (default, fast)
+  # ---------------------------------------------------------------------------
+  test:
+    build:
+      context: .
+      target: ubuntu-with-gitleaks
+      args:
+        GITLEAKS_VERSION: "8.30.1"
+    volumes:
+      - .:/caulking:ro
+    working_dir: /caulking
+    command: make test
+    environment:
+      - TERM=xterm-256color
+
+  full:
+    build:
+      context: .
+      target: ubuntu-with-gitleaks
+      args:
+        GITLEAKS_VERSION: "8.30.1"
+    volumes:
+      - .:/caulking:ro
+    working_dir: /caulking
+    # Skip pre-commit runner check in Docker (prek/pre-commit not installed)
+    # The pre-commit runner is for developer workflow, not caulking core functionality
+    command: >
+      bash -c "
+        cp -r /caulking /tmp/caulking-test &&
+        cd /tmp/caulking-test &&
+        rm -f .pre-commit-config.yaml &&
+        make install &&
+        make verify &&
+        make test
+      "
+    environment:
+      - TERM=xterm-256color
+
+  shell:
+    build:
+      context: .
+      target: ubuntu-with-gitleaks
+      args:
+        GITLEAKS_VERSION: "8.30.1"
+    volumes:
+      - .:/caulking:ro
+    working_dir: /caulking
+    command: bash
+    stdin_open: true
+    tty: true
+    environment:
+      - TERM=xterm-256color
+
+  # ---------------------------------------------------------------------------
+  # Fresh install test (no gitleaks - tests error handling)
+  # ---------------------------------------------------------------------------
+  fresh-install:
+    build:
+      context: .
+      target: fresh-install
+    volumes:
+      - .:/caulking:ro
+    working_dir: /caulking
+    command: >
+      bash -c "
+        echo '=== Fresh Install Test ===' &&
+        echo 'Testing error message when gitleaks is missing...' &&
+        cp -r /caulking /tmp/caulking-test &&
+        cd /tmp/caulking-test &&
+        if make install 2>&1; then
+          echo 'FAIL: Install should have failed without gitleaks' && exit 1
+        else
+          echo 'PASS: Install correctly failed without gitleaks'
+        fi
+      "
+    environment:
+      - TERM=xterm-256color
+
+  # ---------------------------------------------------------------------------
+  # Debian 12 (alternative apt-based distro)
+  # ---------------------------------------------------------------------------
+  debian:
+    build:
+      context: .
+      target: debian
+      args:
+        GITLEAKS_VERSION: "8.30.1"
+    volumes:
+      - .:/caulking:ro
+    working_dir: /caulking
+    command: >
+      bash -c "
+        echo '=== Debian 12 Test ===' &&
+        cp -r /caulking /tmp/caulking-test &&
+        cd /tmp/caulking-test &&
+        rm -f .pre-commit-config.yaml &&
+        make install &&
+        make verify &&
+        make test &&
+        echo '=== Debian 12 PASSED ==='
+      "
+    environment:
+      - TERM=xterm-256color
+
+  # ---------------------------------------------------------------------------
+  # Alpine Linux (musl libc - catches glibc assumptions)
+  # ---------------------------------------------------------------------------
+  alpine:
+    build:
+      context: .
+      target: alpine
+      args:
+        GITLEAKS_VERSION: "8.30.1"
+    volumes:
+      - .:/caulking:ro
+    working_dir: /caulking
+    command: >
+      bash -c "
+        echo '=== Alpine Linux Test ===' &&
+        cp -r /caulking /tmp/caulking-test &&
+        cd /tmp/caulking-test &&
+        rm -f .pre-commit-config.yaml &&
+        make install &&
+        make verify &&
+        make test &&
+        echo '=== Alpine Linux PASSED ==='
+      "
+    environment:
+      - TERM=xterm-256color
+
+  # ---------------------------------------------------------------------------
+  # GitHub Actions CI simulation
+  # ---------------------------------------------------------------------------
+  ci:
+    build:
+      context: .
+      target: ci-simulation
+      args:
+        GITLEAKS_VERSION: "8.30.1"
+        GITLEAKS_SHA256_LINUX_X64: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+    volumes:
+      - .:/github/workspace:ro
+    working_dir: /github/workspace
+    command: >
+      bash -c "
+        set -euo pipefail &&
+        echo '=== GitHub Actions CI Simulation ===' &&
+        echo 'Environment: CI=$CI GITHUB_ACTIONS=$GITHUB_ACTIONS' &&
+        cp -r /github/workspace /tmp/workspace &&
+        cd /tmp/workspace &&
+        rm -f .pre-commit-config.yaml &&
+        echo '--- Step 1: make install ---' &&
+        make install &&
+        echo '--- Step 2: make verify ---' &&
+        make verify &&
+        echo '--- Step 3: make test ---' &&
+        make test &&
+        echo '=== CI Simulation PASSED ==='
+      "
+    environment:
+      - TERM=xterm-256color
+      - CI=true
+      - GITHUB_ACTIONS=true
+
+  # ---------------------------------------------------------------------------
+  # Upgrade test (from previous version)
+  # ---------------------------------------------------------------------------
+  upgrade:
+    build:
+      context: .
+      target: ubuntu-with-gitleaks
+      args:
+        GITLEAKS_VERSION: "8.30.1"
+    volumes:
+      - .:/caulking:ro
+    working_dir: /caulking
+    command: >
+      bash -c "
+        set -euo pipefail &&
+        echo '=== Upgrade Test ===' &&
+
+        echo '--- Simulating previous version install ---' &&
+        mkdir -p ~/.config/git/hooks ~/.config/gitleaks ~/.config/caulking &&
+
+        echo '#!/usr/bin/env bash' > ~/.config/git/hooks/pre-commit &&
+        echo 'echo Old hook v3.2.1' >> ~/.config/git/hooks/pre-commit &&
+        echo 'exit 0' >> ~/.config/git/hooks/pre-commit &&
+        chmod +x ~/.config/git/hooks/pre-commit &&
+
+        git config --global core.hooksPath ~/.config/git/hooks &&
+
+        echo '[extend]' > ~/.config/gitleaks/config.toml &&
+        echo 'useDefault = true' >> ~/.config/gitleaks/config.toml &&
+
+        echo '--- Running upgrade (new version install) ---' &&
+        cp -r /caulking /tmp/caulking-test &&
+        cd /tmp/caulking-test &&
+        rm -f .pre-commit-config.yaml &&
+        make install &&
+
+        echo '--- Verifying upgrade ---' &&
+        make verify &&
+        make test &&
+        echo '=== Upgrade Test PASSED ==='
+      "
+    environment:
+      - TERM=xterm-256color

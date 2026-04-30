@@ -139,18 +139,18 @@ printf '\n'
 info "== Ensure executable bits =="
 
 exec_files=(
-  "install.sh"
-  "uninstall.sh"
-  "verify.sh"
-  "check_repos.sh"
-  "hooks/hook-wrapper.sh"
-  "scripts/ensure-tools.sh"
-  "scripts/repo-doctor.sh"
-  "scripts/cleanup-vestigial.sh"
   "scripts/pretty.sh"
   "scripts/verify-precommit-runner.sh"
   "scripts/lint.sh"
+  "scripts/lib.sh"
+  "scripts/status.sh"
   "tests/run.sh"
+  "tests/test_precommit_staged_only.sh"
+  "tests/test_precommit_denylist_skip.sh"
+  "tests/test_prepush_ref_parsing.sh"
+  "tests/test_skip_gitleaks.sh"
+  "tests/test_gitleaks_missing.sh"
+  "tests/test_local_hook_chain.sh"
 )
 
 for f in "${exec_files[@]}"; do

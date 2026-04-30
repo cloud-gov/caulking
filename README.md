@@ -1,15 +1,17 @@
 # Caulking
 
-Caulking installs **global Git hooks** that run **gitleaks** so you don’t accidentally commit or push secrets.
+**Operator:** GSA / cloud.gov | **License:** CC0 (Public Domain)
 
-It’s intentionally boring:
+Caulking installs **global Git hooks** that run **gitleaks** so you don't accidentally commit or push secrets.
+
+It's intentionally boring:
 
 - deterministic install
 - predictable XDG layout
 - explicit verify/audit
 - minimal moving parts
 
-If you want fancy, you’re in the wrong repo. If you want “it works the same every time,” welcome.
+If you want fancy, you're in the wrong repo. If you want "it works the same every time," welcome.
 
 ---
 
@@ -20,14 +22,14 @@ After install, Git will use a global hooks directory:
 - Hooks live at: `~/.config/git/hooks/`
   - `pre-commit` (scans staged changes)
   - `pre-push` (scans the pushed range)
-- Git is set to use it globally:
+- Git is configured to use this globally (done by `make install`):
   - `git config --global core.hooksPath ~/.config/git/hooks`
 
 Caulking also writes a global gitleaks config:
 
 - `~/.config/gitleaks/config.toml`
 
-**Important:** the global config must extend defaults, or you’ve built security theater:
+**Important:** the global config must extend defaults, or you've built security theater:
 
 ```toml
 [extend]
@@ -36,29 +38,101 @@ useDefault = true
 
 ---
 
+## What gets blocked
+
+Caulking prevents two categories of leaks:
+
+### 1. Content-based detection (gitleaks)
+
+Gitleaks scans staged content for patterns matching:
+
+- AWS access keys and secrets
+- GitHub/GitLab tokens
+- Private keys (RSA, DSA, ECDSA, Ed25519)
+- API keys and bearer tokens
+- Database connection strings
+- And 100+ other secret patterns
+
+See the [gitleaks rule list](https://github.com/gitleaks/gitleaks#rules) for details.
+
+### 2. Filename-based blocking (built-in denylist)
+
+Caulking blocks commits containing high-risk file types regardless of content:
+
+- Private keys: `.pem`, `.key`, `.p12`, `.pfx`, `.jks`
+- SSH keys: `id_rsa`, `id_ed25519`, `id_ecdsa`, `ssh_host_*_key`
+- Credentials: `.env`, `.envrc`, `.netrc`, `.git-credentials`
+- Cloud configs: `.aws/credentials`, `.kube/config`, `.docker/config.json`
+- Terraform state: `.tfstate`, `.tfvars`
+
+This denylist cannot be bypassed via allowlist. If you need to commit a `.pem` file, you are doing something wrong.
+
+---
+
 ## Prerequisites
 
 Required:
 
-- `git`
-- `bash`
-- `gitleaks` v8+ (Caulking will try to install/upgrade via Homebrew on macOS)
+- `git` (configured with user.name and user.email)
+- `bash` 4.0+
+- `gitleaks` v8.21.0+
 
 Optional (but useful):
 
 - `brew` (macOS install helper)
 - `prek` **or** `pre-commit` (only needed if you want to run repo lint/format hooks via `make lint`)
 
+### Installing gitleaks
+
+**macOS (Homebrew):**
+
+```bash
+brew install gitleaks
+```
+
+If gitleaks is missing during `make install`, Caulking will attempt to install it via Homebrew automatically.
+
+**Linux (manual):**
+
+```bash
+# Download latest release (adjust version and arch as needed)
+GITLEAKS_VERSION=8.30.1
+ARCH=x64  # or arm64 for ARM systems
+
+curl -sSfL -o /tmp/gitleaks.tar.gz \
+  "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz"
+
+sudo tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+rm /tmp/gitleaks.tar.gz
+
+# Verify installation
+gitleaks version
+```
+
+**Linux (package managers):**
+
+```bash
+# Arch Linux (AUR)
+yay -S gitleaks
+
+# NixOS
+nix-env -iA nixpkgs.gitleaks
+```
+
+For other distributions, see the [gitleaks releases page](https://github.com/gitleaks/gitleaks/releases).
+
 ---
 
 ## Quick start
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/cloud-gov/caulking.git
 cd caulking
 make install
 make verify
 ```
+
+If `make verify` passes, you'll see an audit box confirming all checks passed with a verification ID for compliance records.
 
 If `make verify` fails, it will tell you what is broken and how to fix it. The output is not lyrical, but it is correct.
 
@@ -66,7 +140,7 @@ If `make verify` fails, it will tell you what is broken and how to fix it. The o
 
 ## Daily use
 
-Once installed, you don’t “run” Caulking.
+Once installed, you don't "run" Caulking.
 
 You just work:
 
@@ -76,6 +150,16 @@ git push
 ```
 
 If you stage or push something that looks like a secret, gitleaks blocks it. That is the whole point.
+
+### When a commit is blocked
+
+If you stage a secret, the commit will fail with output showing:
+
+- The matched rule (e.g., `aws-access-token`)
+- The file and line number
+- A snippet of the matched content
+
+The commit does not proceed. Fix the issue before continuing.
 
 ---
 
@@ -150,6 +234,8 @@ SKIP=gitleaks git commit -m "..."
 SKIP=gitleaks git push
 ```
 
+This bypasses gitleaks pattern scanning only. The filename denylist cannot be bypassed.
+
 This is an escape hatch, not a workflow.
 If you use it often, your rules are wrong and you should fix them.
 
@@ -180,6 +266,16 @@ Verify proves that enforcement actually works:
 make verify
 ```
 
+The verify output includes a verification ID (e.g., `caulk-20260429-221622-bb9a4a92`) with user, host, platform, and timestamp for audit documentation.
+
+For a quick status check:
+
+```bash
+make status
+```
+
+This shows whether hooks are installed and gitleaks is working, without running the full functional test suite.
+
 Audit is intentionally boring and currently aliases verify:
 
 ```bash
@@ -192,7 +288,9 @@ If you want pretty dashboards, write one. This tool is about not leaking secrets
 
 ## Install details
 
-### Where things go (XDG)
+### Where things go (XDG paths)
+
+Caulking follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html). All files go under `~/.config/`:
 
 Hooks:
 
@@ -208,6 +306,21 @@ State:
 - `~/.config/caulking/previous_hookspath`
 
 This exists solely to restore your previous `core.hooksPath` on uninstall. It is not a feature. It is housekeeping.
+
+---
+
+## Upgrading
+
+Pull the latest version and reinstall:
+
+```bash
+cd caulking
+git pull
+make install
+make verify
+```
+
+Caulking does not have automatic updates. You are responsible for keeping it current.
 
 ---
 
@@ -244,7 +357,11 @@ Check a tree of repos with:
 ./check_repos.sh <root_dir> check_hooks_path
 ```
 
-Fix the offenders. Don’t normalize bypassing guardrails.
+This scans all git repositories under `<root_dir>` and reports any that set a local `core.hooksPath`. Fix the offenders. Don't normalize bypassing guardrails.
+
+### Windows
+
+Caulking requires a POSIX shell. On Windows, use WSL (Windows Subsystem for Linux). Native Windows (Git Bash, PowerShell) is not supported.
 
 ---
 

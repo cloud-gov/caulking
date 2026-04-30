@@ -207,6 +207,17 @@ else
   if [[ "$stage" == "pre-commit" ]]; then
     run_gitleaks_or_hint --staged
   else
+    # Pre-push scanning flow:
+    # ========================
+    # Git provides ref updates on stdin: <local_ref> <local_sha> <remote_ref> <remote_sha>
+    #
+    # Cases:
+    # 1. local_sha is all zeros  -> Branch deletion, skip scan (nothing to scan)
+    # 2. remote_sha is all zeros -> New branch, scan all commits not on any remote branch
+    # 3. Both set                -> Normal push, scan commits in range remote_sha..local_sha
+    # 4. No stdin (empty)        -> Fallback to scanning HEAD vs remote (force push safety net)
+    #
+    # The --log-opts flag passes git-log options to gitleaks for commit range selection.
     remote_name="${1:-origin}"
     remote_url="${2:-}"
 

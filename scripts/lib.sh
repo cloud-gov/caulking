@@ -76,6 +76,22 @@ xdg_config_home() { printf '%s\n' "${XDG_CONFIG_HOME:-$HOME/.config}"; }
 caulking_state_dir() { printf '%s\n' "$(xdg_config_home)/caulking"; }
 git_hook_dir() { printf '%s\n' "$(xdg_config_home)/git/hooks"; }
 gitleaks_cfg_path() { printf '%s\n' "$(xdg_config_home)/gitleaks/config.toml"; }
+gitleaks_cfg_dir() { printf '%s\n' "$(xdg_config_home)/gitleaks"; }
+prev_hookspath_file() { printf '%s\n' "$(caulking_state_dir)/previous_hookspath"; }
+
+# Export standard XDG paths for Caulking installation.
+# Usage: eval "$(caulking_export_paths)"
+# Sets: XDG_CONFIG_HOME, HOOK_DIR, GITLEAKS_DIR, GITLEAKS_CFG, STATE_DIR, PREV_HOOKSPATH_FILE
+caulking_export_paths() {
+  cat << 'PATHS'
+XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
+GITLEAKS_DIR="$XDG_CONFIG_HOME/gitleaks"
+GITLEAKS_CFG="$GITLEAKS_DIR/config.toml"
+STATE_DIR="$XDG_CONFIG_HOME/caulking"
+PREV_HOOKSPATH_FILE="$STATE_DIR/previous_hookspath"
+PATHS
+}
 
 # Normalize "v8.30.0" -> "8.30.0"
 strip_v_prefix() {

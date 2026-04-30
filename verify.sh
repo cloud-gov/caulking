@@ -10,6 +10,9 @@ source "$ROOT_DIR/scripts/pretty.sh"
 on_err_trap
 enable_xtrace_if_debug
 
+# Get caulking version
+CAULKING_VERSION="$(cat "$ROOT_DIR/VERSION" 2> /dev/null | head -n1 | cut -d' ' -f1 || echo 'unknown')"
+
 die_pretty() {
   p_err "$*"
   exit 2
@@ -17,9 +20,56 @@ die_pretty() {
 
 have_local() { command -v "$1" > /dev/null 2>&1; }
 
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
-GITLEAKS_CFG="$XDG_CONFIG_HOME/gitleaks/config.toml"
+# Load standard XDG paths
+eval "$(caulking_export_paths)"
+
+# Generate verification ID for audit trail
+# Format: caulk-YYYYMMDD-HHMMSS-<short-hash>
+generate_verification_id() {
+  local timestamp user host
+  timestamp="$(date -u +"%Y%m%d-%H%M%S")"
+  user="$(whoami)"
+  host="$(hostname)"
+  # Create a short hash from user+host+timestamp for uniqueness
+  local hash_input="${user}:${host}:${timestamp}:${CAULKING_VERSION}"
+  local short_hash
+  if have_local shasum; then
+    short_hash="$(printf '%s' "$hash_input" | shasum -a 256 | cut -c1-8)"
+  elif have_local sha256sum; then
+    short_hash="$(printf '%s' "$hash_input" | sha256sum | cut -c1-8)"
+  else
+    # Fallback: use simple checksum
+    short_hash="$(printf '%s' "$hash_input" | cksum | cut -d' ' -f1)"
+  fi
+  printf 'caulk-%s-%s' "$timestamp" "$short_hash"
+}
+
+# Get platform info
+get_platform_info() {
+  local os arch
+  os="$(uname -s)"
+  arch="$(uname -m)"
+  case "$os" in
+    Darwin)
+      local macos_ver
+      macos_ver="$(sw_vers -productVersion 2> /dev/null || echo 'unknown')"
+      printf 'macOS %s (%s)' "$macos_ver" "$arch"
+      ;;
+    Linux)
+      if [[ -f /etc/os-release ]]; then
+        # shellcheck disable=SC1091
+        local distro
+        distro="$(. /etc/os-release && echo "${NAME:-Linux} ${VERSION_ID:-}")"
+        printf '%s (%s)' "$distro" "$arch"
+      else
+        printf 'Linux (%s)' "$arch"
+      fi
+      ;;
+    *)
+      printf '%s (%s)' "$os" "$arch"
+      ;;
+  esac
+}
 
 tmpdir=""
 repo=""
@@ -220,12 +270,22 @@ main() {
   functional_test_uninstall_restores_previous_hookspath_isolated
   check_precommit_runner
 
+  # Generate verification ID for audit trail
+  local verification_id
+  verification_id="$(generate_verification_id)"
+
   printf '\n'
   {
     printf '%s\n' "All checks passed."
     printf '\n'
-    printf '%s\n' "Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+    printf '%s\n' "Verification ID: $verification_id"
     printf '\n'
+    printf '%s\n' "User: $(whoami)"
+    printf '%s\n' "Host: $(hostname)"
+    printf '%s\n' "Platform: $(get_platform_info)"
+    printf '%s\n' "Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+    printf '\n'
+    printf '%s\n' "caulking: $CAULKING_VERSION"
     local l=""
     for l in "${SUMMARY_LINES[@]}"; do
       printf '%s\n' "$l"
