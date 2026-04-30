@@ -18,10 +18,12 @@ repomix-*.md
 
 # AI agent configuration (local only)
 AGENTS.md
+HANDOFF.md
 .claude/
 .cursor/
 .aider*
 .codex/
+.opencode/
 
 # Removed workflows (delete manually)
 .github/workflows/dependency-review.yml
