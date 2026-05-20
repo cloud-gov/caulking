@@ -77,10 +77,51 @@ Required:
 - `bash` 4.0+
 - `gitleaks` v8.21.0+
 
-Optional (but useful):
+Recommended (auto-installed via Homebrew on macOS):
 
-- `brew` (macOS install helper)
-- `prek` **or** `pre-commit` (only needed if you want to run repo lint/format hooks via `make lint`)
+- `brew` (macOS package manager)
+- `prek` (fast Git hook manager, preferred) **or** `pre-commit` (for running repo-local hooks)
+
+**Note:** If you have `brew` installed, `make install` will automatically install `gitleaks`, `prek`, and `pre-commit` if they're missing. If `pre-commit` is installed from a non-Homebrew source (pip, pipx, mise), it will be migrated to Homebrew for easier updates and version consistency.
+
+### Installing gitleaks
+
+**macOS (Homebrew):**
+
+```bash
+brew install gitleaks
+```
+
+If gitleaks is missing during `make install`, Caulking will attempt to install it via Homebrew automatically.
+
+**Linux (manual):**
+
+```bash
+# Download latest release (adjust version and arch as needed)
+GITLEAKS_VERSION=8.30.1
+ARCH=x64  # or arm64 for ARM systems
+
+curl -sSfL -o /tmp/gitleaks.tar.gz \
+  "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz"
+
+sudo tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
+rm /tmp/gitleaks.tar.gz
+
+# Verify installation
+gitleaks version
+```
+
+**Linux (package managers):**
+
+```bash
+# Arch Linux (AUR)
+yay -S gitleaks
+
+# NixOS
+nix-env -iA nixpkgs.gitleaks
+```
+
+For other distributions, see the [gitleaks releases page](https://github.com/gitleaks/gitleaks/releases).
 
 ### Installing gitleaks
 
