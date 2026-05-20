@@ -86,6 +86,74 @@ What to do instead:
 EOF
 }
 
+print_npmrc_hint() {
+  cat << 'EOF'
+Caulking blocked .npmrc because it may contain auth tokens or lack security controls.
+
+Safe .npmrc files must include these security settings:
+  ignore-scripts=true
+  audit=true
+
+And must NOT contain:
+  - Auth tokens (_authToken, _auth, _password)
+  - Registry credentials
+  - API keys
+
+To fix:
+  1. Add required security settings to .npmrc:
+       ignore-scripts=true
+       audit=true
+
+  2. Remove any auth tokens (use environment variables instead):
+       # BAD:  _authToken=npm_abc123...
+       # GOOD: Use NPM_TOKEN environment variable
+
+  3. Stage and commit again
+
+For project-wide npm config, commit .npmrc with security settings.
+For auth tokens, use ~/.npmrc (user-level, gitignored by default).
+
+EOF
+}
+
+# -------------------------------------------------------------------
+# Validate .npmrc for security controls
+# -------------------------------------------------------------------
+validate_npmrc() {
+  local file="$1"
+  [[ -f "$file" ]] || return 0
+
+  local has_ignore_scripts=0
+  local has_credentials=0
+
+  # Check for required security settings
+  if grep -qE '^\s*ignore-scripts\s*=\s*true' "$file"; then
+    has_ignore_scripts=1
+  fi
+
+  # Check for credentials (auth tokens, passwords, etc.)
+  if grep -qE '(_authToken|_auth|_password|:_authToken|:_password|//.*:_authToken)' "$file"; then
+    has_credentials=1
+  fi
+
+  # Fail if credentials present
+  if [[ $has_credentials -eq 1 ]]; then
+    say "ERROR: .npmrc contains auth tokens or credentials"
+    print_npmrc_hint
+    return 1
+  fi
+
+  # Warn if missing security controls (but allow commit)
+  if [[ $has_ignore_scripts -eq 0 ]]; then
+    say "WARNING: .npmrc missing 'ignore-scripts=true' (recommended security control)"
+    say "Add this line to .npmrc to prevent arbitrary script execution:"
+    say "  ignore-scripts=true"
+    say ""
+  fi
+
+  return 0
+}
+
 # -------------------------------------------------------------------
 # High-signal "forbidden files" guardrail (content-agnostic)
 # - Only runs for pre-commit (staged files)
@@ -141,7 +209,6 @@ enforce_forbidden_staged_files() {
 
     '(^|/)(shadow|passwd|group|gshadow)$'
 
-    '(^|/)\.npmrc$'
     '(^|/)\.pypirc$'
 
     '(^|/)\.vault-token$'
@@ -150,6 +217,13 @@ enforce_forbidden_staged_files() {
   local f pat
   while IFS= read -r f; do
     [[ -n "$f" ]] || continue
+
+    # Special handling for .npmrc
+    if [[ "$f" =~ (^|/)\.npmrc$ ]]; then
+      validate_npmrc "$f" || exit 1
+      continue
+    fi
+
     for pat in "${deny_patterns[@]}"; do
       if [[ "$f" =~ $pat ]]; then
         say "ERROR: forbidden file staged: $f"
