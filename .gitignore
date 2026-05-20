@@ -1,6 +1,28 @@
+# macOS
 .DS_Store
+
+# IDE
 .vscode/
+.idea/
+
+# Legacy
 pre-commit.sh
+
+# Repomix output
 repomix-output.*
 repomix-*.xml
 repomix-*.md
+
+# Docker (local testing)
+.docker/
+
+# AI agent configuration (local only)
+AGENTS.md
+.claude/
+.cursor/
+.aider*
+.codex/
+
+# Removed workflows (delete manually)
+.github/workflows/dependency-review.yml
+.github/workflows/scorecard.yml

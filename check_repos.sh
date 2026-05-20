@@ -11,8 +11,9 @@ enable_xtrace_if_debug
 MAXDEPTH=5
 USER_DOMAIN=gsa.gov
 
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-EXPECTED_HOOKS_PATH="${XDG_CONFIG_HOME}/git/hooks"
+# Load standard XDG paths
+eval "$(caulking_export_paths)"
+EXPECTED_HOOKS_PATH="$HOOK_DIR"
 
 usage() {
   err "Usage: $0 root_dir (check_hooks_path | check_hooks_gitleaks | check_user_email)"
@@ -70,6 +71,6 @@ while IFS= read -r -d '' gitdir; do
   else
     debug "OK $option for repository: $gitrepo"
   fi
-done < <(find "$root" -name '.git' -type d -maxdepth "$MAXDEPTH" -print0 2> /dev/null)
+done < <(find "$root" -maxdepth "$MAXDEPTH" -name '.git' -type d -print0 2> /dev/null)
 
 exit "$exit_status"

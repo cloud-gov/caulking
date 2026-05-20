@@ -18,9 +18,13 @@ ensure_gitleaks() {
   else
     if have brew; then
       info "Installing gitleaks via Homebrew (best-effort)..."
-      # Avoid failing install if brew has transient issues; we verify afterward.
-      brew upgrade gitleaks > /dev/null 2>&1 || true
-      brew install gitleaks > /dev/null 2>&1 || true
+      # Log output but don't fail immediately; we verify afterward.
+      if ! brew upgrade gitleaks 2>&1; then
+        debug "brew upgrade gitleaks had issues (may not be installed yet)"
+      fi
+      if ! brew install gitleaks 2>&1; then
+        warn "brew install gitleaks encountered issues; checking if it exists anyway"
+      fi
     else
       die "gitleaks not found and Homebrew is not available. Install gitleaks v8+."
     fi

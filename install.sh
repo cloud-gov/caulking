@@ -8,13 +8,8 @@ source "$ROOT_DIR/scripts/lib.sh"
 on_err_trap
 enable_xtrace_if_debug
 
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-HOOK_DIR="$XDG_CONFIG_HOME/git/hooks"
-GITLEAKS_DIR="$XDG_CONFIG_HOME/gitleaks"
-GITLEAKS_CFG="$GITLEAKS_DIR/config.toml"
-
-STATE_DIR="$XDG_CONFIG_HOME/caulking"
-PREV_HOOKSPATH_FILE="$STATE_DIR/previous_hookspath"
+# Load standard XDG paths
+eval "$(caulking_export_paths)"
 
 HOOK_WRAPPER_SRC="$ROOT_DIR/hooks/hook-wrapper.sh"
 
@@ -25,9 +20,77 @@ install_gitleaks_if_missing() {
   fi
   if have brew; then
     info "Installing gitleaks via Homebrew..."
-    brew install gitleaks > /dev/null 2>&1 || true
+    if ! brew install gitleaks 2>&1; then
+      warn "Homebrew install encountered issues; checking if gitleaks exists anyway"
+    fi
   fi
   have gitleaks || die "gitleaks not found. Install it (gitleaks v8+) and re-run."
+}
+
+install_prek_if_missing() {
+  if have prek; then
+    debug "prek present: $(command -v prek)"
+    return 0
+  fi
+  if have brew; then
+    info "Installing prek via Homebrew..."
+    if ! brew install prek 2>&1; then
+      warn "Homebrew install encountered issues; checking if prek exists anyway"
+    fi
+  fi
+  if have prek; then
+    info "prek installed successfully"
+    return 0
+  fi
+  warn "prek not found. Install it for pre-commit hook support."
+  return 0
+}
+
+install_precommit_if_missing() {
+  if have pre-commit; then
+    local existing_path
+    existing_path="$(command -v pre-commit)"
+    debug "pre-commit present: $existing_path"
+
+    # Check if it's from mise/other non-brew sources
+    if [[ "$existing_path" != *"/opt/homebrew"* && "$existing_path" != *"/usr/local"* ]]; then
+      if have brew; then
+        info "pre-commit found at $existing_path (non-Homebrew)"
+        info "Uninstalling from pip/pipx and installing via Homebrew for consistency..."
+
+        # Try to uninstall from pip/pipx
+        if have pip; then
+          pip uninstall -y pre-commit 2>&1 || true
+        fi
+        if have pipx; then
+          pipx uninstall pre-commit 2>&1 || true
+        fi
+
+        # Install via Homebrew
+        if brew install pre-commit 2>&1; then
+          info "pre-commit installed via Homebrew"
+          return 0
+        else
+          warn "Homebrew install encountered issues; checking if pre-commit exists anyway"
+        fi
+      fi
+    fi
+    return 0
+  fi
+
+  if have brew; then
+    info "Installing pre-commit via Homebrew..."
+    if ! brew install pre-commit 2>&1; then
+      warn "Homebrew install encountered issues; checking if pre-commit exists anyway"
+    fi
+  fi
+
+  if have pre-commit; then
+    info "pre-commit installed successfully"
+    return 0
+  fi
+  warn "pre-commit not found. Install it for pre-commit hook support."
+  return 0
 }
 
 write_global_gitleaks_config() {
@@ -111,6 +174,8 @@ main() {
   chmod +x "$HOOK_WRAPPER_SRC" || true
 
   install_gitleaks_if_missing
+  install_prek_if_missing
+  install_precommit_if_missing
   write_global_gitleaks_config
 
   store_previous_hookspath_if_needed
