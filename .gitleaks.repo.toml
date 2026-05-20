@@ -6,9 +6,16 @@ useDefault = true
 [allowlist]
 description = "Allow known fake secrets used for verification and dev artifacts"
 
-paths = ['''verify\.sh$''', '''repomix-output\..*$''']
+paths = [
+    '''verify\.sh$''',
+    '''repomix-output\..*$''',
+    '''tests/test_npmrc_validation\.sh$''',  # Contains test fixtures with fake tokens
+]
 
 regexes = [
     # fake aws secret used in verify.sh
     '''WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp''',
+    # fake npm tokens used in test_npmrc_validation.sh
+    '''npm_abc123456789''',
+    '''npm_secret123''',
 ]
