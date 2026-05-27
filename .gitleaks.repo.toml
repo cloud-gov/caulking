@@ -10,6 +10,7 @@ paths = [
     '''verify\.sh$''',
     '''repomix-output\..*$''',
     '''tests/test_npmrc_validation\.sh$''',  # Contains test fixtures with fake tokens
+    '''tests/test_arn_detection\.sh$''',     # Contains test ARNs with fake account IDs
 ]
 
 regexes = [
@@ -18,4 +19,9 @@ regexes = [
     # fake npm tokens used in test_npmrc_validation.sh
     '''npm_abc123456789''',
     '''npm_secret123''',
+    # fake account IDs used in test_arn_detection.sh (non-documentation examples)
+    '''987654321098''',
+    '''876543210987''',
+    '''765432109876''',
+    '''555566667777''',
 ]
