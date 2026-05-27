@@ -57,7 +57,19 @@ The following file types are blocked by filename pattern, even if they contain n
 | `.netrc` | `~/.netrc` | HTTP authentication |
 | `.git-credentials` | `~/.git-credentials` | Git credential store |
 
-**Alternative:** Use `.env.template` or `.env.example` with placeholders, keep actual `.env` gitignored.
+#### Allowed Exceptions
+
+The following patterns are **explicitly allowed** because they are documentation/template files that should not contain real secrets:
+
+| Pattern | Examples | Notes |
+|---------|----------|-------|
+| `*.example` | `.env.example`, `.env.local.example` | Example configuration templates |
+| `*.sample` | `.env.sample` | Sample configuration files |
+| `*.template` | `.env.template` | Template files for documentation |
+
+**Best practice:** Use `.env.example` with placeholder values like `YOUR_API_KEY_HERE`, keep actual `.env` gitignored.
+
+**Alternative:** Use `.env.example` with placeholders, keep actual `.env` gitignored.
 
 ### Cloud Provider Credentials
 
