@@ -6,7 +6,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib/test-helpers.sh"
 
 # Manual setup - we DON'T want require_gitleaks() here since we're testing missing gitleaks
-test_init
+test_init "gitleaks-missing"
 isolate_env
 create_test_repo
 create_gitleaks_config
@@ -42,10 +42,7 @@ exec "$bash_path" "\$@"
 WRAPPER
 chmod +x "$restricted_path/bash"
 
-set +e
-out="$(PATH="$restricted_path" bash "$TEST_HOOK" 2>&1)"
-rc=$?
-set -e
+out="$(PATH="$restricted_path" bash "$TEST_HOOK" 2>&1)" && rc=0 || rc=$?
 
 if [[ "$rc" -eq 0 ]]; then
   echo "FAIL: Hook should fail when gitleaks is missing"

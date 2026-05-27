@@ -54,10 +54,7 @@ exit 1
 LOCALHOOK
 chmod +x "$local_hook"
 
-set +e
-out="$("$TEST_HOOK" 2>&1)"
-rc=$?
-set -e
+out="$("$TEST_HOOK" 2>&1)" && rc=0 || rc=$?
 
 if [[ "$rc" -eq 0 ]]; then
   echo "FAIL: Failing local hook should cause overall failure"
@@ -79,10 +76,7 @@ cat > "$local_hook" << 'LOCALHOOK'
 exit 1
 LOCALHOOK
 
-set +e
-"$TEST_HOOK" > /dev/null 2>&1
-rc=$?
-set -e
+"$TEST_HOOK" > /dev/null 2>&1 && rc=0 || rc=$?
 
 if [[ "$rc" -ne 0 ]]; then
   echo "FAIL: Non-executable local hook should be skipped, not fail"

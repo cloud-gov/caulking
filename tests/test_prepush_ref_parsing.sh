@@ -79,10 +79,7 @@ git commit -q -m "oops secret"
 secret_sha="$(git rev-parse HEAD)"
 
 secret_stdin="refs/heads/$branch_name $secret_sha refs/heads/$branch_name $another_sha"
-set +e
-echo "$secret_stdin" | "$TEST_HOOK" origin "$remote_repo" > /dev/null 2>&1
-rc=$?
-set -e
+echo "$secret_stdin" | "$TEST_HOOK" origin "$remote_repo" > /dev/null 2>&1 && rc=0 || rc=$?
 
 if [[ "$rc" -eq 0 ]]; then
   echo "FAIL: Secret push should have been blocked"

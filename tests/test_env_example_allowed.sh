@@ -14,10 +14,8 @@ test_file() {
   mkdir -p "$(dirname "$file")" 2> /dev/null || true
   echo "$content" > "$file"
   git add "$file"
-  set +e
-  out="$("$TEST_HOOK" 2>&1)"
-  rc=$?
-  set -e
+  # Run hook and capture exit code
+  "$TEST_HOOK" > /dev/null 2>&1 && rc=0 || rc=$?
   git rm --cached "$file" > /dev/null 2>&1 || true
   if [ "$expect" = "allow" ] && [ "$rc" -ne 0 ]; then
     echo "FAIL: $file blocked (expected allow)"

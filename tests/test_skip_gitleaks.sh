@@ -12,10 +12,7 @@ echo "=== Test 1: Without SKIP, secret should be blocked ==="
 echo "aws_secret_access_key = WT8ftNba7siVx5UOoGzJSyd82uNCZAC8LCllzcWp" > secret.txt
 git add secret.txt
 
-set +e
-"$TEST_HOOK" > /dev/null 2>&1
-rc=$?
-set -e
+"$TEST_HOOK" > /dev/null 2>&1 && rc=0 || rc=$?
 
 if [[ "$rc" -eq 0 ]]; then
   echo "FAIL: Secret should have been blocked without SKIP"
@@ -28,10 +25,7 @@ echo "=== Test 2: With SKIP=gitleaks, secret scanning should be bypassed ==="
 git reset -q HEAD -- secret.txt 2> /dev/null || true
 git add secret.txt
 
-set +e
-out="$(SKIP=gitleaks "$TEST_HOOK" 2>&1)"
-rc=$?
-set -e
+out="$(SKIP=gitleaks "$TEST_HOOK" 2>&1)" && rc=0 || rc=$?
 
 if [[ "$rc" -ne 0 ]]; then
   echo "FAIL: With SKIP=gitleaks, commit should have succeeded"
@@ -54,10 +48,7 @@ rm -f secret.txt
 echo "not a real key" > test.pem
 git add test.pem
 
-set +e
-out="$(SKIP=gitleaks "$TEST_HOOK" 2>&1)"
-rc=$?
-set -e
+out="$(SKIP=gitleaks "$TEST_HOOK" 2>&1)" && rc=0 || rc=$?
 
 if [[ "$rc" -eq 0 ]]; then
   echo "FAIL: Forbidden file should still be blocked even with SKIP=gitleaks"

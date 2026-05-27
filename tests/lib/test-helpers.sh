@@ -12,21 +12,24 @@ TEST_HOOK=""
 WRAPPER_SRC=""
 
 # Initialize test environment
+# Args: $1 - optional suffix for temp dir (default: "test")
 # Sets: TEST_ROOT, WRAPPER_SRC, TEST_TMP
 # Creates temp dir with cleanup trap
 test_init() {
+  local suffix="${1:-test}"
   # Get repo root by finding where hooks/hook-wrapper.sh exists
   # We need to go up from tests/lib/ to the repo root
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   TEST_ROOT="$(cd "$script_dir/../.." && pwd)"
   WRAPPER_SRC="$TEST_ROOT/hooks/hook-wrapper.sh"
-  TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/caulking.test.XXXXXX")"
+  TEST_TMP="$(mktemp -d "${TMPDIR:-/tmp}/caulking.${suffix}.XXXXXX")"
   # shellcheck disable=SC2064
   trap "rm -rf '$TEST_TMP' || true" EXIT
 }
 
 # Skip test if gitleaks not installed
+# Exits 0 (skip) - this is standard test convention for skipped tests
 require_gitleaks() {
   command -v gitleaks > /dev/null 2>&1 || {
     echo "SKIP: gitleaks not installed"
@@ -35,8 +38,13 @@ require_gitleaks() {
 }
 
 # Isolate HOME and XDG environment
+# Requires: test_init() must be called first (TEST_TMP must be set)
 # Sets: HOME, XDG_CONFIG_HOME
 isolate_env() {
+  if [[ -z "${TEST_TMP:-}" ]]; then
+    echo "ERROR: isolate_env() called before test_init()" >&2
+    exit 1
+  fi
   export HOME="$TEST_TMP/home"
   export XDG_CONFIG_HOME="$TEST_TMP/xdg"
   mkdir -p "$HOME" "$XDG_CONFIG_HOME"

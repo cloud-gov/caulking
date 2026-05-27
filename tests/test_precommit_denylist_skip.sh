@@ -11,10 +11,7 @@ full_test_setup
 date > blocked.pem
 git add blocked.pem
 
-set +e
-out="$(SKIP=gitleaks "$TEST_HOOK" 2>&1)"
-rc=$?
-set -e
+out="$(SKIP=gitleaks "$TEST_HOOK" 2>&1)" && rc=0 || rc=$?
 
 echo "$out" | grep -q "forbidden file staged" || {
   echo "missing denylist message"
