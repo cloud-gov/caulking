@@ -1,39 +1,16 @@
 #!/usr/bin/env bash
-# test_gitleaks_missing.sh
-#
-# Tests proper error handling when gitleaks is not in PATH.
-
+# Test proper error handling when gitleaks is not in PATH
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WRAPPER_SRC="$ROOT/hooks/hook-wrapper.sh"
+# shellcheck source=lib/test-helpers.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/test-helpers.sh"
 
-tmp="$(mktemp -d "${TMPDIR:-/tmp}/caulking.missing.XXXXXX")"
-cleanup() { rm -rf "$tmp" || true; }
-trap cleanup EXIT
-
-export HOME="$tmp/home"
-export XDG_CONFIG_HOME="$tmp/xdg"
-mkdir -p "$HOME" "$XDG_CONFIG_HOME"
-
-repo="$tmp/repo"
-mkdir -p "$repo"
-cd "$repo"
-git init -q
-git config user.name "test"
-git config user.email "test@gsa.gov"
-
-# Create gitleaks config (hook checks for this before running gitleaks)
-mkdir -p "$XDG_CONFIG_HOME/gitleaks"
-cat > "$XDG_CONFIG_HOME/gitleaks/config.toml" << 'EOF'
-title="test"
-[extend]
-useDefault=true
-EOF
-
-hook="$tmp/pre-commit"
-cp -f "$WRAPPER_SRC" "$hook"
-chmod +x "$hook"
+# Manual setup - we DON'T want require_gitleaks() here since we're testing missing gitleaks
+test_init "gitleaks-missing"
+isolate_env
+create_test_repo
+create_gitleaks_config
+install_hook
 
 # Stage a clean file
 echo "clean content" > clean.txt
@@ -41,13 +18,11 @@ git add clean.txt
 
 echo "=== Test: gitleaks not in PATH should produce clear error ==="
 
-# Create a restricted PATH with only essential commands but NOT gitleaks
-# We need to ensure bash and basic utils are available
-restricted_path="$tmp/bin"
+# Create restricted PATH with only essential commands but NOT gitleaks
+restricted_path="$TEST_TMP/bin"
 mkdir -p "$restricted_path"
 
-# Create wrapper scripts that call the real binaries
-# This avoids symlink issues on some systems
+# Create wrapper scripts for required commands
 for cmd in git basename cat mkdir rm printf grep awk tr date readlink dirname command env; do
   cmd_path="$(command -v "$cmd" 2> /dev/null || true)"
   if [[ -n "$cmd_path" && -x "$cmd_path" ]]; then
@@ -59,7 +34,7 @@ WRAPPER
   fi
 done
 
-# We need bash itself in the path for the shebang to work
+# Need bash itself for shebang
 bash_path="$(command -v bash)"
 cat > "$restricted_path/bash" << WRAPPER
 #!/bin/bash
@@ -67,10 +42,7 @@ exec "$bash_path" "\$@"
 WRAPPER
 chmod +x "$restricted_path/bash"
 
-set +e
-out="$(PATH="$restricted_path" bash "$hook" 2>&1)"
-rc=$?
-set -e
+out="$(PATH="$restricted_path" bash "$TEST_HOOK" 2>&1)" && rc=0 || rc=$?
 
 if [[ "$rc" -eq 0 ]]; then
   echo "FAIL: Hook should fail when gitleaks is missing"

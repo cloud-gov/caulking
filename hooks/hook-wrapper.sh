@@ -214,7 +214,16 @@ enforce_forbidden_staged_files() {
     '(^|/)\.vault-token$'
   )
 
-  local f pat
+  # Safe patterns that are explicitly allowed (documentation/example files)
+  # These patterns are checked BEFORE deny_patterns and allow the file through
+  local -a allow_patterns=(
+    # .env.example, .env.sample, .env.template (and variants like .env.local.example)
+    '\.example$'
+    '\.sample$'
+    '\.template$'
+  )
+
+  local f pat allowed
   while IFS= read -r f; do
     [[ -n "$f" ]] || continue
 
@@ -223,6 +232,16 @@ enforce_forbidden_staged_files() {
       validate_npmrc "$f" || exit 1
       continue
     fi
+
+    # Check allow patterns first (for .env.example, .env.sample, .env.template)
+    allowed=0
+    for pat in "${allow_patterns[@]}"; do
+      if [[ "$f" =~ $pat ]]; then
+        allowed=1
+        break
+      fi
+    done
+    [[ "$allowed" -eq 1 ]] && continue
 
     for pat in "${deny_patterns[@]}"; do
       if [[ "$f" =~ $pat ]]; then
