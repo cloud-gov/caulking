@@ -3,32 +3,10 @@
 # Fixes: https://github.com/cloud-gov/caulking/issues/109
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WRAPPER_SRC="$ROOT/hooks/hook-wrapper.sh"
+# shellcheck source=lib/test-helpers.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/test-helpers.sh"
 
-tmp="$(mktemp -d "${TMPDIR:-/tmp}/caulking.test.XXXXXX")"
-cleanup() { rm -rf "$tmp" || true; }
-trap cleanup EXIT
-
-command -v gitleaks > /dev/null 2>&1 || {
-  echo "SKIP: gitleaks not installed"
-  exit 0
-}
-
-export HOME="$tmp/home" XDG_CONFIG_HOME="$tmp/xdg"
-mkdir -p "$HOME" "$XDG_CONFIG_HOME/gitleaks"
-cat > "$XDG_CONFIG_HOME/gitleaks/config.toml" << 'EOF'
-title="test"
-[extend]
-useDefault=true
-EOF
-
-repo="$tmp/repo"
-mkdir -p "$repo" && cd "$repo"
-git init -q && git config user.name "t" && git config user.email "t@gsa.gov"
-
-hook="$tmp/pre-commit"
-cp -f "$WRAPPER_SRC" "$hook" && chmod +x "$hook"
+full_test_setup
 
 # Helper: test file allowed/blocked
 test_file() {
@@ -37,7 +15,7 @@ test_file() {
   echo "$content" > "$file"
   git add "$file"
   set +e
-  out="$("$hook" 2>&1)"
+  out="$("$TEST_HOOK" 2>&1)"
   rc=$?
   set -e
   git rm --cached "$file" > /dev/null 2>&1 || true
