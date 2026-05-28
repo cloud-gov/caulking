@@ -241,8 +241,41 @@ Gitleaks detects 100+ secret patterns including:
 - Database connection strings
 - Private keys embedded in code
 - Generic high-entropy strings
+- **AWS ARNs with hardcoded account IDs** (custom rule)
 
 **This runs on ALL files**, not just the ones listed above.
+
+### AWS ARN Detection
+
+**Why detected:** AWS ARNs containing hardcoded 12-digit account IDs reveal sensitive infrastructure information useful for reconnaissance attacks.
+
+| Blocked | Allowed |
+|---------|---------|
+| `arn:aws:iam::987654321098:role/prod` | `arn:aws:iam::${ACCOUNT_ID}:role/prod` |
+| `arn:aws-us-gov:iam::876543210987:user/admin` | `arn:aws:s3:::my-bucket` (no account ID) |
+| `arn:aws-cn:lambda:cn-north-1:555566667777:function:app` | `arn:aws:iam::*:role/ServiceRole` (wildcard) |
+
+**Allowed patterns:**
+
+- **Variable interpolation:** `${ACCOUNT_ID}`, `${AWS_ACCOUNT_ID}`, `$ACCOUNT`
+- **S3 bucket ARNs:** No account ID in S3 ARN format
+- **Wildcard accounts:** `arn:aws:iam::*:role/ServiceRole`
+- **Documentation examples:** AWS standard example IDs (`123456789012`, `111122223333`, etc.)
+
+**All AWS partitions detected:**
+- `aws` (commercial)
+- `aws-us-gov` (GovCloud)
+- `aws-cn` (China)
+
+**Alternative:** Use environment variables or parameter store for account IDs:
+
+```bash
+# Instead of:
+aws iam get-role --role-name arn:aws:iam::987654321098:role/prod
+
+# Use:
+aws iam get-role --role-name "arn:aws:iam::${AWS_ACCOUNT_ID}:role/prod"
+```
 
 ### Example Detection
 

@@ -116,6 +116,35 @@ title = "Global Developer Default (gitleaks)"
 [extend]
 useDefault = true
 
+# AWS ARN detection - warns on hardcoded 12-digit account IDs
+# Detects: arn:aws:iam::123456789012:user/admin
+# Allows: arn:aws:iam::${ACCOUNT_ID}:user/admin (variable interpolation)
+# Allows: arn:aws:s3:::bucket-name (S3 buckets have no account ID field)
+# See: https://github.com/cloud-gov/caulking/issues/111
+[[rules]]
+id = "aws-arn-account-id"
+description = "AWS ARN with hardcoded account ID (reconnaissance risk)"
+regex = '''arn:aws(-us-gov|-cn)?:[a-z0-9-]+:[a-z0-9-]*:[0-9]{12}:[a-zA-Z0-9/_=+.@:-]+'''
+keywords = ["arn:aws"]
+tags = ["aws", "arn", "account-id"]
+
+  [rules.allowlist]
+  description = "Safe ARN patterns (variable interpolation, documentation)"
+  regexes = [
+    # Variable interpolation patterns
+    '''\$\{[^}]*ACCOUNT[^}]*\}''',
+    '''\$\{[^}]*AWS[^}]*\}''',
+    '''\$ACCOUNT''',
+    '''\$AWS_ACCOUNT''',
+    # Documentation example account IDs (AWS docs use these)
+    '''123456789012''',
+    '''111122223333''',
+    '''444455556666''',
+    '''999999999999''',
+    # Wildcard patterns
+    ''':\*:''',
+  ]
+
 [allowlist]
 description = "Global allowlist for known-safe patterns (keep small)."
 
