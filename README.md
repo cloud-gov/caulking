@@ -388,6 +388,14 @@ Then rerun:
 make install
 ```
 
+### ModuleNotFoundError: No module named 'yaml'
+
+Symptoms: 
+- `git commit...` is failing because Python3 is not finding the `yaml` module
+- System is using a Homebrew Python3 installation
+
+Fix: `pip3 install pyyaml --break-system-packages`
+
 ### Someone bypassed hooks
 
 If a repo sets a **local** `core.hooksPath`, it can override the global one.
