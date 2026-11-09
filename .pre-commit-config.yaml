@@ -25,22 +25,24 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=1024"]
 
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
+  - repo: local
     hooks:
       - id: shellcheck
-        args: ["-x", "-S", "error"]
+        name: shellcheck
+        entry: shellcheck -x -S error
+        language: system
+        types: [shell]
 
-  - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.13.1-1
-    hooks:
       - id: shfmt
-        args: ["-w", "-i", "2", "-ci", "-sr"]
+        name: shfmt
+        entry: shfmt -w -i 2 -ci -sr
+        language: system
+        types: [shell]
 
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.12
-    hooks:
       - id: actionlint
+        name: actionlint
+        entry: actionlint
+        language: system
         files: ^\.github/workflows/.*\.(yml|yaml)$
 
   - repo: meta

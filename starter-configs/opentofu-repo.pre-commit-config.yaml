@@ -1,0 +1,99 @@
+# ===========================================================================
+# Pre-commit Configuration for OpenTofu Repositories (RECOMMENDED)
+# ===========================================================================
+# This configuration follows cloud.gov pre-commit standardization.
+# Each category has ONE default tool enabled; alternatives are commented.
+#
+# Paired `.caulking-profiles` (for `caulking.sh bootstrap --repo .`):
+#   baseline
+#   shell
+#   opentofu
+#   security
+#
+# Categories:
+#   - HYGIENE: Generic file quality (all repos)
+#   - LINTING: IaC code quality and formatting
+#   - SAST: Security static analysis
+#   - SCA: Dependency vulnerability scanning
+#
+# Why OpenTofu?
+#   - MPL-2.0 license (OSI-approved open source)
+#   - Linux Foundation governance (vendor-neutral)
+#   - No license ambiguity for federal procurement
+#   - Drop-in replacement for Terraform (same HCL syntax)
+#   - See ADR-0002 for full assessment
+#
+# Setup (cloud.gov staff):
+#   1. Install caulking first: https://github.com/cloud-gov/caulking
+#   2. Create `.caulking-profiles` and run `caulking.sh bootstrap --repo .`
+#   3. Copy this file to your repo root as .pre-commit-config.yaml
+#   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
+#
+# References:
+#   - ADR-0002: Supply chain security assessment
+#   - ADR-0004: Language security tool selection
+# ===========================================================================
+
+repos:
+  # Canonical consolidated hook provider endpoint.
+  # Legacy compatibility endpoint (frozen until the first consolidated caulking tag
+  # is published): https://github.com/cloud-gov/pre-commit-templates (rev: v0.6.0)
+  - repo: https://github.com/cloud-gov/caulking
+    rev: v3.4.0  # Pin to specific version
+    hooks:
+      # =========================================================================
+      # HYGIENE: Generic file quality checks
+      # Satisfies: NIST SA-15 (Development Process), SSDF PO.3
+      # =========================================================================
+      # DEFAULT: All hygiene hooks — required for all repositories
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      # Isolated self-contained syntax checks (legacy `check-yaml` / `check-json`
+      # remain supported if ambient `python3` + `PyYAML` is preferred):
+      - id: check-yaml-selfcontained
+      - id: check-json-selfcontained
+
+      # =========================================================================
+      # LINTING: OpenTofu code quality and formatting
+      # Satisfies: NIST SA-11 (Developer Testing), SSDF PW.7
+      # =========================================================================
+      # DEFAULT: OpenTofu fmt + validate + TFLint
+      - id: tofu-fmt
+      - id: tofu-validate
+      - id: tflint
+        # TFLint works with both Terraform and OpenTofu
+
+      # =========================================================================
+      # SAST: Security static analysis
+      # Satisfies: NIST SA-11(1) (Static Analysis), SSDF PW.7, RA-5
+      # =========================================================================
+      # DEFAULT: semgrep — Multi-language SAST with Terraform/HCL rules
+      - id: semgrep
+      #
+      # ALTERNATIVE: checkov (category: SAST)
+      # Palo Alto Networks (Bridgecrew) — policy-as-code scanner
+      # Install: pip install checkov
+      # Use local hook with: checkov -d . --framework terraform
+
+      # =========================================================================
+      # SCA: Dependency/Module vulnerability scanning
+      # Satisfies: NIST RA-5 (Vulnerability Scanning), SSDF PW.4, RV.1
+      # =========================================================================
+      # DEFAULT: osv-scanner — Scans .terraform.lock.hcl for known vulnerabilities
+      - id: osv-scanner
+      #
+      # Note: OpenTofu/Terraform modules don't have a traditional package manager,
+      # but osv-scanner can scan the lock file for provider vulnerabilities.
+
+      # =========================================================================
+      # Shell scripts (deploy scripts, provisioners)
+      # =========================================================================
+      - id: shellcheck
+
+      # =========================================================================
+      # GSA compliance
+      # =========================================================================
+      - id: check-gsa-email

@@ -12,6 +12,81 @@ enable_xtrace_if_debug
 eval "$(caulking_export_paths)"
 
 HOOK_WRAPPER_SRC="$ROOT_DIR/hooks/hook-wrapper.sh"
+NO_INSTALL=0
+
+# Quote literal paths for generated POSIX shell launchers, never as executable data.
+shell_quote() { printf "'%s'" "${1//\'/\'\\\'\'}"; }
+
+runtime_command() {
+  local path="$1" prefix rest formula
+  [[ "$path" == /* && -x "$path" && ! -d "$path" ]] || die "Required executable must have an absolute path: $path"
+  if [[ "$path" == */Cellar/* ]]; then
+    prefix="${path%%/Cellar/*}"
+    rest="${path#*/Cellar/}"
+    formula="${rest%%/*}"
+    rest="${rest#*/}"
+    rest="${rest#*/}"
+    path="$prefix/opt/$formula/$rest"
+    [[ -x "$path" ]] || die "Missing stable Homebrew executable: $path"
+  fi
+  printf '%s\n' "$path"
+}
+
+select_runtime() {
+  unset RUNTIME_CLI
+  if [[ -f "$ROOT_DIR/scripts/package-runtime.sh" ]]; then
+    # Only the installed application supplies this generated, fixed baseline.
+    # shellcheck source=/dev/null
+    source "$ROOT_DIR/scripts/package-runtime.sh"
+  else
+    RUNTIME_BASH="$(runtime_command "$BASH")"
+    RUNTIME_GIT="$(runtime_command "$(command -v git)")"
+    RUNTIME_GITLEAKS="$(runtime_command "$(command -v gitleaks)")"
+    if have prek; then
+      RUNTIME_RUNNER="$(runtime_command "$(command -v prek)")"
+    elif have pre-commit; then
+      RUNTIME_RUNNER="$(runtime_command "$(command -v pre-commit)")"
+    else
+      die "Missing required hook runner: prek or pre-commit"
+    fi
+    RUNTIME_PATH="${RUNTIME_BASH%/*}:${RUNTIME_GIT%/*}:${RUNTIME_GITLEAKS%/*}:${RUNTIME_RUNNER%/*}"
+  fi
+  # Packages bind the opt application path; source setup binds this checkout.
+  RUNTIME_CLI="${RUNTIME_CLI:-$ROOT_DIR/caulking.sh}"
+  [[ "$RUNTIME_CLI" == /* && -f "$RUNTIME_CLI" && -r "$RUNTIME_CLI" ]] || die "Missing absolute toolchain CLI: $RUNTIME_CLI"
+  [[ -f "${RUNTIME_CLI%/*}/scripts/toolchain.sh" && -r "${RUNTIME_CLI%/*}/scripts/toolchain.sh" ]] || die "Missing readable toolchain helper: ${RUNTIME_CLI%/*}/scripts/toolchain.sh"
+  local executable
+  for executable in "$RUNTIME_BASH" "$RUNTIME_GIT" "$RUNTIME_GITLEAKS" "$RUNTIME_RUNNER"; do
+    runtime_command "$executable" > /dev/null
+  done
+}
+
+parse_args() {
+  case "$#:${1:-}" in
+    0:) ;;
+    1:--no-install) NO_INSTALL=1 ;;
+    *) die "Usage: install.sh [--no-install] (or caulking setup --no-install)" ;;
+  esac
+}
+
+preflight_setup() {
+  ((BASH_VERSINFO[0] >= 4)) || die "setup --no-install requires Bash >=4; run with Homebrew Bash."
+  local cmd out version
+  for cmd in git gitleaks install mkdir cp grep date chmod; do
+    need_cmd "$cmd"
+  done
+  select_runtime
+  "$RUNTIME_BASH" -c '((BASH_VERSINFO[0] >= 4))' || die "Runtime Bash >=4 required"
+  "$RUNTIME_GIT" --version > /dev/null 2>&1 || die "git failed to run"
+  out="$("$RUNTIME_GITLEAKS" version 2> /dev/null)" || die "gitleaks failed to run"
+  if [[ "$out" =~ ^[[:space:]]*(gitleaks[[:space:]]+version[[:space:]]+)?v?([0-9]+\.[0-9]+\.[0-9]+)[[:space:]]*$ ]]; then
+    version="${BASH_REMATCH[2]}"
+  else
+    die "Could not parse gitleaks version: $out"
+  fi
+  version_ge "$version" "8.21.0" || die "gitleaks >=8.21.0 required (found $version)"
+  "$RUNTIME_RUNNER" --version > /dev/null 2>&1 || die "${RUNTIME_RUNNER##*/} failed to run"
+}
 
 install_gitleaks_if_missing() {
   if have gitleaks; then
@@ -48,33 +123,7 @@ install_prek_if_missing() {
 
 install_precommit_if_missing() {
   if have pre-commit; then
-    local existing_path
-    existing_path="$(command -v pre-commit)"
-    debug "pre-commit present: $existing_path"
-
-    # Check if it's from mise/other non-brew sources
-    if [[ "$existing_path" != *"/opt/homebrew"* && "$existing_path" != *"/usr/local"* ]]; then
-      if have brew; then
-        info "pre-commit found at $existing_path (non-Homebrew)"
-        info "Uninstalling from pip/pipx and installing via Homebrew for consistency..."
-
-        # Try to uninstall from pip/pipx
-        if have pip; then
-          pip uninstall -y pre-commit 2>&1 || true
-        fi
-        if have pipx; then
-          pipx uninstall pre-commit 2>&1 || true
-        fi
-
-        # Install via Homebrew
-        if brew install pre-commit 2>&1; then
-          info "pre-commit installed via Homebrew"
-          return 0
-        else
-          warn "Homebrew install encountered issues; checking if pre-commit exists anyway"
-        fi
-      fi
-    fi
+    debug "pre-commit present: $(command -v pre-commit)"
     return 0
   fi
 
@@ -97,6 +146,10 @@ write_global_gitleaks_config() {
   mkdir -p "$GITLEAKS_DIR"
 
   if [[ -f "$GITLEAKS_CFG" ]]; then
+    if [[ "$NO_INSTALL" -eq 1 ]]; then
+      info "Preserving existing global gitleaks config: $GITLEAKS_CFG"
+      return 0
+    fi
     if grep -qE '^\[extend\]' "$GITLEAKS_CFG" && grep -qE '^\s*useDefault\s*=\s*true\s*$' "$GITLEAKS_CFG"; then
       info "Global gitleaks config exists and extends defaults: $GITLEAKS_CFG"
       return 0
@@ -149,7 +202,23 @@ write_hook() {
   local dst="$HOOK_DIR/$stage"
 
   mkdir -p "$HOOK_DIR"
-  install -m 0755 "$HOOK_WRAPPER_SRC" "$dst"
+  if [[ "$NO_INSTALL" -eq 1 ]]; then
+    install -m 0644 "$HOOK_WRAPPER_SRC" "$HOOK_DIR/.caulking-wrapper.sh"
+    {
+      printf '#!/bin/sh\n# Generated by caulking setup --no-install.\n'
+      printf 'unset BASH_ENV ENV\n'
+      printf 'PATH=%s:"${PATH:-/usr/bin:/bin}"\nexport PATH\n' "$(shell_quote "$RUNTIME_PATH")"
+      printf 'export CAULKING_GIT=%s CAULKING_GITLEAKS=%s CAULKING_RUNNER=%s\n' \
+        "$(shell_quote "$RUNTIME_GIT")" "$(shell_quote "$RUNTIME_GITLEAKS")" "$(shell_quote "$RUNTIME_RUNNER")"
+      printf 'export CAULKING_BASH=%s CAULKING_TOOLCHAIN_CLI=%s\n' \
+        "$(shell_quote "$RUNTIME_BASH")" "$(shell_quote "$RUNTIME_CLI")"
+      printf 'exec %s %s --caulking-stage %s "$@"\n' \
+        "$(shell_quote "$RUNTIME_BASH")" "$(shell_quote "$HOOK_DIR/.caulking-wrapper.sh")" "$(shell_quote "$stage")"
+    } > "$dst"
+    chmod 0755 "$dst"
+  else
+    install -m 0755 "$HOOK_WRAPPER_SRC" "$dst"
+  fi
   info "Installed hook: $dst"
 }
 
@@ -163,24 +232,33 @@ configure_git_hookspath() {
   info "Configured: git config --global core.hooksPath $HOOK_DIR"
 
   # Treat hooks.gitleaks as legacy; ensure it's not set globally.
-  git config --global --unset hooks.gitleaks > /dev/null 2>&1 || true
+  if [[ "$NO_INSTALL" -eq 0 ]]; then
+    git config --global --unset hooks.gitleaks > /dev/null 2>&1 || true
+  fi
 }
 
 main() {
+  parse_args "$@"
   need_cmd bash
   need_cmd git
-  [[ -f "$HOOK_WRAPPER_SRC" ]] || die "Missing hook wrapper source: $HOOK_WRAPPER_SRC"
+  [[ -f "$HOOK_WRAPPER_SRC" && -r "$HOOK_WRAPPER_SRC" ]] || die "Missing readable hook wrapper source: $HOOK_WRAPPER_SRC"
 
-  chmod +x "$HOOK_WRAPPER_SRC" || true
-
-  install_gitleaks_if_missing
-  install_prek_if_missing
-  install_precommit_if_missing
+  if [[ "$NO_INSTALL" -eq 1 ]]; then
+    preflight_setup
+  else
+    install_gitleaks_if_missing
+    if ! have prek && ! have pre-commit; then
+      install_prek_if_missing
+      have prek || install_precommit_if_missing
+    fi
+  fi
   write_global_gitleaks_config
 
   store_previous_hookspath_if_needed
 
-  cleanup_legacy_hooks
+  if [[ "$NO_INSTALL" -eq 0 ]]; then
+    cleanup_legacy_hooks
+  fi
   write_hook pre-commit
   write_hook pre-push
 
@@ -188,7 +266,12 @@ main() {
 
   printf '\n'
   info "Done."
-  info "Next: run ./verify.sh"
+  if [[ "$NO_INSTALL" -eq 1 ]]; then
+    info "Global hooks use pinned Bash, Git, gitleaks, and runner executables."
+    info "Existing gitleaks policy is preserved; setup does not validate or enable default rules in a custom config."
+  else
+    info "Next: run ./verify.sh"
+  fi
 }
 
 main "$@"

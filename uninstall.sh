@@ -14,7 +14,7 @@ eval "$(caulking_export_paths)"
 need_cmd git
 
 info "Removing installed hooks from: $HOOK_DIR"
-rm -f "$HOOK_DIR/pre-commit" "$HOOK_DIR/pre-push" "$HOOK_DIR/commit-msg" || true
+rm -f "$HOOK_DIR/pre-commit" "$HOOK_DIR/pre-push" "$HOOK_DIR/commit-msg" "$HOOK_DIR/.caulking-wrapper.sh" || true
 
 if [[ -f "$PREV_HOOKSPATH_FILE" ]]; then
   prev="$(cat "$PREV_HOOKSPATH_FILE" || true)"

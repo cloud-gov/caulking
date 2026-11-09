@@ -18,6 +18,16 @@ set -euo pipefail
 #   without recursion or double-running
 
 stage="$(basename "$0")"
+if [[ "$stage" == ".caulking-wrapper.sh" ]]; then
+  [[ "${1:-}" == --caulking-stage ]] || exit 2
+  stage="${2:-}"
+  case "$stage" in pre-commit | pre-push) ;; *) exit 2 ;; esac
+  shift 2
+fi
+
+# Generated setup launchers bind these to absolute, stable baseline executables.
+git() { command "${CAULKING_GIT:-git}" "$@"; }
+gitleaks() { command "${CAULKING_GITLEAKS:-gitleaks}" "$@"; }
 
 # shellcheck disable=SC2329
 want_debug() { [[ "${CAULKING_DEBUG:-0}" != "0" ]]; }
@@ -265,7 +275,7 @@ enforce_forbidden_staged_files
 if skip_has "gitleaks"; then
   say "SKIP includes gitleaks; skipping gitleaks scan."
 else
-  command -v gitleaks > /dev/null 2>&1 || {
+  type -P "${CAULKING_GITLEAKS:-gitleaks}" > /dev/null 2>&1 || {
     say "ERROR: gitleaks not found in PATH"
     exit 2
   }
@@ -347,7 +357,12 @@ run_repo_precommit_suite() {
   local repo_root
   repo_root="$(git rev-parse --show-toplevel 2> /dev/null || true)"
   [[ -n "$repo_root" ]] || return 0
-  [[ -f "$repo_root/.pre-commit-config.yaml" ]] || return 0
+  local profiles_present=0
+  if [[ -e "$repo_root/.caulking-profiles" || -L "$repo_root/.caulking-profiles" ]]; then
+    profiles_present=1
+  else
+    [[ -f "$repo_root/.pre-commit-config.yaml" ]] || return 0
+  fi
 
   if [[ "${CAULKING_SKIP_REPO_HOOKS:-}" == "1" ]]; then
     say "CAULKING_SKIP_REPO_HOOKS=1; skipping repo pre-commit suite."
@@ -359,20 +374,41 @@ run_repo_precommit_suite() {
     return 0
   fi
 
+  if ((profiles_present)); then
+    [[ "${CAULKING_TOOLCHAIN_CLI:-}" == /* && -f "${CAULKING_TOOLCHAIN_CLI:-}" && -r "${CAULKING_TOOLCHAIN_CLI:-}" &&
+      "${CAULKING_BASH:-}" == /* && -x "${CAULKING_BASH:-}" && ! -d "${CAULKING_BASH:-}" ]] || {
+      say 'ERROR: profile-aware hook helper is missing; rerun caulking setup --no-install.'
+      exit 2
+    }
+    "$CAULKING_BASH" "$CAULKING_TOOLCHAIN_CLI" hook-run --repo "$repo_root" --stage "$stage" < /dev/null || exit $?
+    export CAULKING_RAN_REPO_SUITE="1"
+    return 0
+  fi
+
+  if [[ -n "${CAULKING_RUNNER:-}" ]]; then
+    [[ "$CAULKING_RUNNER" == /* && -x "$CAULKING_RUNNER" ]] || {
+      say "ERROR: configured hook runner is missing: $CAULKING_RUNNER"
+      exit 2
+    }
+    "$CAULKING_RUNNER" run --config "$repo_root/.pre-commit-config.yaml" --hook-stage "$stage" --show-diff-on-failure || exit $?
+    export CAULKING_RAN_REPO_SUITE="1"
+    return 0
+  fi
+
   if command -v prek > /dev/null 2>&1; then
-    prek run --hook-stage "$stage" --show-diff-on-failure || exit $?
+    prek run --config "$repo_root/.pre-commit-config.yaml" --hook-stage "$stage" --show-diff-on-failure || exit $?
     export CAULKING_RAN_REPO_SUITE="1"
     return 0
   fi
 
   if command -v pre-commit > /dev/null 2>&1; then
-    pre-commit run --hook-stage "$stage" --show-diff-on-failure || exit $?
+    pre-commit run --config "$repo_root/.pre-commit-config.yaml" --hook-stage "$stage" --show-diff-on-failure || exit $?
     export CAULKING_RAN_REPO_SUITE="1"
     return 0
   fi
 
-  say "NOTE: .pre-commit-config.yaml present, but neither prek nor pre-commit is installed."
-  return 0
+  say "ERROR: .pre-commit-config.yaml present, but neither prek nor pre-commit is installed."
+  exit 2
 }
 
 run_repo_precommit_suite

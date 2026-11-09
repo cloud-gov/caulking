@@ -82,46 +82,7 @@ Recommended (auto-installed via Homebrew on macOS):
 - `brew` (macOS package manager)
 - `prek` (fast Git hook manager, preferred) **or** `pre-commit` (for running repo-local hooks)
 
-**Note:** If you have `brew` installed, `make install` will automatically install `gitleaks`, `prek`, and `pre-commit` if they're missing. If `pre-commit` is installed from a non-Homebrew source (pip, pipx, mise), it will be migrated to Homebrew for easier updates and version consistency.
-
-### Installing gitleaks
-
-**macOS (Homebrew):**
-
-```bash
-brew install gitleaks
-```
-
-If gitleaks is missing during `make install`, Caulking will attempt to install it via Homebrew automatically.
-
-**Linux (manual):**
-
-```bash
-# Download latest release (adjust version and arch as needed)
-GITLEAKS_VERSION=8.30.1
-ARCH=x64  # or arm64 for ARM systems
-
-curl -sSfL -o /tmp/gitleaks.tar.gz \
-  "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz"
-
-sudo tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
-rm /tmp/gitleaks.tar.gz
-
-# Verify installation
-gitleaks version
-```
-
-**Linux (package managers):**
-
-```bash
-# Arch Linux (AUR)
-yay -S gitleaks
-
-# NixOS
-nix-env -iA nixpkgs.gitleaks
-```
-
-For other distributions, see the [gitleaks releases page](https://github.com/gitleaks/gitleaks/releases).
+**Note:** If you have `brew` installed, `make install` will automatically install `gitleaks` and `prek` if they're missing, while preserving any existing user-managed `pre-commit` installation.
 
 ### Installing gitleaks
 
@@ -283,6 +244,56 @@ If you use it often, your rules are wrong and you should fix them.
 ---
 
 ## Linting this repo (contributors)
+
+### Releases and stable versions
+
+Use the latest published non-prerelease tag for stable installation; `main` is
+development. Historical VERSION labels do not establish published tags. See
+[release management](docs/releases.md) for Release Please, initial bootstrap,
+Conventional Commits, and independent Homebrew tool upgrades.
+
+### Selective workstation toolchain & Brewfile bundles
+
+Caulking includes selective Homebrew bundles (`brewfiles/<profile>.Brewfile`) and
+profile-aware bootstrap/diagnostics for `baseline`, `shell`, `container`,
+`python`, `go`, `javascript`, `opentofu`, `terraform`, and `security`:
+
+```bash
+./caulking.sh bootstrap --profile baseline --profile shell --profile container --dry-run
+./caulking.sh doctor --profile baseline --profile shell --profile container
+make test-toolchain
+```
+
+Repositories can declare required profiles in `.caulking-profiles` (one profile
+per line). `caulking doctor` enforces justified minimum supported SemVer floors
+for each tool while allowing developers to run `brew upgrade` freely without
+waiting for a caulking release.
+
+### Reusable pre-commit hooks and starter configurations
+
+Caulking is the consolidated home for cloud.gov's reusable pre-commit hooks
+(`.pre-commit-hooks.yaml`) and copy-to-start configurations (`starter-configs/`),
+superseding the frozen `cloud-gov/pre-commit-templates` repository:
+
+- **49 reusable hooks** across hygiene, shell (`shellcheck`, `shfmt-check`),
+  Python (`ruff-check`, `ruff-format`, `mypy`, `bandit`, `pip-audit`), Go
+  (`go-fmt`, `go-vet`, `golangci-lint`, `gosec`, `govulncheck`), JS/TS (`eslint`,
+  `prettier`, `tsc`, `biome-check`), IaC (`opentofu`, `terraform`, `tflint`),
+  containers (`hadolint`), compliance (`check-gsa-email`), and universal scanners
+  (`semgrep`, `osv-scanner`, `syft`, `grype`).
+- **Self-contained syntax and Go hooks** (`check-yaml-selfcontained`,
+  `check-json-selfcontained`, `gofmt-selfcontained`, `go-vet-selfcontained`,
+  `gosec-selfcontained`, `govulncheck-selfcontained`) that provision isolated
+  environments for CI and containers without ambient `PyYAML` or Go installations.
+- **Starter configurations** in `starter-configs/` paired with `.caulking-profiles`
+  bundles.
+
+See [toolchain bootstrap](docs/toolchain-bootstrap.md),
+[release management](docs/releases.md), [ADR-0002](docs/adr/ADR-0002-template-consolidation-and-brewfile-bundles.md),
+and [troubleshooting](TROUBLESHOOTING.md) for details. Run `make check-consolidated`
+to validate all hooks, profiles, Python checks, and release invariants.
+
+### Repository linting
 
 This repo includes a local `.pre-commit-config.yaml` for formatting and linting itself.
 

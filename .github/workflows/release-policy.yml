@@ -1,0 +1,39 @@
+name: Release policy
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  conventional-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Conventional Commit PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          title = os.environ['PR_TITLE']
+          pattern = r'(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^()\r\n]+\))?!?: [^\s].*'
+          if not re.fullmatch(pattern, title):
+              raise SystemExit('Use a Conventional Commit title, e.g. feat(bootstrap): add shell bundle')
+          PY
+  release-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate version and release configuration
+        run: python3 scripts/check-release-config.py
+      - name: Validate consolidated hooks, toolchain, and Python syntax checks
+        run: |
+          ./tests/toolchain.sh
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --disable-pip-version-check PyYAML==6.0.3
+          PYTHON_YAML="$RUNNER_TEMP/venv/bin/python" make verify-hooks test-python

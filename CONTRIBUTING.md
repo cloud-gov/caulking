@@ -17,3 +17,13 @@ To avoid the appearance of government endorsement, manage supply chain risk, and
 - Unvetted accounts or first-time contributors submitting minor changes
 
 If you're unsure whether your contribution fits, feel free to open an issue first so we can discuss it.
+
+## Change and release conventions
+
+Use Conventional Commit PR titles (`fix:`, `feat:`, `docs:`, etc.). Squash merges
+must preserve the validated title. Mark breaking changes with `!` or a
+`BREAKING CHANGE:` footer. See [release management](docs/releases.md).
+
+Architectural changes, new external dependencies, tool replacements, and decisions
+affecting consumers require a sequential MADR document in `docs/adr/`, containing
+Status, Date, Deciders, Context, Decision, Consequences, and References.

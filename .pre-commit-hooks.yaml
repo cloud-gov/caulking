@@ -1,0 +1,581 @@
+# .pre-commit-hooks.yaml
+# Cloud.gov centralized pre-commit HOOK PROVIDER manifest.
+#
+# THIS is the inheritance target: consuming repos reference these hooks by id from
+# their own .pre-commit-config.yaml, e.g.
+#     repos:
+#       - repo: https://github.com/cloud-gov/caulking
+#         rev: v3.4.0
+#         hooks: [{id: gosec-selfcontained}]
+# (Note: https://github.com/cloud-gov/pre-commit-templates remains a frozen
+# compatibility endpoint for older tags such as v0.6.0.)
+# pre-commit resolves the id against this file. (Copy-to-start whole configs live
+# in starter-configs/ — those are NOT inherited; pre-commit has no whole-config
+# inheritance, only hook-level. Keep your pinned rev current to pick up updates.)
+#
+# ============================================================================
+# IMPORTANT: These are RECOMMENDED hooks, not requirements.
+# Teams MAY override tool selections based on their specific needs.
+# All tools have been security-assessed but alternatives may be appropriate.
+# See docs/adr/ADR-0002-supply-chain-security.md for assessment details.
+# ============================================================================
+#
+# Uses `language: system` for backward compatibility with pre-commit 3.2.0+
+# Note: In pre-commit 4.4.0+, `system` was renamed to `unsupported`, but the old
+# name still works as an alias. We use `system` for compatibility with older versions.
+# See: https://pre-commit.com/#supported-languages
+
+# =============================================================================
+# GENERIC HYGIENE HOOKS (all repos)
+# =============================================================================
+
+- id: check-merge-conflict
+  name: Check for merge conflict markers
+  description: Prevents committing unresolved merge conflicts
+  entry: scripts/check-merge-conflict.sh
+  language: script
+  types: [text]
+  stages: [pre-commit]
+
+- id: check-added-large-files
+  name: Check for large files
+  description: Prevents committing files larger than 500KB
+  entry: scripts/check-large-files.sh
+  language: script
+  stages: [pre-commit]
+  args: ['--maxkb=500']
+
+- id: trailing-whitespace
+  name: Trim trailing whitespace
+  description: Removes trailing whitespace from files
+  # Portable across macOS (BSD) and Linux via a mktemp+atomic-mv script (the old
+  # inline `sed -i ''` entry was macOS-only and broke on Linux/CI).
+  # NOTE: uses language: script for consistency with the other hooks here; the
+  # repo-wide migration to `unsupported_script` is tracked separately.
+  # Files containing NUL bytes are skipped, not rewritten: BSD sed aborts on NUL
+  # (which previously truncated such files) and a whitespace fixer has no
+  # business rewriting binary payloads. `types: [text]` filters most binaries,
+  # but identify() only sniffs the first 1024 bytes so some still reach us.
+  entry: scripts/trailing-whitespace.sh
+  language: script
+  types: [text]
+  stages: [pre-commit]
+
+- id: end-of-file-fixer
+  name: Fix end of file
+  description: Ensures files end with exactly one newline
+  entry: scripts/end-of-file-fixer.sh
+  language: script
+  types: [text]
+  stages: [pre-commit]
+
+- id: check-yaml
+  name: Check YAML syntax
+  description: Validates YAML file syntax
+  # Processes all files passed by pre-commit (sys.argv[1:])
+  entry: python3 -c "import sys, yaml; [yaml.safe_load(open(f)) for f in sys.argv[1:]]"
+  language: system
+  types: [yaml]
+  stages: [pre-commit]
+
+- id: check-json
+  name: Check JSON syntax
+  description: Validates JSON file syntax
+  # Processes all files passed by pre-commit (sys.argv[1:])
+  entry: python3 -c "import sys, json; [json.load(open(f)) for f in sys.argv[1:]]"
+  language: system
+  types: [json]
+  stages: [pre-commit]
+
+# Opt-in isolated variants; legacy ids above retain their ambient dependencies.
+# Python must be available; pre-commit installs this package into a virtualenv.
+- id: check-yaml-selfcontained
+  name: Check YAML syntax (self-contained)
+  description: Validates single-document YAML with isolated, pinned PyYAML
+  entry: python -I -m cloud_gov_pre_commit_checks yaml
+  language: python
+  additional_dependencies: [PyYAML==6.0.3]
+  types: [yaml]
+  stages: [pre-commit]
+
+- id: check-json-selfcontained
+  name: Check JSON syntax (self-contained)
+  description: Validates JSON with isolated Python and the standard library
+  entry: python -I -m cloud_gov_pre_commit_checks json
+  language: python
+  types: [json]
+  stages: [pre-commit]
+
+# =============================================================================
+# SHELL SCRIPT HOOKS
+# =============================================================================
+
+- id: shellcheck
+  name: ShellCheck
+  description: Lints shell scripts for common issues
+  entry: shellcheck
+  language: system
+  types: [shell]
+  stages: [pre-commit]
+
+- id: shfmt-check
+  name: Shell format check
+  description: Checks shell script formatting (does not modify)
+  entry: shfmt -d
+  language: system
+  types: [shell]
+  stages: [pre-commit]
+
+# =============================================================================
+# PYTHON HOOKS (recommended)
+# Alternatives: black, isort, flake8, pylint, pyright
+# =============================================================================
+
+- id: ruff-check
+  name: Ruff linter
+  description: Fast Python linter (recommended - replaces flake8/isort)
+  entry: ruff check --fix
+  language: system
+  types: [python]
+  stages: [pre-commit]
+
+- id: ruff-format
+  name: Ruff formatter
+  description: Fast Python formatter (recommended - replaces black)
+  entry: ruff format
+  language: system
+  types: [python]
+  stages: [pre-commit]
+
+- id: mypy
+  name: Mypy type checker
+  description: Static type checking for Python
+  entry: mypy
+  language: system
+  types: [python]
+  stages: [pre-commit]
+  require_serial: true
+
+# =============================================================================
+# GO HOOKS (recommended)
+# Alternatives: staticcheck, go vet (built-in), revive
+# =============================================================================
+
+- id: go-fmt
+  name: Go format
+  description: Formats Go code with gofmt
+  entry: gofmt -w
+  language: system
+  types: [go]
+  stages: [pre-commit]
+
+- id: go-vet
+  name: Go vet
+  description: Reports suspicious constructs in Go code
+  entry: go vet
+  language: system
+  types: [go]
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: golangci-lint
+  name: golangci-lint
+  description: Fast Go linters runner (recommended)
+  entry: golangci-lint run --fix
+  language: system
+  types: [go]
+  pass_filenames: false
+  stages: [pre-commit]
+
+# =============================================================================
+# GO HOOKS — SELF-CONTAINED variants (Linux / CI / containers) — issue #36
+# =============================================================================
+# The `system` Go hooks above require the tool already on PATH (fine on caulking
+# macOS workstations via the Brewfile). These `-selfcontained` variants use
+# language: golang so pre-commit INSTALLS the tool itself into an isolated,
+# pinned environment — and pre-commit >= 3.0.0 bootstraps the Go toolchain — so
+# they work in a bare Linux/CI/container with nothing pre-installed.
+#
+# Opt-in: existing consumers keep using the ids above unchanged. Choose these ids
+# instead when you have no pre-installed toolchain.
+# REQUIRES: pre-commit >= 3.0.0, and NETWORK on first run (compiles/downloads the
+# tool once, then cached). Offline/air-gapped consumers should keep the `system`
+# ids or pre-warm the pre-commit cache.
+#
+# language_version: each Go tool declares a minimum Go in its own go.mod (gosec
+# v2.28.0 -> 1.25.8, govulncheck v1.6.0 -> 1.25.0). pre-commit's golang bootstrap
+# otherwise installs the LATEST Go, which usually works, but we PIN language_version
+# so the build is reproducible and cannot silently fall below a tool's floor. Bump
+# these in lockstep with the tool version in additional_dependencies.
+# See starter-configs/go-repo-selfcontained.pre-commit-config.yaml and ADR-0006.
+
+- id: gofmt-selfcontained
+  name: gofmt (self-contained)
+  description: Formats Go code with gofmt; Go toolchain provided by pre-commit
+  entry: gofmt -w
+  language: golang
+  language_version: '1.25.8'
+  types: [go]
+  stages: [pre-commit]
+
+- id: go-vet-selfcontained
+  name: go vet (self-contained)
+  description: Reports suspicious constructs; Go toolchain provided by pre-commit
+  entry: go vet ./...
+  language: golang
+  language_version: '1.25.8'
+  types: [go]
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: gosec-selfcontained
+  name: gosec (self-contained)
+  description: Go security checker (securego); self-installs via language golang
+  entry: gosec ./...
+  language: golang
+  # gosec v2.28.0 requires Go >= 1.25.8 (its go.mod). Keep in lockstep below.
+  language_version: '1.25.8'
+  types: [go]
+  pass_filenames: false
+  stages: [pre-commit]
+  # No official gosec pre-commit hook repo exists (verified) — pin here so all
+  # consumers share one auditable version.
+  additional_dependencies:
+    - github.com/securego/gosec/v2/cmd/gosec@v2.28.0
+
+- id: govulncheck-selfcontained
+  name: govulncheck (self-contained)
+  description: Official Go vulnerability scanner; self-installs via language golang
+  entry: govulncheck ./...
+  language: golang
+  # govulncheck (x/vuln v1.6.0) requires Go >= 1.25.0; pin 1.25.8 to match gosec.
+  language_version: '1.25.8'
+  types: [go]
+  pass_filenames: false
+  stages: [pre-commit]
+  # No official govulncheck pre-commit hook repo exists (verified) — pin here.
+  additional_dependencies:
+    - golang.org/x/vuln/cmd/govulncheck@v1.6.0
+
+# =============================================================================
+# JAVASCRIPT/TYPESCRIPT HOOKS (recommended)
+# These require npm packages installed in your project:
+#   npm install --save-dev eslint prettier typescript
+# Alternatives: Biome (faster, all-in-one), deno lint, oxlint
+# =============================================================================
+
+- id: eslint
+  name: ESLint
+  description: JavaScript/TypeScript linter (OpenJS Foundation)
+  entry: npx eslint --fix
+  language: system
+  types_or: [javascript, jsx, ts, tsx]
+  stages: [pre-commit]
+
+- id: eslint-check
+  name: ESLint (check only)
+  description: JavaScript/TypeScript linter without auto-fix
+  entry: npx eslint
+  language: system
+  types_or: [javascript, jsx, ts, tsx]
+  stages: [pre-commit]
+
+- id: prettier
+  name: Prettier
+  description: Code formatter for JS/TS/JSON/CSS/MD (recommended)
+  entry: npx prettier --write
+  language: system
+  types_or: [javascript, jsx, ts, tsx, json, css, scss, markdown, yaml]
+  stages: [pre-commit]
+
+- id: prettier-check
+  name: Prettier (check only)
+  description: Prettier format check without modifying files
+  entry: npx prettier --check
+  language: system
+  types_or: [javascript, jsx, ts, tsx, json, css, scss, markdown, yaml]
+  stages: [pre-commit]
+
+- id: tsc
+  name: TypeScript compiler
+  description: Type-checks TypeScript files (Microsoft)
+  entry: npx tsc --noEmit
+  language: system
+  # 'ts' is the identify library type for .ts files, 'tsx' for .tsx
+  types_or: [ts, tsx]
+  pass_filenames: false
+  stages: [pre-commit]
+
+# --- Biome (alternative to ESLint + Prettier) ---
+# Faster Rust-based tool that replaces both ESLint and Prettier
+# Install: npm install --save-dev @biomejs/biome
+
+- id: biome-check
+  name: Biome check
+  description: Fast linter and formatter (alternative to ESLint+Prettier)
+  entry: npx biome check --write
+  language: system
+  types_or: [javascript, jsx, ts, tsx, json]
+  stages: [pre-commit]
+
+- id: biome-ci
+  name: Biome CI
+  description: Biome for CI (no writes, exits on error)
+  entry: npx biome ci
+  language: system
+  types_or: [javascript, jsx, ts, tsx, json]
+  pass_filenames: false
+  stages: [pre-commit]
+
+# =============================================================================
+# TERRAFORM / IAC HOOKS
+# Both Terraform (HashiCorp) and OpenTofu (Linux Foundation) supported
+# =============================================================================
+
+# --- Terraform (HashiCorp - BSL 1.1 license) ---
+
+- id: terraform-fmt
+  name: Terraform format
+  description: Formats Terraform files (HashiCorp Terraform)
+  entry: terraform fmt -recursive
+  language: system
+  files: \.tf$
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: terraform-validate
+  name: Terraform validate
+  description: Validates Terraform configuration (HashiCorp Terraform)
+  entry: terraform validate
+  language: system
+  files: \.tf$
+  pass_filenames: false
+  stages: [pre-commit]
+
+# --- OpenTofu (Linux Foundation - MPL-2.0 license, recommended) ---
+
+- id: tofu-fmt
+  name: OpenTofu format
+  description: Formats Terraform files (OpenTofu - recommended)
+  entry: tofu fmt -recursive
+  language: system
+  files: \.tf$
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: tofu-validate
+  name: OpenTofu validate
+  description: Validates Terraform configuration (OpenTofu - recommended)
+  entry: tofu validate
+  language: system
+  files: \.tf$
+  pass_filenames: false
+  stages: [pre-commit]
+
+# --- TFLint (works with both Terraform and OpenTofu) ---
+
+- id: tflint
+  name: TFLint
+  description: Terraform/OpenTofu linter
+  entry: tflint
+  language: system
+  files: \.tf$
+  pass_filenames: false
+  stages: [pre-commit]
+
+# =============================================================================
+# CONTAINER HOOKS
+# =============================================================================
+
+- id: hadolint
+  name: Hadolint
+  description: Dockerfile linter
+  entry: hadolint
+  language: system
+  types: [dockerfile]
+  stages: [pre-commit]
+
+# =============================================================================
+# CLOUD.GOV COMPLIANCE HOOKS
+# =============================================================================
+
+- id: check-gsa-email
+  name: Check GSA email
+  description: Ensures commits use @gsa.gov email addresses
+  entry: scripts/check-gsa-email.sh
+  language: script
+  stages: [commit-msg]
+  always_run: true
+  pass_filenames: false
+
+# =============================================================================
+# SECURITY SCANNING HOOKS
+# See docs/adr/ADR-0002-supply-chain-security.md for tool assessments
+# =============================================================================
+
+# --- Secrets detection: NOT a hook here (see ADR-0005, superseded by ADR-0007) ---
+# This template intentionally ships NO gitleaks hook:
+#   * On caulking workstations, caulking already runs gitleaks globally — a hook
+#     here would double-scan.
+#   * In CI / containers / devcontainers, consumers use gitleaks' OWN upstream
+#     pre-commit hook (github.com/gitleaks/gitleaks — a real Go module that
+#     self-installs), pinned by rev. See starter-configs/go-repo-selfcontained.pre-commit-config.yaml.
+#   * WARNING: Do NOT set `SKIP=gitleaks` globally on a caulking workstation —
+#     `SKIP=gitleaks` bypasses caulking's global gitleaks scan! Instead, keep
+#     upstream gitleaks hooks for CI-only or non-caulking environments.
+# A cloud-gov-branded caulking-aware wrapper was tried (ADR-0005) but was removed:
+# a language: golang hook resolves its `entry` against the CONSUMER repo, so a
+# repo-relative wrapper script cannot be found — it never worked in CI. ADR-0007
+# records the Option-C decision.
+
+# --- Universal SCA (Software Composition Analysis) ---
+
+- id: osv-scanner
+  name: OSV Scanner
+  description: Scans for vulnerable dependencies using Google OSV database
+  entry: osv-scanner scan source --recursive --format=table .
+  language: system
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: osv-scanner-lockfile
+  name: OSV Scanner (lockfiles)
+  description: Fast scan of lockfiles for known vulnerabilities
+  entry: osv-scanner scan --lockfile
+  language: system
+  files: (package-lock\.json|yarn\.lock|pnpm-lock\.yaml|Gemfile\.lock|Cargo\.lock|go\.sum|requirements\.txt|poetry\.lock|pdm\.lock)$
+  stages: [pre-commit]
+
+# --- Universal SBOM Generation ---
+
+- id: syft
+  name: Syft SBOM generator
+  description: Generates CycloneDX SBOM from project (Anchore)
+  entry: syft . -o cyclonedx-json=sbom.cdx.json
+  language: system
+  pass_filenames: false
+  stages: [manual]
+
+# --- Multi-language SAST ---
+
+- id: semgrep
+  name: Semgrep SAST
+  description: Multi-language static analysis security testing
+  entry: semgrep scan --config=auto --error --metrics=off
+  language: system
+  types: [file]
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: semgrep-ci
+  name: Semgrep CI (with SARIF output)
+  description: Semgrep for CI with SARIF output for security dashboards
+  entry: semgrep scan --config=auto --error --metrics=off --sarif --output=semgrep.sarif
+  language: system
+  types: [file]
+  pass_filenames: false
+  stages: [manual]
+
+# --- Container/SBOM Scanning ---
+
+- id: grype
+  name: Grype container scan
+  description: Scans container images for vulnerabilities (Anchore)
+  entry: grype dir:. --fail-on high
+  language: system
+  pass_filenames: false
+  stages: [manual]
+
+- id: grype-sbom
+  name: Grype SBOM scan
+  description: Scans SBOM files for vulnerabilities
+  entry: grype
+  language: system
+  files: (sbom|bom)\.(json|xml|spdx)$
+  stages: [manual]
+
+# =============================================================================
+# GO SECURITY HOOKS
+# See docs/adr/ADR-0004-language-security-tools.md for selection rationale
+# =============================================================================
+
+- id: govulncheck
+  name: Go vulnerability check
+  description: Official Go vulnerability scanner (Go Team, BSD-3-Clause)
+  entry: govulncheck ./...
+  language: system
+  files: \.go$
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: gosec
+  name: Go security checker
+  description: Security-focused static analysis for Go (securego, Apache-2.0)
+  entry: gosec ./...
+  language: system
+  files: \.go$
+  pass_filenames: false
+  stages: [pre-commit]
+
+# =============================================================================
+# PYTHON SECURITY HOOKS
+# See docs/adr/ADR-0004-language-security-tools.md for selection rationale
+# =============================================================================
+
+- id: pip-audit
+  name: pip-audit
+  description: Scans Python dependencies for vulnerabilities (PyPA, Apache-2.0)
+  entry: pip-audit
+  language: system
+  files: (requirements.*\.txt|pyproject\.toml|setup\.py)$
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: bandit
+  name: Bandit security linter
+  description: Security-focused static analysis for Python (PyCQA, Apache-2.0)
+  entry: bandit -r . -x .venv,venv,node_modules,.git,build,dist
+  language: system
+  types: [python]
+  pass_filenames: false
+  stages: [pre-commit]
+
+# =============================================================================
+# JAVASCRIPT/NODE.JS SECURITY HOOKS
+# See docs/adr/ADR-0004-language-security-tools.md for selection rationale
+# =============================================================================
+
+- id: npm-audit
+  name: npm audit
+  description: Scans npm dependencies for vulnerabilities (npm/Microsoft)
+  entry: npm audit --audit-level=moderate
+  language: system
+  files: ^package-lock\.json$
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: yarn-audit
+  name: yarn audit
+  description: Scans yarn dependencies for vulnerabilities
+  entry: yarn audit --level moderate
+  language: system
+  files: ^yarn\.lock$
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: pnpm-audit
+  name: pnpm audit
+  description: Scans pnpm dependencies for vulnerabilities
+  entry: pnpm audit --audit-level moderate
+  language: system
+  files: ^pnpm-lock\.yaml$
+  pass_filenames: false
+  stages: [pre-commit]
+
+- id: retire-js
+  name: retire.js
+  description: Scans for vulnerable JavaScript libraries (OWASP, Apache-2.0)
+  entry: retire --exitwith 13 --severity medium
+  language: system
+  types: [javascript]
+  stages: [pre-commit]
