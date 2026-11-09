@@ -1,0 +1,85 @@
+# ===========================================================================
+# Pre-commit Configuration for Ruby & InSpec STIG Overlay Repositories
+# ===========================================================================
+# This configuration follows cloud.gov pre-commit standardization.
+# Each category has ONE default tool enabled; alternatives are commented.
+#
+# Paired `.caulking-profiles` (for `caulking.sh bootstrap --repo .`):
+#   baseline
+#   shell
+#   ruby
+#   security
+#
+# Categories:
+#   - HYGIENE: Generic file quality (all repos)
+#   - LINTING: Ruby syntax, code quality, and formatting (Ruby apps, bots, InSpec)
+#   - SAST: Security static analysis
+#   - SCA: Dependency vulnerability scanning (Gemfile.lock)
+#
+# Setup (cloud.gov staff):
+#   1. Install caulking first: https://github.com/cloud-gov/caulking
+#   2. Create `.caulking-profiles` and run `caulking.sh bootstrap --repo .`
+#   3. Copy this file to your repo root as .pre-commit-config.yaml
+#   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
+#
+# References:
+#   - ADR-0002: Template consolidation and Brewfile bundles
+#   - ADR-0004: Supply chain security tool selection
+# ===========================================================================
+
+repos:
+  # Canonical consolidated hook provider endpoint.
+  # Legacy compatibility endpoint (frozen until the first consolidated caulking tag
+  # is published): https://github.com/cloud-gov/pre-commit-templates (rev: v0.6.0)
+  - repo: https://github.com/cloud-gov/caulking
+    rev: v3.4.0  # Pin to specific version
+    hooks:
+      # =========================================================================
+      # HYGIENE: Generic file quality checks
+      # Satisfies: NIST SA-15 (Development Process), SSDF PO.3
+      # =========================================================================
+      # DEFAULT: All hygiene hooks — required for all repositories
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      # Isolated self-contained syntax checks (legacy `check-yaml` / `check-json`
+      # remain supported if ambient `python3` + `PyYAML` is preferred):
+      - id: check-yaml-selfcontained
+      - id: check-json-selfcontained
+
+      # =========================================================================
+      # LINTING: Ruby syntax and code quality
+      # Satisfies: NIST SA-11 (Developer Testing), SSDF PW.7
+      # =========================================================================
+      # DEFAULT: ruby-check + rubocop (with safe auto-correct)
+      - id: ruby-check
+      - id: rubocop
+      #
+      # ALTERNATIVE: rubocop-check (check-only mode without modifying files)
+      # - id: rubocop-check
+
+      # =========================================================================
+      # SAST: Security static analysis
+      # Satisfies: NIST SA-11(1) (Static Analysis), SSDF PW.7, RA-5
+      # =========================================================================
+      # DEFAULT: semgrep — Multi-language static analysis covering Ruby
+      - id: semgrep
+
+      # =========================================================================
+      # SCA: Dependency vulnerability scanning
+      # Satisfies: NIST RA-5 (Vulnerability Scanning), SSDF PW.4, RV.1
+      # =========================================================================
+      # DEFAULT: osv-scanner-lockfile — Scans Gemfile.lock for known CVEs
+      - id: osv-scanner-lockfile
+
+      # =========================================================================
+      # Shell scripts (if present in repo)
+      # =========================================================================
+      - id: shellcheck
+
+      # =========================================================================
+      # GSA compliance
+      # =========================================================================
+      - id: check-gsa-email

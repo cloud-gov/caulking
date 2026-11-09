@@ -1,0 +1,76 @@
+# ===========================================================================
+# Pre-commit Configuration for Documentation, YAML & CI Workflow Repositories
+# ===========================================================================
+# This configuration follows cloud.gov pre-commit standardization.
+# Each category has ONE default tool enabled; alternatives are commented.
+#
+# Paired `.caulking-profiles` (for `caulking.sh bootstrap --repo .`):
+#   baseline
+#   shell
+#   docs
+#
+# Categories:
+#   - HYGIENE: Generic file quality (all repos)
+#   - YAML & WORKFLOW LINTING: YAML structure and GitHub Actions workflow checks
+#   - DOCUMENTATION LINTING: Markdown formatting and style
+#
+# Setup (cloud.gov staff):
+#   1. Install caulking first: https://github.com/cloud-gov/caulking
+#   2. Create `.caulking-profiles` and run `caulking.sh bootstrap --repo .`
+#   3. Copy this file to your repo root as .pre-commit-config.yaml
+#   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
+#
+# References:
+#   - ADR-0002: Template consolidation and Brewfile bundles
+#   - ADR-0004: Supply chain security tool selection
+# ===========================================================================
+
+repos:
+  # Canonical consolidated hook provider endpoint.
+  # Legacy compatibility endpoint (frozen until the first consolidated caulking tag
+  # is published): https://github.com/cloud-gov/pre-commit-templates (rev: v0.6.0)
+  - repo: https://github.com/cloud-gov/caulking
+    rev: v3.4.0  # Pin to specific version
+    hooks:
+      # =========================================================================
+      # HYGIENE: Generic file quality checks
+      # Satisfies: NIST SA-15 (Development Process), SSDF PO.3
+      # =========================================================================
+      # DEFAULT: All hygiene hooks — required for all repositories
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      # Isolated self-contained syntax checks (legacy `check-yaml` / `check-json`
+      # remain supported if ambient `python3` + `PyYAML` is preferred):
+      - id: check-yaml-selfcontained
+      - id: check-json-selfcontained
+
+      # =========================================================================
+      # YAML & WORKFLOW LINTING: YAML formatting and GitHub Actions workflows
+      # Satisfies: NIST SA-11 (Developer Testing), SSDF PW.7
+      # =========================================================================
+      # DEFAULT: yamllint + actionlint
+      - id: yamllint
+      - id: actionlint
+
+      # =========================================================================
+      # DOCUMENTATION LINTING: Markdown quality and formatting
+      # Satisfies: NIST SA-11 (Developer Testing), SSDF PW.7
+      # =========================================================================
+      # DEFAULT: markdownlint (with --fix)
+      - id: markdownlint
+      #
+      # ALTERNATIVE: markdownlint-check (check-only mode without modifying files)
+      # - id: markdownlint-check
+
+      # =========================================================================
+      # Shell scripts (if present in repo)
+      # =========================================================================
+      - id: shellcheck
+
+      # =========================================================================
+      # GSA compliance
+      # =========================================================================
+      - id: check-gsa-email

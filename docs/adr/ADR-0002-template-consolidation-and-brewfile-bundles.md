@@ -35,9 +35,9 @@ Move all reusable hook assets from `cloud-gov/pre-commit-templates` into
 `.release-please-manifest.json`, `release-please-config.json` per
 [ADR-0001](ADR-0001-release-management.md)):
 
-- `.pre-commit-hooks.yaml` (all 49 standard and opt-in `-selfcontained` Go and
+- `.pre-commit-hooks.yaml` (all 56 standard and opt-in `-selfcontained` Go and
   Python hooks at the repository root)
-- `starter-configs/*.pre-commit-config.yaml` (pointing `repo:` at
+- `starter-configs/*.pre-commit-config.yaml` (all 9 starter configurations pointing `repo:` at
   `https://github.com/cloud-gov/caulking`, with a note referencing the frozen
   `cloud-gov/pre-commit-templates` `v0.6.0` compatibility endpoint until the
   first consolidated caulking release `v3.4.0` is published by Release Please)
@@ -51,7 +51,7 @@ Move all reusable hook assets from `cloud-gov/pre-commit-templates` into
 
 ### 2. Replace Monolithic `Brewfile` with Composable `brewfiles/<profile>.Brewfile` Bundles
 
-Replace the single all-languages `Brewfile` with 9 selective, composable
+Replace the single all-languages `Brewfile` with 11 selective, composable
 Homebrew Bundle files under `brewfiles/<profile>.Brewfile`:
 
 - `brewfiles/baseline.Brewfile` (`bash`, `gitleaks`, `prek`)
@@ -60,8 +60,10 @@ Homebrew Bundle files under `brewfiles/<profile>.Brewfile`:
 - `brewfiles/python.Brewfile` (`ruff`, `mypy`, `bandit`, `pip-audit`)
 - `brewfiles/go.Brewfile` (`go`, `golangci-lint`)
 - `brewfiles/javascript.Brewfile` (`node`)
+- `brewfiles/ruby.Brewfile` (`ruby`, `rubocop`)
 - `brewfiles/opentofu.Brewfile` (`terraform-linters/tap`, `opentofu`, `terraform-linters/tap/tflint` cask)
 - `brewfiles/terraform.Brewfile` (`hashicorp/tap`, `terraform-linters/tap`, `hashicorp/tap/terraform`, `terraform-linters/tap/tflint` cask)
+- `brewfiles/docs.Brewfile` (`yamllint`, `actionlint`, `markdownlint-cli`)
 - `brewfiles/security.Brewfile` (`semgrep`, `osv-scanner`, `syft`, `grype`)
 
 Repositories declare their required profiles explicitly in `.caulking-profiles`
@@ -79,11 +81,12 @@ Homebrew `Brewfile` syntax selects package names rather than enforcing `>=`
 SemVer constraints. To balance supply-chain safety with developer ergonomics:
 
 - `scripts/toolchain.sh` defines justified minimum supported SemVer floors for
-  all 20 profile tools (`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
+  all 25 profile tools (`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
   `shellcheck >=0.9.0`, `shfmt >=3.6.0`, `hadolint >=2.12.0`, `ruff >=0.4.0`,
   `mypy >=1.8.0`, `bandit >=1.7.5`, `pip-audit >=2.7.0`, `go >=1.22.0`,
-  `golangci-lint >=1.59.0`, `node >=20.0.0`, `opentofu >=1.6.0`,
-  `terraform >=1.5.0`, `tflint >=0.50.0`, `semgrep >=1.50.0`,
+  `golangci-lint >=1.59.0`, `node >=20.0.0`, `ruby >=3.2.0`, `rubocop >=1.60.0`,
+  `opentofu >=1.6.0`, `terraform >=1.5.0`, `tflint >=0.50.0`, `yamllint >=1.35.0`,
+  `actionlint >=1.7.0`, `markdownlint-cli >=0.39.0`, `semgrep >=1.50.0`,
   `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0`) and verifies installed
   versions in `caulking.sh doctor` (and before `run`/`hook-run`) with 5-second
   telemetry-disabled version probes.

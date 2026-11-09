@@ -33,8 +33,10 @@ container
 | `python` | `brewfiles/python.Brewfile` | `ruff >=0.4.0`, `mypy >=1.8.0`, `bandit >=1.7.5`, `pip-audit >=2.7.0` |
 | `go` | `brewfiles/go.Brewfile` | `go >=1.22.0`, `golangci-lint >=1.59.0` |
 | `javascript` | `brewfiles/javascript.Brewfile` | `node >=20.0.0` |
+| `ruby` | `brewfiles/ruby.Brewfile` | `ruby >=3.2.0`, `rubocop >=1.60.0` |
 | `opentofu` | `brewfiles/opentofu.Brewfile` | `opentofu` (`tofu >=1.6.0`), `terraform-linters/tap/tflint >=0.50.0` |
 | `terraform` | `brewfiles/terraform.Brewfile` | `hashicorp/tap/terraform >=1.5.0`, `terraform-linters/tap/tflint >=0.50.0` |
+| `docs` | `brewfiles/docs.Brewfile` | `yamllint >=1.35.0`, `actionlint >=1.7.0`, `markdownlint-cli` (`markdownlint >=0.39.0`) |
 | `security` | `brewfiles/security.Brewfile` | `semgrep >=1.50.0`, `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0` |
 
 No profiles are implied. Repeated `--profile` flags add to the file's selections,
@@ -101,7 +103,7 @@ or broken dependency or installation/probe failure; `2` means invalid input.
 ## Coverage boundaries
 
 - **Reusable hooks and starter configs:** `.pre-commit-hooks.yaml` at the root
-  of `cloud-gov/caulking` defines all 49 reusable hooks. Copy-to-start
+  of `cloud-gov/caulking` defines all 56 reusable hooks. All 9 copy-to-start
   configurations in `starter-configs/` include `.caulking-profiles` pairings.
 - **Self-contained syntax hooks:** `check-yaml-selfcontained` and
   `check-json-selfcontained` use runner-managed Python environments (`PyYAML==6.0.3`
@@ -122,14 +124,15 @@ or broken dependency or installation/probe failure; `2` means invalid input.
 
 - `make check-consolidated`: runs `make test`, `make test-toolchain`,
   `make verify-hooks`, `make test-python`, and `make verify-release`.
-- `/bin/bash tests/toolchain.sh` and `./tests/toolchain.sh`: 99 isolated checks
-  exercising all 9 profiles (`baseline`, `shell`, `container`, `python`, `go`,
-  `javascript`, `opentofu`, `terraform`, `security`), minimum-version floor
-  rejection, upgraded-version acceptance, `opentofu` (`tofu`) binary resolution,
+- `/bin/bash tests/toolchain.sh` and `./tests/toolchain.sh`: isolated checks
+  exercising all 11 profiles (`baseline`, `shell`, `container`, `python`, `go`,
+  `javascript`, `ruby`, `opentofu`, `terraform`, `docs`, `security`), all 25
+  profile tools, minimum-version floor rejection, upgraded-version acceptance,
+  `opentofu` (`tofu`) and `markdownlint-cli` (`markdownlint`) binary resolution,
   `go version` probing, `tflint` Caskroom/opt resolution, and `brewfiles/*.Brewfile`
   presence.
 - `python3 scripts/validate-hooks.py` and `bash scripts/test-validate-hooks.sh`:
-  validates all 49 hooks in `.pre-commit-hooks.yaml` and all 7 `starter-configs/*.yaml`
+  validates all 56 hooks in `.pre-commit-hooks.yaml` and all 9 `starter-configs/*.yaml`
   files against `PROFILE_BINARIES`.
 - `python3 -m unittest discover -s tests -p "test_python_checks.py" -v` and
   `python3 tests/try_repo_python_checks.py`: verifies isolated YAML/JSON hooks.

@@ -328,6 +328,34 @@
   stages: [pre-commit]
 
 # =============================================================================
+# RUBY HOOKS (Ruby apps, bots, and InSpec STIG overlays)
+# =============================================================================
+
+- id: ruby-check
+  name: Ruby syntax check
+  description: Validates Ruby syntax with ruby -c
+  entry: ruby -c
+  language: system
+  types: [ruby]
+  stages: [pre-commit]
+
+- id: rubocop
+  name: RuboCop linter and formatter
+  description: Ruby static code analyzer and formatter (auto-correct safe offenses)
+  entry: rubocop -a
+  language: system
+  types: [ruby]
+  stages: [pre-commit]
+
+- id: rubocop-check
+  name: RuboCop (check only)
+  description: Ruby static code analyzer without auto-correct
+  entry: rubocop
+  language: system
+  types: [ruby]
+  stages: [pre-commit]
+
+# =============================================================================
 # TERRAFORM / IAC HOOKS
 # Both Terraform (HashiCorp) and OpenTofu (Linux Foundation) supported
 # =============================================================================
@@ -393,6 +421,42 @@
   entry: hadolint
   language: system
   types: [dockerfile]
+  stages: [pre-commit]
+
+# =============================================================================
+# DOCUMENTATION, YAML & CI WORKFLOW HOOKS
+# =============================================================================
+
+- id: yamllint
+  name: yamllint
+  description: Lints YAML files for syntax, duplicate keys, and formatting
+  entry: yamllint -d relaxed
+  language: system
+  types: [yaml]
+  stages: [pre-commit]
+
+- id: actionlint
+  name: actionlint
+  description: Static checker for GitHub Actions workflow files
+  entry: actionlint
+  language: system
+  files: ^\.github/workflows/.*\.(yml|yaml)$
+  stages: [pre-commit]
+
+- id: markdownlint
+  name: markdownlint
+  description: Lints and fixes Markdown files with markdownlint-cli
+  entry: markdownlint --fix
+  language: system
+  types: [markdown]
+  stages: [pre-commit]
+
+- id: markdownlint-check
+  name: markdownlint (check only)
+  description: Lints Markdown files with markdownlint-cli without modifying files
+  entry: markdownlint
+  language: system
+  types: [markdown]
   stages: [pre-commit]
 
 # =============================================================================

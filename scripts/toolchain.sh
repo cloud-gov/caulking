@@ -10,8 +10,10 @@ toolchain_usage() {
     '          python (ruff >=0.4.0, mypy >=1.8.0, bandit >=1.7.5, pip-audit >=2.7.0),' \
     '          go (go >=1.22.0, golangci-lint >=1.59.0),' \
     '          javascript (node >=20.0.0),' \
+    '          ruby (ruby >=3.2.0, rubocop >=1.60.0),' \
     '          opentofu (opentofu >=1.6.0, tflint >=0.50.0),' \
     '          terraform (terraform >=1.5.0, tflint >=0.50.0),' \
+    '          docs (yamllint >=1.35.0, actionlint >=1.7.0, markdownlint-cli >=0.39.0),' \
     '          security (semgrep >=1.50.0, osv-scanner >=1.7.0, syft >=1.0.0, grype >=0.74.0).' \
     '          No default or implied profiles. Bundles live in brewfiles/<profile>.Brewfile.' \
     'Profiles also come from REPO/.caulking-profiles: one name per line, # comments.' \
@@ -33,7 +35,7 @@ toolchain_error() {
 toolchain_profile() {
   local profile="$1" existing
   case "$profile" in
-    baseline | shell | container | python | go | javascript | opentofu | terraform | security) ;;
+    baseline | shell | container | python | go | javascript | ruby | opentofu | terraform | docs | security) ;;
     *)
       toolchain_error "unknown profile: $profile"
       return 2
@@ -198,6 +200,7 @@ toolchain_check() {
   prefix="$brew_prefix/opt/$formula"
   binary_name="$formula"
   [[ "$formula" != opentofu ]] || binary_name=tofu
+  [[ "$formula" != markdownlint-cli ]] || binary_name=markdownlint
   if [[ "$formula" == tflint && ! -x "$prefix/bin/tflint" ]] &&
     [[ -e "$brew_prefix/Caskroom/tflint" || -L "$brew_prefix/Caskroom/tflint" ]]; then
     bin_dir="$brew_prefix/bin"
@@ -261,9 +264,14 @@ toolchain_check() {
       go) min_version=1.22.0 ;;
       golangci-lint) min_version=1.59.0 ;;
       node) min_version=20.0.0 ;;
+      ruby) min_version=3.2.0 ;;
+      rubocop) min_version=1.60.0 ;;
       opentofu) min_version=1.6.0 ;;
       terraform) min_version=1.5.0 ;;
       tflint) min_version=0.50.0 ;;
+      yamllint) min_version=1.35.0 ;;
+      actionlint) min_version=1.7.0 ;;
+      markdownlint-cli) min_version=0.39.0 ;;
       semgrep) min_version=1.50.0 ;;
       osv-scanner) min_version=1.7.0 ;;
       syft) min_version=1.0.0 ;;
@@ -402,8 +410,10 @@ toolchain_main() {
       python) toolchain_add_formula ruff mypy bandit pip-audit ;;
       go) toolchain_add_formula go golangci-lint ;;
       javascript) toolchain_add_formula node ;;
+      ruby) toolchain_add_formula ruby rubocop ;;
       opentofu) toolchain_add_formula opentofu tflint ;;
       terraform) toolchain_add_formula terraform tflint ;;
+      docs) toolchain_add_formula yamllint actionlint markdownlint-cli ;;
       security) toolchain_add_formula semgrep osv-scanner syft grype ;;
     esac
   done

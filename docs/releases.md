@@ -78,9 +78,14 @@ tool requirements, without pinning each upstream patch:
 | `go` | `go` | `>= 1.22.0` | Modern module/workspace routing (`go version`) |
 | `go` | `golangci-lint` | `>= 1.59.0` | Supports late v1 and v2 (`version: "2"` in `.golangci.yml` for v2) |
 | `javascript` | `node` | `>= 20.0.0` | Active LTS floor for `npx` project-local linters |
+| `ruby` | `ruby` | `>= 3.2.0` | Supported Ruby 3.2+ floor for syntax validation (`ruby -c`) and InSpec overlays |
+| `ruby` | `rubocop` | `>= 1.60.0` | Modern RuboCop plugin/department configuration floor |
 | `opentofu` | `opentofu` (`tofu`) | `>= 1.6.0` | `tofu fmt` / `tofu validate` GA floor |
 | `terraform` | `terraform` | `>= 1.5.0` | `terraform fmt` / `terraform validate` floor |
 | `opentofu` / `terraform` | `tflint` | `>= 0.50.0` | HCL2 plugin configuration floor |
+| `docs` | `yamllint` | `>= 1.35.0` | `-d relaxed` preset and modern Python 3.12+ compatibility |
+| `docs` | `actionlint` | `>= 1.7.0` | Current GitHub Actions runner/context schema support |
+| `docs` | `markdownlint-cli` (`markdownlint`) | `>= 0.39.0` | `--fix` flag and modern CommonMark rule floor |
 | `security` | `semgrep` | `>= 1.50.0` | `semgrep scan --config=auto --error --metrics=off` |
 | `security` | `osv-scanner` | `>= 1.7.0` | `osv-scanner scan` subcommand syntax |
 | `security` | `syft` | `>= 1.0.0` | `-o cyclonedx-json=...` v1 CLI contract |

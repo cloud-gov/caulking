@@ -36,6 +36,11 @@ The tools listed here have been security-assessed and are pre-approved for use, 
 | ruff | Astral/OpenAI | MIT | LOW | VC-backed, OpenAI acquisition |
 | mypy | Python/PSF | MIT | LOW | Foundation governance, 13 maintainers |
 | golangci-lint | Community | GPL-3.0 | LOW | Multi-maintainer, SBOMs provided |
+| ruby | Ruby Core Team | Ruby/BSD-2-Clause | LOW | Multi-decade core language governance |
+| rubocop | RuboCop Core Team | MIT | LOW | Community governance, standard Ruby analyzer |
+| yamllint | Adrien Vergé | GPL-3.0 | LOW | Read-only Python YAML linter, widely packaged |
+| actionlint | rhysd | MIT | LOW | Static GitHub Actions workflow analyzer |
+| markdownlint-cli | Igor Shubovych / David Anson | MIT | LOW | Standard Markdown CLI linter |
 | hadolint | Community | GPL-3.0 | LOW | No CVEs, read-only operation |
 | tflint | terraform-linters | MPL-2.0/BUSL | LOW-MEDIUM | Attestation support, plugin model |
 | git-cliff | orhun | Apache-2.0/MIT | LOW | Single maintainer, monitor quarterly |

@@ -140,8 +140,10 @@ PROFILE_BINARIES: dict[str, set[str]] = {
     "python": {"ruff", "mypy", "bandit", "pip-audit"},
     "go": {"go", "gofmt", "golangci-lint"},
     "javascript": {"node", "npx", "npm"},
+    "ruby": {"ruby", "rubocop"},
     "opentofu": {"tofu", "tflint"},
     "terraform": {"terraform", "tflint"},
+    "docs": {"yamllint", "actionlint", "markdownlint"},
     "security": {"semgrep", "osv-scanner", "syft", "grype"},
 }
 

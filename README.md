@@ -254,9 +254,10 @@ Conventional Commits, and independent Homebrew tool upgrades.
 
 ### Selective workstation toolchain & Brewfile bundles
 
-Caulking includes selective Homebrew bundles (`brewfiles/<profile>.Brewfile`) and
-profile-aware bootstrap/diagnostics for `baseline`, `shell`, `container`,
-`python`, `go`, `javascript`, `opentofu`, `terraform`, and `security`:
+Caulking includes 11 selective Homebrew bundles (`brewfiles/<profile>.Brewfile`)
+covering 25 profile tools, plus profile-aware bootstrap/diagnostics for
+`baseline`, `shell`, `container`, `python`, `go`, `javascript`, `ruby`,
+`opentofu`, `terraform`, `docs`, and `security`:
 
 ```bash
 ./caulking.sh bootstrap --profile baseline --profile shell --profile container --dry-run
@@ -275,18 +276,22 @@ Caulking is the consolidated home for cloud.gov's reusable pre-commit hooks
 (`.pre-commit-hooks.yaml`) and copy-to-start configurations (`starter-configs/`),
 superseding the frozen `cloud-gov/pre-commit-templates` repository:
 
-- **49 reusable hooks** across hygiene, shell (`shellcheck`, `shfmt-check`),
+- **56 reusable hooks** across hygiene, shell (`shellcheck`, `shfmt-check`),
   Python (`ruff-check`, `ruff-format`, `mypy`, `bandit`, `pip-audit`), Go
   (`go-fmt`, `go-vet`, `golangci-lint`, `gosec`, `govulncheck`), JS/TS (`eslint`,
-  `prettier`, `tsc`, `biome-check`), IaC (`opentofu`, `terraform`, `tflint`),
-  containers (`hadolint`), compliance (`check-gsa-email`), and universal scanners
+  `prettier`, `tsc`, `biome-check`), Ruby (`ruby-check`, `rubocop`,
+  `rubocop-check`), IaC (`opentofu`, `terraform`, `tflint`), containers
+  (`hadolint`), documentation/YAML/CI (`yamllint`, `actionlint`, `markdownlint`,
+  `markdownlint-check`), compliance (`check-gsa-email`), and universal scanners
   (`semgrep`, `osv-scanner`, `syft`, `grype`).
 - **Self-contained syntax and Go hooks** (`check-yaml-selfcontained`,
   `check-json-selfcontained`, `gofmt-selfcontained`, `go-vet-selfcontained`,
   `gosec-selfcontained`, `govulncheck-selfcontained`) that provision isolated
   environments for CI and containers without ambient `PyYAML` or Go installations.
-- **Starter configurations** in `starter-configs/` paired with `.caulking-profiles`
-  bundles.
+- **9 starter configurations** in `starter-configs/` paired with `.caulking-profiles`
+  bundles (`container-repo`, `docs-yaml-repo`, `go-repo`, `go-repo-selfcontained`,
+  `javascript-repo`, `opentofu-repo`, `python-repo`, `ruby-repo`, and
+  `terraform-repo`).
 
 See [toolchain bootstrap](docs/toolchain-bootstrap.md),
 [release management](docs/releases.md), [ADR-0002](docs/adr/ADR-0002-template-consolidation-and-brewfile-bundles.md),
