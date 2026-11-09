@@ -179,23 +179,44 @@ expect 2 bootstrap --repo "$REPO"
 printf 'repos: []\n' > "$TMP/.pre-commit-config.yaml"
 expect 2 run --repo "$REPO" --profile baseline
 contains "$TMP/output" 'readable direct config:'
-printf 'repos: []\n' > "$REPO/.pre-commit-config.yaml"
-printf 'baseline\nshell container\n' > "$REPO/.caulking-profiles"
+ln -s "$TMP/missing.config" "$REPO/.pre-commit-config.yaml"
 expect 2 bootstrap --repo "$REPO"
-# Literal shell syntax must remain data in the profiles file.
+contains "$TMP/output" 'readable direct config required:'
+rm "$REPO/.pre-commit-config.yaml"
+printf 'repos:\n  - repo: local\n    hooks:\n      - id: shellcheck shfmt\n' > "$REPO/.pre-commit-config.yaml"
+expect 2 bootstrap --repo "$REPO"
+contains "$TMP/output" 'invalid hook id in config:'
+# Literal shell syntax must remain data in .pre-commit-config.yaml.
 # shellcheck disable=SC2016
-printf 'baseline\n$(touch %s/pwned)\n' "$TMP" > "$REPO/.caulking-profiles"
+printf 'repos:\n  - repo: local\n    hooks:\n      - id: $(touch %s/pwned)\n' "$TMP" > "$REPO/.pre-commit-config.yaml"
 expect 2 bootstrap --repo "$REPO"
 [[ ! -e "$TMP/pwned" ]]
-printf 'baseline\000\n' > "$REPO/.caulking-profiles"
+# shellcheck disable=SC2016
+printf 'repos:\n  - repo: local\n    hooks: [{id: $(touch %s/pwned)}]\n' "$TMP" > "$REPO/.pre-commit-config.yaml"
 expect 2 bootstrap --repo "$REPO"
-for ((i = 0; i < 129; i++)); do printf '# comment\n'; done > "$REPO/.caulking-profiles"
+[[ ! -e "$TMP/pwned" ]]
+printf 'repos: []\000\n' > "$REPO/.pre-commit-config.yaml"
+expect 2 bootstrap --repo "$REPO"
+for ((i = 0; i < 1025; i++)); do printf '# comment\n'; done > "$REPO/.pre-commit-config.yaml"
 expect 2 bootstrap --repo "$REPO" --profile baseline
-printf '%65537s' ' ' > "$REPO/.caulking-profiles"
+printf '%65537s' ' ' > "$REPO/.pre-commit-config.yaml"
 expect 2 bootstrap --repo "$REPO" --profile baseline
 [[ ! -e "$FAKE_LOG" ]]
 
-printf '# composed profiles\n baseline # required runner\nshell\ncontainer\nbaseline' > "$REPO/.caulking-profiles"
+cat > "$REPO/.pre-commit-config.yaml" << 'YAML'
+# Direct config with block, quoted, flow, and self-contained hook IDs
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict # self-contained hook ignored by formula mapper
+      - id: "shellcheck"
+      - id: 'shfmt-check'
+  - repo: local
+    hooks:
+      - {id: hadolint, name: hadolint}
+      - { id: custom-hook }
+YAML
 expect 0 bootstrap --repo "$REPO" --profile shell --dry-run
 contains "$TMP/output" 'Would install Homebrew formula: hadolint'
 no_installs
@@ -339,10 +360,40 @@ expect 0 bootstrap --repo "$TMP/other repo" --profile opentofu --profile terrafo
 contains "$TMP/output" "OK tflint: TFLint version 0.55.1 ($FAKE_HOME/opt/tflint/bin/tflint)"
 : > "$FAKE_LOG"
 
-# Verify run includes all expanded profile tools on the scoped PATH.
-expect 0 run --repo "$REPO" \
-  --profile python --profile go --profile javascript --profile ruby \
-  --profile opentofu --profile terraform --profile docs --profile security
+# Verify run includes all expanded profile tools on the scoped PATH, and verify
+# direct hook ID derivation from .pre-commit-config.yaml without --profile flags.
+cat > "$TMP/other repo/.pre-commit-config.yaml" << 'YAML'
+repos:
+  - repo: local
+    hooks:
+      - id: bash-syntax
+      - id: ruff-format-check
+      - id: mypy
+      - id: pyright
+      - id: bandit
+      - id: pip-audit
+      - id: go-mod-tidy
+      - id: golangci-lint-full
+      - id: gosec
+      - id: govulncheck
+      - id: biome-ci
+      - id: bundle-audit
+      - id: rubocop-check
+      - id: tofu-validate
+      - id: terraform_validate
+      - id: terraform_tflint
+      - id: terraform_checkov
+      - id: yamllint
+      - id: yamlfmt-check
+      - id: actionlint
+      - id: zizmor
+      - id: markdownlint-check
+      - id: semgrep-ci
+      - id: osv-scanner-lockfile
+      - id: syft
+      - id: grype-sbom
+YAML
+expect 0 run --repo "$TMP/other repo"
 contains "$FAKE_RUN" "tofu=$FAKE_HOME/opt/opentofu/bin/tofu"
 contains "$FAKE_RUN" "terraform=$FAKE_HOME/opt/terraform/bin/terraform"
 contains "$FAKE_RUN" "tflint=$FAKE_HOME/opt/tflint/bin/tflint"
@@ -350,6 +401,7 @@ contains "$FAKE_RUN" "markdownlint=$FAKE_HOME/opt/markdownlint-cli/bin/markdownl
 for formula in ruff mypy pyright bandit pip-audit go golangci-lint gosec govulncheck node ruby rubocop yamllint yamlfmt actionlint zizmor semgrep osv-scanner syft grype checkov; do
   contains "$FAKE_RUN" "$formula=$FAKE_HOME/opt/$formula/bin/$formula"
 done
+rm "$TMP/other repo/.pre-commit-config.yaml"
 no_installs
 
 # Minimum version floors reject outdated versions while accepting upgraded higher versions.
@@ -594,7 +646,7 @@ FAKE
   /usr/bin/git -C "$REPO" rm --cached -q blocked.key
   mv "$TMP/stable/app" "$TMP/stable/app.link"
   run_hook pre-commit 2
-  contains "$TMP/hook.output" 'profile-aware hook helper is missing'
+  contains "$TMP/hook.output" 'hook helper is missing'
   mv "$TMP/stable/app.link" "$TMP/stable/app"
   # An application upgrade retargets opt without regenerating global hooks.
   cp -R "$TMP/app" "$TMP/app-next"
@@ -603,22 +655,18 @@ FAKE
   rm -rf "$TMP/app"
   run_hook pre-commit 0
   mv "$REPO/.pre-commit-config.yaml" "$TMP/direct.config"
+  ln -s "$TMP/missing.config" "$REPO/.pre-commit-config.yaml"
   : > "$FAKE_LOG"
   run_hook pre-commit 2
   contains "$TMP/hook.output" 'readable direct config'
   [[ ! -s "$FAKE_LOG" ]]
   mv "$TMP/direct.config" "$REPO/.pre-commit-config.yaml"
-  printf 'shell\n' > "$REPO/.caulking-profiles"
-  run_hook pre-commit 2
-  contains "$TMP/hook.output" 'explicit baseline profile'
-  printf 'baseline\nshell\ncontainer\n' > "$REPO/.caulking-profiles"
   mv "$FAKE_HOME/opt/shfmt" "$TMP/shfmt.opt"
   run_hook pre-commit 1
   contains "$TMP/hook.output" 'missing executable:'
   mv "$TMP/shfmt.opt" "$FAKE_HOME/opt/shfmt"
-  # No profile file retains the established pinned-runner path.
-  mv "$REPO/.caulking-profiles" "$TMP/profiles.saved"
-  run_hook pre-commit 0
+  # CAULKING_NO_TOOLCHAIN_PATH=1 retains the established pinned-runner path.
+  CAULKING_NO_TOOLCHAIN_PATH=1 run_hook pre-commit 0
   contains "$FAKE_RUN" "args=run --config $REPO/.pre-commit-config.yaml --hook-stage pre-commit"
   no_installs
 else

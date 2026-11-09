@@ -4,11 +4,6 @@
 # This configuration follows cloud.gov pre-commit standardization.
 # Each category has ONE default tool enabled; alternatives are commented.
 #
-# Paired `.caulking-profiles` (for `caulking.sh bootstrap --repo .`):
-#   baseline
-#   shell
-#   python
-#
 # Categories:
 #   - HYGIENE: Generic file quality (all repos)
 #   - LINTING: Python code quality and formatting
@@ -17,8 +12,10 @@
 #
 # Setup (cloud.gov staff):
 #   1. Install caulking first: https://github.com/cloud-gov/caulking
-#   2. Create `.caulking-profiles` and run `caulking.sh bootstrap --repo .`
-#   3. Copy this file to your repo root as .pre-commit-config.yaml
+#   2. Copy this file to your repo root as .pre-commit-config.yaml
+#   3. Run `caulking.sh bootstrap --repo .` and `caulking.sh doctor --repo .`
+#      (Caulking reads .pre-commit-config.yaml directly and installs/verifies
+#      only the Homebrew tools required by the hooks enabled in this file.)
 #   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
 #
 # References:

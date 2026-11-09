@@ -82,19 +82,21 @@ pre-commit run  # Default: staged files only
 
 ### "Executable not found" or missing linter when committing
 
-Run `caulking doctor` in your repository to inspect which profiles and tools are required, and `caulking bootstrap` to install missing Homebrew bundles:
+Run `caulking.sh doctor --repo .` in your repository to inspect which Homebrew formulae and minimum SemVer floors are required by the hooks enabled in `.pre-commit-config.yaml`, and `caulking.sh bootstrap --repo .` to install any missing Homebrew formulae:
 
 ```bash
-# Diagnose missing tools or version floor mismatches
-./bin/caulking doctor --repo /path/to/repo
+# Diagnose missing tools or version floor mismatches (reads .pre-commit-config.yaml directly)
+./caulking.sh doctor --repo /path/to/repo
 
-# Install the repository's declared .caulking-profiles bundles (or specify --profile)
-./bin/caulking bootstrap --repo /path/to/repo
+# Install the Homebrew tools required by the hooks in .pre-commit-config.yaml
+./caulking.sh bootstrap --repo /path/to/repo
 ```
 
-You can also install selective Brewfile bundles directly:
+No separate `.caulking-profiles` file is needed—`.pre-commit-config.yaml` is the single repository configuration file (parsed via a bounded `<=64 KiB`, `<=1024 lines`, NUL-rejected, `eval`-free parser and static allowlist). You can also use `--profile <name>` or install selective Brewfile convenience bundles directly when setting up a language stack outside a repository:
 
 ```bash
+./caulking.sh bootstrap --profile baseline --profile shell --profile python
+# Or via Homebrew Bundle:
 brew bundle --file=brewfiles/baseline.Brewfile --no-upgrade
 brew bundle --file=brewfiles/shell.Brewfile --no-upgrade
 brew bundle --file=brewfiles/python.Brewfile --no-upgrade
@@ -171,26 +173,26 @@ yarn add --dev eslint prettier
 
 ### "Cowardly refusing to install hooks with core.hooksPath set"
 
-**This is expected when Caulking is installed.** Caulking sets `core.hooksPath` globally (`~/.git-templates/hooks`) to enforce mandatory secrets detection (`gitleaks`) on every commit and push.
+**This is expected when Caulking is installed.** Caulking sets `core.hooksPath` globally (`~/.config/git/hooks`) to enforce mandatory secrets detection (`gitleaks`) on every commit and push.
 
-**Solution:** Do **not** run `pre-commit install`. Caulking's global hook wrapper automatically delegates to `prek` or `pre-commit` whenever your repository has a `.pre-commit-config.yaml`.
+**Solution:** Do **not** run `pre-commit install`. Caulking's global hook wrapper automatically delegates to `hook-run` (reading `.pre-commit-config.yaml` and resolving Homebrew tool paths) or `prek` / `pre-commit` whenever your repository has a `.pre-commit-config.yaml`. If you need to opt out of the toolchain-scoped `PATH` for global hooks and use your ambient `PATH` runner instead, set `CAULKING_NO_TOOLCHAIN_PATH=1`.
 
 ### "How do I verify caulking is working?"
 
 ```bash
 # Check caulking status and health
 make status
-./bin/caulking doctor
+./caulking.sh doctor --repo .
 
 # Check that global hooksPath is set
 git config --global --get core.hooksPath
-# Should show: /Users/<you>/.git-templates/hooks
+# Should show: /Users/<you>/.config/git/hooks
 ```
 
 ### "Hooks aren't running at all"
 
 1. Verify `.pre-commit-config.yaml` exists in your repo root
-2. Run `./bin/caulking doctor --repo .` to verify `core.hooksPath`, `gitleaks`, and `prek`/`pre-commit`
+2. Run `./caulking.sh doctor --repo .` to verify `gitleaks`, `prek`, and the tools required by `.pre-commit-config.yaml`
 3. Check global hooks path: `git config --global --get core.hooksPath`
 
 If you are in a container or CI environment without Caulking's global hooks and want standalone `pre-commit`:

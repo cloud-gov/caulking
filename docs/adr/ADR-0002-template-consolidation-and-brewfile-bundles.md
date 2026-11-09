@@ -82,14 +82,22 @@ The 11 composable Homebrew Bundle files are:
 - `brewfiles/docs.Brewfile` (`yamllint`, `yamlfmt`, `actionlint`, `zizmor`, `markdownlint-cli`)
 - `brewfiles/security.Brewfile` (`semgrep`, `osv-scanner`, `syft`, `grype`, `checkov`)
 
-Repositories declare their required profiles explicitly in `.caulking-profiles`
-(no profiles are implicitly assumed; `run` and `hook-run` require `baseline` to
-be selected). `caulking.sh bootstrap` verifies the presence of each selected
-`brewfiles/<profile>.Brewfile` and installs missing Homebrew formulae/casks with
+Repositories use `.pre-commit-config.yaml` as the single repository
+configuration file—no separate `.caulking-profiles` file is needed.
+`caulking.sh bootstrap --repo .`, `caulking.sh doctor --repo .`,
+`caulking.sh run --repo .`, and global hooks (`hook-run`) read hook IDs
+directly from `.pre-commit-config.yaml` (using a bounded `<=64 KiB`,
+`<=1024 lines`, NUL-rejected, `eval`-free parser and static allowlist) and map
+each enabled hook ID to the required Homebrew formulae alongside the `baseline`
+tools (`gitleaks`, `prek`, `bash`). `caulking.sh bootstrap` verifies the
+presence of each profile `brewfiles/<profile>.Brewfile` and installs missing
+Homebrew formulae/casks with
 `HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_UPGRADE=1 HOMEBREW_NO_INSTALL_CLEANUP=1`
 (never implicitly upgrading, downgrading, unlinking, or removing existing tools).
-Teams can also invoke `brew bundle install --file=brewfiles/<profile>.Brewfile --no-upgrade`
-directly.
+Optional `--profile <name>` flags and `brew bundle install --file=brewfiles/<profile>.Brewfile --no-upgrade`
+remain available as convenience bundles for installing or checking a language
+stack outside a repository, and `CAULKING_NO_TOOLCHAIN_PATH=1` is available as
+an opt-out escape hatch for global hooks.
 
 ### 3. Enforce Minimum SemVer Floors in `caulking doctor` While Allowing `brew upgrade`
 

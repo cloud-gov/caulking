@@ -254,8 +254,24 @@ Conventional Commits, and independent Homebrew tool upgrades.
 
 ### Selective workstation toolchain & Brewfile bundles
 
-Caulking includes 11 selective Homebrew bundles (`brewfiles/<profile>.Brewfile`)
-covering 31 profile tools (`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
+`.pre-commit-config.yaml` is the single repository configuration file—no
+separate `.caulking-profiles` file is needed. `caulking.sh bootstrap --repo .`,
+`caulking.sh doctor --repo .`, `caulking.sh run --repo .`, and global hooks
+(`hook-run`) read hook IDs directly from `.pre-commit-config.yaml` (using a
+bounded `<=64 KiB`, `<=1024 lines`, NUL-rejected, `eval`-free parser and static
+allowlist) and map each enabled hook to the required Homebrew formulae alongside
+the `baseline` tools (`gitleaks`, `prek`, `bash`):
+
+```bash
+./caulking.sh bootstrap --repo . --dry-run
+./caulking.sh bootstrap --repo .
+./caulking.sh doctor --repo .
+make test-toolchain
+```
+
+Caulking also includes 11 selective Homebrew bundles (`brewfiles/<profile>.Brewfile`)
+and optional `--profile <name>` convenience flags covering 31 profile tools
+(`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
 `shellcheck >=0.9.0`, `shfmt >=3.6.0`, `hadolint >=2.12.0`, `ruff >=0.4.0`,
 `mypy >=1.8.0`, `pyright >=1.1.350`, `bandit >=1.7.5`, `pip-audit >=2.7.0`,
 `go >=1.22.0`, `golangci-lint >=1.59.0`, `gosec >=2.18.0`, `govulncheck >=1.0.0`,
@@ -263,20 +279,13 @@ covering 31 profile tools (`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
 `terraform >=1.5.0`, `tflint >=0.50.0`, `yamllint >=1.35.0`, `yamlfmt >=0.13.0`,
 `actionlint >=1.7.0`, `zizmor >=1.0.0`, `markdownlint-cli >=0.39.0`,
 `semgrep >=1.50.0`, `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0`,
-`checkov >=3.2.0`), plus profile-aware bootstrap/diagnostics for
-`baseline`, `shell`, `container`, `python`, `go`, `javascript`, `ruby`,
-`opentofu`, `terraform`, `docs`, and `security`:
-
-```bash
-./caulking.sh bootstrap --profile baseline --profile shell --profile container --dry-run
-./caulking.sh doctor --profile baseline --profile shell --profile container
-make test-toolchain
-```
-
-Repositories can declare required profiles in `.caulking-profiles` (one profile
-per line). `caulking doctor` enforces justified minimum supported SemVer floors
-for each tool while allowing developers to run `brew upgrade` freely without
-waiting for a caulking release.
+`checkov >=3.2.0`) for `baseline`, `shell`, `container`, `python`, `go`,
+`javascript`, `ruby`, `opentofu`, `terraform`, `docs`, and `security`.
+`caulking doctor` enforces justified minimum supported SemVer floors for each
+tool while allowing developers to run `brew upgrade` freely without waiting for
+a caulking release. Global hooks automatically use toolchain-scoped `PATH` for
+repositories with `.pre-commit-config.yaml` when installed with `./caulking.sh setup --no-install`
+(with `CAULKING_NO_TOOLCHAIN_PATH=1` available as an opt-out escape hatch).
 
 ### Reusable pre-commit hooks and starter configurations
 
@@ -301,10 +310,10 @@ superseding the frozen `cloud-gov/pre-commit-templates` repository:
   `check-json-selfcontained`, `gofmt-selfcontained`, `go-vet-selfcontained`,
   `gosec-selfcontained`, `govulncheck-selfcontained`) that provision isolated
   environments for CI and containers without ambient `PyYAML` or Go installations.
-- **9 starter configurations** in `starter-configs/` paired with `.caulking-profiles`
-  bundles (`container-repo`, `docs-yaml-repo`, `go-repo`, `go-repo-selfcontained`,
-  `javascript-repo`, `opentofu-repo`, `python-repo`, `ruby-repo`, and
-  `terraform-repo`).
+- **9 starter configurations** in `starter-configs/` ready to copy directly as
+  `.pre-commit-config.yaml` (`container-repo`, `docs-yaml-repo`, `go-repo`,
+  `go-repo-selfcontained`, `javascript-repo`, `opentofu-repo`, `python-repo`,
+  `ruby-repo`, and `terraform-repo`).
 
 See [toolchain bootstrap](docs/toolchain-bootstrap.md),
 [release management](docs/releases.md), [ADR-0002](docs/adr/ADR-0002-template-consolidation-and-brewfile-bundles.md),

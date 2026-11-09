@@ -8,7 +8,7 @@
 
 Caulking is now the consolidated single repository for:
 1. Global Git hooks (`pre-commit`, `pre-push`), filename denylist, and tailored `gitleaks` policy.
-2. Selective workstation tooling profiles (`.caulking-profiles`) and composable Brewfiles (`brewfiles/<profile>.Brewfile`).
+2. `.pre-commit-config.yaml`-driven workstation toolchain resolution (`caulking.sh bootstrap`, `caulking.sh doctor`, `caulking.sh run`, and global `hook-run`) plus optional `--profile <name>` convenience bundles and composable Brewfiles (`brewfiles/<profile>.Brewfile`).
 3. Minimum supported SemVer floor verification in `caulking doctor` (allowing developers to run `brew upgrade` freely without needing a caulking release per upstream tool patch).
 4. Reusable hook definitions (`.pre-commit-hooks.yaml`), self-contained Python/Go hooks (`cloud_gov_pre_commit_checks/`, `pyproject.toml`, `go.mod`), and `starter-configs/`.
 5. Unified SemVer release management via Release Please (`VERSION`, `.release-please-manifest.json`, `release-please-config.json`).
@@ -423,6 +423,15 @@ panel approved consolidating `.pre-commit-hooks.yaml`, `starter-configs/`,
 self-contained Python/Go hooks, selective `brewfiles/<profile>.Brewfile` bundles,
 and minimum supported SemVer floors in `caulking doctor` into `cloud-gov/caulking`
 while freezing `cloud-gov/pre-commit-templates` as a compatibility endpoint.
+Following consolidation, `scripts/toolchain.sh` was further simplified so
+`.pre-commit-config.yaml` is the single repository configuration file:
+`caulking.sh bootstrap --repo .`, `caulking.sh doctor --repo .`,
+`caulking.sh run --repo .`, and global hooks (`hook-run`) read hook IDs directly
+from `.pre-commit-config.yaml` (via a bounded `<=64 KiB`, `<=1024 lines`,
+NUL-rejected, `eval`-free parser and static allowlist) with no separate
+`.caulking-profiles` file needed, while retaining `--profile <name>` and
+`brewfiles/<profile>.Brewfile` as optional convenience bundles (and
+`CAULKING_NO_TOOLCHAIN_PATH=1` as an opt-out escape hatch for global hooks).
 
 ## References
 

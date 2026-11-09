@@ -1,8 +1,9 @@
 # Homebrew toolchain bootstrap and selective Brewfile bundles
 
-Status: local consolidated implementation, macOS-first. Includes selective
+Status: local consolidated implementation, macOS-first. Includes
+`.pre-commit-config.yaml`-driven toolchain resolution, selective
 `brewfiles/<profile>.Brewfile` bundles, minimum SemVer floor verification in
-`caulking doctor`, profile-aware global hook integration, reusable
+`caulking doctor`, toolchain-aware global hook integration, reusable
 `.pre-commit-hooks.yaml` definitions, `starter-configs/`, and a formula template.
 
 `cloud-gov/caulking` is the single consolidated home for global secret-scanning
@@ -16,14 +17,22 @@ the consolidation decision.
 
 ## Try from a checkout
 
-Select only the profiles your repository needs. A repository's `.caulking-profiles`
-is a data-only text file with one profile per line and optional `#` comments:
+`.pre-commit-config.yaml` is the single repository configuration file—no
+separate `.caulking-profiles` file is needed. When invoked with `--repo PATH`
+(or defaulting to `.`), `caulking.sh bootstrap`, `caulking.sh doctor`,
+`caulking.sh run`, and global hooks (`hook-run`) read hook IDs directly from
+`REPO/.pre-commit-config.yaml` and map each enabled hook to the required
+Homebrew formulae alongside the `baseline` tools (`gitleaks`, `prek`, `bash`).
 
-```text
-baseline
-shell
-container
-```
+The config parser is bounded (`<=64 KiB`, `<=1024 lines`), rejects NUL bytes,
+never uses `eval` or executes repository code, and resolves hook IDs against a
+static allowlist in `scripts/toolchain.sh`. Unknown or self-contained hook IDs
+(which provision their own isolated environments via `prek`/`pre-commit`) do not
+trigger arbitrary Homebrew installs, while malformed hook IDs fail closed (`exit 2`).
+
+Optional `--profile <name>` flags and `brewfiles/<profile>.Brewfile` remain
+available as convenience bundles for installing or checking a language stack
+outside a repository:
 
 | Profile | Brewfile bundle | Homebrew packages & minimum versions enforced by `caulking doctor` |
 | --- | --- | --- |
@@ -39,13 +48,11 @@ container
 | `docs` | `brewfiles/docs.Brewfile` | `yamllint >=1.35.0`, `yamlfmt >=0.13.0`, `actionlint >=1.7.0`, `zizmor >=1.0.0`, `markdownlint-cli` (`markdownlint >=0.39.0`) |
 | `security` | `brewfiles/security.Brewfile` | `semgrep >=1.50.0`, `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0`, `checkov >=3.2.0` |
 
-No profiles are implied. Repeated `--profile` flags add to the file's selections,
-and shared tools (such as `tflint` across `opentofu` and `terraform`) are
-automatically deduplicated. Unknown profiles and malformed files fail before
-installation. `.caulking-profiles` is limited to 64 KiB and 128 lines, rejects
-NUL bytes, and is never sourced or executed as shell code.
+Repeated `--profile` flags can be combined with or used independently of
+`--repo`, and shared tools (such as `tflint` across `opentofu` and `terraform`)
+are automatically deduplicated.
 
-From the caulking checkout:
+From the caulking checkout (reading `REPO/.pre-commit-config.yaml` directly):
 
 ```bash
 ./caulking.sh bootstrap --repo /path/to/repo --dry-run
@@ -54,7 +61,7 @@ From the caulking checkout:
 ./caulking.sh run --repo /path/to/repo
 ```
 
-Or use explicit selections without creating a profiles file:
+Or use explicit `--profile` convenience bundles outside a repository:
 
 ```bash
 ./caulking.sh doctor --profile baseline --profile shell --profile container
@@ -120,7 +127,10 @@ Across all **11 profiles**, **31 profile tools**, **65 reusable hooks**, and **9
 
 - **Reusable hooks and starter configs:** `.pre-commit-hooks.yaml` at the root
   of `cloud-gov/caulking` defines all 65 reusable hooks. All 9 copy-to-start
-  configurations in `starter-configs/` include `.caulking-profiles` pairings.
+  configurations in `starter-configs/` work as a single `.pre-commit-config.yaml`
+  file—`caulking.sh bootstrap --repo .`, `caulking.sh doctor --repo .`, and
+  `caulking.sh run --repo .` derive the required Homebrew formulae directly from
+  enabled hook IDs.
 - **Self-contained syntax hooks:** `check-yaml-selfcontained` and
   `check-json-selfcontained` use runner-managed Python environments (`PyYAML==6.0.3`
   for YAML; stdlib for JSON) invoked with `python -I -m cloud_gov_pre_commit_checks`,
@@ -130,26 +140,31 @@ Across all **11 profiles**, **31 profile tools**, **65 reusable hooks**, and **9
   `gosec-selfcontained`, and `govulncheck-selfcontained` use `language: golang`
   (backed by root `go.mod`) so CI and container environments without a
   pre-installed Go toolchain can bootstrap Go 1.25.8 automatically.
-- **Global `gitleaks` isolation:** Explicit `./caulking.sh setup --no-install`
-  enables profile-aware global hooks. Global secret scanning always runs before
-  the repo hook suite using caulking's pinned `gitleaks` binary and config,
-  never the repo-scoped `PATH`. Never set `SKIP=gitleaks` globally to
-  deduplicate a repo hook, as that bypasses caulking's global secret scan.
+- **Global `gitleaks` isolation and `CAULKING_NO_TOOLCHAIN_PATH=1` opt-out:**
+  Explicit `./caulking.sh setup --no-install` enables toolchain-aware global
+  hooks, which automatically run `hook-run` whenever a repository contains
+  `.pre-commit-config.yaml` (unless `CAULKING_NO_TOOLCHAIN_PATH=1` is set as an
+  opt-out escape hatch to use the direct ambient runner path). Global secret
+  scanning always runs before the repo hook suite using caulking's pinned
+  `gitleaks` binary and config, never the repo-scoped `PATH`. Never set
+  `SKIP=gitleaks` globally to deduplicate a repo hook, as that bypasses
+  caulking's global secret scan.
 
 ## Verification performed
 
 - `make check-consolidated`: runs `make test`, `make test-toolchain`,
   `make verify-hooks`, `make test-python`, and `make verify-release`.
 - `/bin/bash tests/toolchain.sh` and `./tests/toolchain.sh`: isolated checks
-  exercising all 11 profiles (`baseline`, `shell`, `container`, `python`, `go`,
-  `javascript`, `ruby`, `opentofu`, `terraform`, `docs`, `security`), all 31
-  profile tools, minimum-version floor rejection, upgraded-version acceptance,
-  `opentofu` (`tofu`) and `markdownlint-cli` (`markdownlint`) binary resolution,
+  exercising `.pre-commit-config.yaml` hook-to-formula derivation, all 11
+  profiles (`baseline`, `shell`, `container`, `python`, `go`, `javascript`,
+  `ruby`, `opentofu`, `terraform`, `docs`, `security`), all 31 profile tools,
+  minimum-version floor rejection, upgraded-version acceptance, `opentofu`
+  (`tofu`) and `markdownlint-cli` (`markdownlint`) binary resolution,
   `go version` probing, `tflint` Caskroom/opt resolution, and `brewfiles/*.Brewfile`
   presence.
 - `python3 scripts/validate-hooks.py` and `bash scripts/test-validate-hooks.sh`:
   validates all 65 hooks in `.pre-commit-hooks.yaml` and all 9 `starter-configs/*.yaml`
-  files against `PROFILE_BINARIES`.
+  files against `HOOK_FORMULAE` and `FORMULA_PROFILE`.
 - `python3 -m unittest discover -s tests -p "test_python_checks.py" -v` and
   `python3 tests/try_repo_python_checks.py`: verifies isolated YAML/JSON hooks.
 - `shellcheck -x`, `shfmt -d`, `yamllint -d relaxed`, and `actionlint`.

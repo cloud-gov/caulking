@@ -16,16 +16,16 @@ toolchain_usage() {
     '          docs (yamllint >=1.35.0, yamlfmt >=0.13.0, actionlint >=1.7.0, zizmor >=1.0.0, markdownlint-cli >=0.39.0),' \
     '          security (semgrep >=1.50.0, osv-scanner >=1.7.0, syft >=1.0.0, grype >=0.74.0, checkov >=3.2.0).' \
     '          No default or implied profiles. Bundles live in brewfiles/<profile>.Brewfile.' \
-    'Profiles also come from REPO/.caulking-profiles: one name per line, # comments.' \
+    'Formulae are derived from hook IDs in REPO/.pre-commit-config.yaml or --profile.' \
     'bootstrap: macOS only; install missing formulae. --dry-run prints the plan.' \
     'doctor: check-only; exit 0 healthy, 1 missing/broken tools, 2 invalid input.' \
     'run: requires baseline and a direct REPO/.pre-commit-config.yaml; pins --config.' \
-    'Internal: hook-run --repo ABS --stage pre-commit|pre-push reads repo profiles,' \
+    'Internal: hook-run --repo ABS --stage pre-commit|pre-push reads .pre-commit-config.yaml,' \
     'checks dependencies and runs the pinned suite with stage-specific file selection.' \
     'Global setup: caulking setup --no-install (explicit; never performed by hooks).' \
     'Prefix/version probes have a fixed 5s timeout; only direct children are killed.' \
     'prek may provision project hook environments; success only describes that runner.' \
-    'Profile-aware global hooks require explicit setup; global gitleaks stays separate.'
+    'Toolchain-aware global hooks require explicit setup; global gitleaks stays separate.'
 }
 
 toolchain_error() {
@@ -66,34 +66,98 @@ toolchain_add_dir() {
   tool_dirs+=("$dir")
 }
 
-toolchain_profiles_file() {
-  local file="$1" bytes line count=0
+toolchain_hook_formula() {
+  case "$1" in
+    shellcheck) toolchain_add_formula shellcheck ;;
+    shfmt | shfmt-check | shfmt-src) toolchain_add_formula shfmt ;;
+    bash-syntax) toolchain_add_formula bash ;;
+    hadolint) toolchain_add_formula hadolint ;;
+    ruff | ruff-check | ruff-format | ruff-format-check) toolchain_add_formula ruff ;;
+    mypy) toolchain_add_formula mypy ;;
+    pyright) toolchain_add_formula pyright ;;
+    bandit) toolchain_add_formula bandit ;;
+    pip-audit) toolchain_add_formula pip-audit ;;
+    go-fmt | go-vet | go-build | go-test | go-mod-tidy) toolchain_add_formula go ;;
+    golangci-lint | golangci-lint-full) toolchain_add_formula golangci-lint ;;
+    gosec) toolchain_add_formula gosec ;;
+    govulncheck) toolchain_add_formula govulncheck ;;
+    eslint | eslint-check | prettier | prettier-check | tsc | biome-check | biome-ci | npm-audit | yarn-audit | pnpm-audit | retire-js)
+      toolchain_add_formula node
+      ;;
+    ruby-check | bundle-audit) toolchain_add_formula ruby ;;
+    rubocop | rubocop-check) toolchain_add_formula ruby rubocop ;;
+    tofu-fmt | tofu-validate) toolchain_add_formula opentofu ;;
+    terraform-fmt | terraform-validate | terraform_fmt | terraform_validate)
+      toolchain_add_formula terraform
+      ;;
+    tflint | terraform_tflint) toolchain_add_formula tflint ;;
+    checkov | terraform_checkov) toolchain_add_formula checkov ;;
+    yamllint) toolchain_add_formula yamllint ;;
+    yamlfmt | yamlfmt-check) toolchain_add_formula yamlfmt ;;
+    actionlint) toolchain_add_formula actionlint ;;
+    zizmor) toolchain_add_formula zizmor ;;
+    markdownlint | markdownlint-check) toolchain_add_formula markdownlint-cli ;;
+    semgrep | semgrep-ci) toolchain_add_formula semgrep ;;
+    osv-scanner | osv-scanner-lockfile) toolchain_add_formula osv-scanner ;;
+    syft) toolchain_add_formula syft ;;
+    grype | grype-sbom) toolchain_add_formula grype ;;
+    *) return 0 ;;
+  esac
+}
+
+toolchain_validate_hook_id() {
+  local raw="$1"
+  raw="${raw#"${raw%%[![:space:]]*}"}"
+  raw="${raw%"${raw##*[![:space:]]}"}"
+  if [[ "$raw" == \"*\" && "$raw" == *\" && "${#raw}" -ge 2 ]]; then
+    raw="${raw#\"}"
+    raw="${raw%\"}"
+  elif [[ "$raw" == \'*\' && "$raw" == *\' && "${#raw}" -ge 2 ]]; then
+    raw="${raw#\'}"
+    raw="${raw%\'}"
+  fi
+  if [[ ! "$raw" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; then
+    toolchain_error "invalid hook id in config: $raw"
+    return 2
+  fi
+  config_hooks+=("$raw")
+}
+
+toolchain_config_file() {
+  local file="$1" bytes line rest count=0
   [[ -e "$file" || -L "$file" ]] || return 0
   if [[ ! -f "$file" || ! -r "$file" ]]; then
-    toolchain_error "profiles file must be a readable regular file: $file"
+    toolchain_error "readable direct config required: $file"
     return 2
   fi
   bytes="$(LC_ALL=C wc -c < "$file")" || return 2
   if ((bytes > 65536)); then
-    toolchain_error 'profiles file exceeds 64 KiB'
+    toolchain_error 'config file exceeds 64 KiB'
     return 2
   fi
   if IFS= read -r -d '' line < "$file"; then
-    toolchain_error 'profiles file contains a NUL byte'
+    toolchain_error 'config file contains a NUL byte'
     return 2
   fi
   while IFS= read -r line || [[ -n "$line" ]]; do
     count=$((count + 1))
-    if ((count > 128)); then
-      toolchain_error 'profiles file exceeds 128 lines'
+    if ((count > 1024)); then
+      toolchain_error 'config file exceeds 1024 lines'
       return 2
     fi
     line="${line%%#*}"
-    line="${line#"${line%%[![:space:]]*}"}"
-    line="${line%"${line##*[![:space:]]}"}"
-    [[ -n "$line" ]] || continue
-    toolchain_profile "$line" || return 2
+    if [[ "$line" =~ ^[[:space:]]*(-[[:space:]]*)?id:([[:space:]]+(.*))?$ ]]; then
+      toolchain_validate_hook_id "${BASH_REMATCH[3]:-}" || return 2
+      continue
+    fi
+    rest="$line"
+    while [[ "$rest" =~ [{,][[:space:]]*id:[[:space:]]*([^,}]*) ]]; do
+      toolchain_validate_hook_id "${BASH_REMATCH[1]}" || return 2
+      rest="${rest#*"${BASH_REMATCH[0]}"}"
+    done
   done < "$file"
+  config_seen=1
+  toolchain_profile baseline || return 2
 }
 
 toolchain_brew() {
@@ -327,11 +391,11 @@ toolchain_install() {
 }
 
 toolchain_main() {
-  local action="${1:-}" repo=. repo_seen=0 dry_run=0 profile formula dir hook_stage=''
-  local brew_bin='' brew_prefix='' runner='' scoped_path='' failed=0 has_baseline=0 profile_count=0
+  local action="${1:-}" repo=. repo_seen=0 dry_run=0 profile formula dir hook_stage='' hook_id=''
+  local brew_bin='' brew_prefix='' runner='' scoped_path='' failed=0 has_baseline=0 profile_count=0 config_seen=0
   local git_bin='' runtime_file='' caulking_root='' brewfile='' RUNTIME_GIT='' RUNTIME_RUNNER=''
   # These arrays are dynamically scoped to the helpers; Bash 3 can launch bootstrap.
-  local -a profiles=() formulae=() tool_dirs=()
+  local -a profiles=() formulae=() tool_dirs=() config_hooks=()
   case "$action" in
     -h | --help)
       toolchain_usage
@@ -356,7 +420,7 @@ toolchain_main() {
         ;;
       --profile)
         if [[ "$action" == hook-run ]]; then
-          toolchain_error 'hook-run reads profiles only from .caulking-profiles'
+          toolchain_error 'hook-run reads hooks only from .pre-commit-config.yaml'
           return 2
         fi
         if (($# < 2)); then
@@ -402,16 +466,16 @@ toolchain_main() {
     toolchain_error 'repository path must be an accessible directory'
     return 2
   }
-  if [[ "$action" == hook-run && ! -f "$repo/.caulking-profiles" ]]; then
-    toolchain_error 'hook-run requires a direct .caulking-profiles file'
+  if [[ "$action" == hook-run ]] && [[ ! -f "$repo/.pre-commit-config.yaml" || ! -r "$repo/.pre-commit-config.yaml" ]]; then
+    toolchain_error "hook-run requires a readable direct config: $repo/.pre-commit-config.yaml"
     return 2
   fi
-  toolchain_profiles_file "$repo/.caulking-profiles" || return 2
-  if ((profile_count == 0)); then
-    toolchain_error 'select at least one profile via --profile or .caulking-profiles'
+  toolchain_config_file "$repo/.pre-commit-config.yaml" || return 2
+  if ((profile_count == 0 && config_seen == 0)); then
+    toolchain_error 'provide .pre-commit-config.yaml in --repo or select at least one --profile'
     return 2
   fi
-  for profile in "${profiles[@]}"; do
+  for profile in ${profiles[@]+"${profiles[@]}"}; do
     case "$profile" in
       baseline)
         toolchain_add_formula gitleaks prek bash
@@ -428,6 +492,9 @@ toolchain_main() {
       docs) toolchain_add_formula yamllint yamlfmt actionlint zizmor markdownlint-cli ;;
       security) toolchain_add_formula semgrep osv-scanner syft grype checkov ;;
     esac
+  done
+  for hook_id in ${config_hooks[@]+"${config_hooks[@]}"}; do
+    toolchain_hook_formula "$hook_id"
   done
   if [[ "$action" == run || "$action" == hook-run ]] && ((has_baseline == 0)); then
     toolchain_error "$action requires the explicit baseline profile (prek runner)"
@@ -464,7 +531,7 @@ toolchain_main() {
   toolchain_brew || return 1
   toolchain_prefix || return 1
   if [[ "$action" == bootstrap || "$action" == doctor || ! -f "$caulking_root/scripts/package-runtime.sh" || -d "$caulking_root/brewfiles" ]]; then
-    for profile in "${profiles[@]}"; do
+    for profile in baseline shell container python go javascript ruby opentofu terraform docs security; do
       brewfile="$caulking_root/brewfiles/${profile}.Brewfile"
       if [[ ! -f "$brewfile" || ! -r "$brewfile" ]]; then
         toolchain_error "missing profile Brewfile: $brewfile"

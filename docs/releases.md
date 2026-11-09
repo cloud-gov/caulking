@@ -58,6 +58,17 @@ has not been performed during development.
 
 ## Tool versions are separate from caulking releases
 
+`.pre-commit-config.yaml` is the single repository configuration file (no
+separate `.caulking-profiles` file is needed): `caulking.sh bootstrap --repo .`,
+`caulking.sh doctor --repo .`, `caulking.sh run --repo .`, and global hooks
+(`hook-run`) read hook IDs directly from `.pre-commit-config.yaml` (using a
+bounded `<=64 KiB`, `<=1024 lines`, NUL-rejected, `eval`-free parser and static
+allowlist) and map them to the required Homebrew formulae alongside `baseline`.
+Optional `--profile <name>` flags and `brewfiles/<profile>.Brewfile` bundles
+remain available for installing or checking a language stack outside a
+repository (and `CAULKING_NO_TOOLCHAIN_PATH=1` is available as an opt-out escape
+hatch for global hooks).
+
 Brewfiles (`brewfiles/<profile>.Brewfile`) declare package names, not arbitrary `>=`
 version constraints. Homebrew installs rolling current versions. Compatibility
 checks in `caulking doctor` enforce minimum supported versions across all **11 profiles**

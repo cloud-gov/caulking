@@ -31,6 +31,7 @@ gitleaks() { command "${CAULKING_GITLEAKS:-gitleaks}" "$@"; }
 
 # shellcheck disable=SC2329
 want_debug() { [[ "${CAULKING_DEBUG:-0}" != "0" ]]; }
+# shellcheck disable=SC2329
 dbg() { want_debug && printf "CAULKING_DEBUG: %s\n" "$*" >&2 || true; }
 
 say() { printf "%s\n" "$*"; }
@@ -54,6 +55,7 @@ trap 'rc=$?; if want_debug; then dbg "failed rc=$rc stage=$stage file=${BASH_SOU
 # For pre-push, git provides ref update lines on stdin.
 # We must preserve stdin so repo-local hooks still work.
 push_input=""
+# shellcheck disable=SC2329
 cleanup_push_input() {
   [[ -n "${push_input:-}" && -f "${push_input:-}" ]] && rm -f "$push_input" || true
 }
@@ -357,12 +359,7 @@ run_repo_precommit_suite() {
   local repo_root
   repo_root="$(git rev-parse --show-toplevel 2> /dev/null || true)"
   [[ -n "$repo_root" ]] || return 0
-  local profiles_present=0
-  if [[ -e "$repo_root/.caulking-profiles" || -L "$repo_root/.caulking-profiles" ]]; then
-    profiles_present=1
-  else
-    [[ -f "$repo_root/.pre-commit-config.yaml" ]] || return 0
-  fi
+  [[ -e "$repo_root/.pre-commit-config.yaml" || -L "$repo_root/.pre-commit-config.yaml" ]] || return 0
 
   if [[ "${CAULKING_SKIP_REPO_HOOKS:-}" == "1" ]]; then
     say "CAULKING_SKIP_REPO_HOOKS=1; skipping repo pre-commit suite."
@@ -374,10 +371,12 @@ run_repo_precommit_suite() {
     return 0
   fi
 
-  if ((profiles_present)); then
+  if [[ "${CAULKING_NO_TOOLCHAIN_PATH:-0}" != "1" && -n "${CAULKING_TOOLCHAIN_CLI:-}${CAULKING_BASH:-}" ]] &&
+    { [[ ! -f "$repo_root/.pre-commit-config.yaml" || ! -r "$repo_root/.pre-commit-config.yaml" ]] ||
+      grep -Eq '^[[:space:]]*(-[[:space:]]*)?id:[[:space:]]*|^[^#]*[{,][[:space:]]*id:[[:space:]]*' "$repo_root/.pre-commit-config.yaml"; }; then
     [[ "${CAULKING_TOOLCHAIN_CLI:-}" == /* && -f "${CAULKING_TOOLCHAIN_CLI:-}" && -r "${CAULKING_TOOLCHAIN_CLI:-}" &&
       "${CAULKING_BASH:-}" == /* && -x "${CAULKING_BASH:-}" && ! -d "${CAULKING_BASH:-}" ]] || {
-      say 'ERROR: profile-aware hook helper is missing; rerun caulking setup --no-install.'
+      say 'ERROR: toolchain-aware hook helper is missing; rerun caulking setup --no-install.'
       exit 2
     }
     "$CAULKING_BASH" "$CAULKING_TOOLCHAIN_CLI" hook-run --repo "$repo_root" --stage "$stage" < /dev/null || exit $?

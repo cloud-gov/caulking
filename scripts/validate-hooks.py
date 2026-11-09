@@ -157,18 +157,95 @@ def validate_hooks(filepath: str = ".pre-commit-hooks.yaml") -> tuple[list[str],
     return errors, hook_count
 
 
-PROFILE_BINARIES: dict[str, set[str]] = {
-    "baseline": {"gitleaks", "prek", "bash"},
-    "shell": {"shellcheck", "shfmt"},
-    "container": {"hadolint"},
-    "python": {"ruff", "mypy", "pyright", "bandit", "pip-audit"},
-    "go": {"go", "gofmt", "golangci-lint", "gosec", "govulncheck"},
-    "javascript": {"node", "npx", "npm"},
-    "ruby": {"ruby", "rubocop", "bundle"},
-    "opentofu": {"tofu", "tflint"},
-    "terraform": {"terraform", "tflint"},
-    "docs": {"yamllint", "yamlfmt", "actionlint", "zizmor", "markdownlint"},
-    "security": {"semgrep", "osv-scanner", "syft", "grype", "checkov"},
+FORMULA_PROFILE: dict[str, str] = {
+    "gitleaks": "baseline",
+    "prek": "baseline",
+    "bash": "baseline",
+    "shellcheck": "shell",
+    "shfmt": "shell",
+    "hadolint": "container",
+    "ruff": "python",
+    "mypy": "python",
+    "pyright": "python",
+    "bandit": "python",
+    "pip-audit": "python",
+    "go": "go",
+    "golangci-lint": "go",
+    "gosec": "go",
+    "govulncheck": "go",
+    "node": "javascript",
+    "ruby": "ruby",
+    "rubocop": "ruby",
+    "opentofu": "opentofu",
+    "terraform": "terraform",
+    "tflint": "opentofu",
+    "yamllint": "docs",
+    "yamlfmt": "docs",
+    "actionlint": "docs",
+    "zizmor": "docs",
+    "markdownlint-cli": "docs",
+    "semgrep": "security",
+    "osv-scanner": "security",
+    "syft": "security",
+    "grype": "security",
+    "checkov": "security",
+}
+
+AMBIENT_SYSTEM_HOOKS: set[str] = {"check-yaml", "check-json"}
+
+HOOK_FORMULAE: dict[str, set[str]] = {
+    "shellcheck": {"shellcheck"},
+    "shfmt": {"shfmt"},
+    "shfmt-check": {"shfmt"},
+    "bash-syntax": {"bash"},
+    "hadolint": {"hadolint"},
+    "ruff-check": {"ruff"},
+    "ruff-format": {"ruff"},
+    "ruff-format-check": {"ruff"},
+    "mypy": {"mypy"},
+    "pyright": {"pyright"},
+    "bandit": {"bandit"},
+    "pip-audit": {"pip-audit"},
+    "go-fmt": {"go"},
+    "go-vet": {"go"},
+    "golangci-lint": {"golangci-lint"},
+    "gosec": {"gosec"},
+    "govulncheck": {"govulncheck"},
+    "eslint": {"node"},
+    "eslint-check": {"node"},
+    "prettier": {"node"},
+    "prettier-check": {"node"},
+    "tsc": {"node"},
+    "biome-check": {"node"},
+    "biome-ci": {"node"},
+    "npm-audit": {"node"},
+    "yarn-audit": {"node"},
+    "pnpm-audit": {"node"},
+    "retire-js": {"node"},
+    "ruby-check": {"ruby"},
+    "rubocop": {"ruby", "rubocop"},
+    "rubocop-check": {"ruby", "rubocop"},
+    "bundle-audit": {"ruby"},
+    "tofu-fmt": {"opentofu"},
+    "tofu-validate": {"opentofu"},
+    "terraform-fmt": {"terraform"},
+    "terraform-validate": {"terraform"},
+    "tflint": {"tflint"},
+    "checkov": {"checkov"},
+    "yamllint": {"yamllint"},
+    "yamlfmt": {"yamlfmt"},
+    "yamlfmt-check": {"yamlfmt"},
+    "actionlint": {"actionlint"},
+    "zizmor": {"zizmor"},
+    "markdownlint": {"markdownlint-cli"},
+    "markdownlint-check": {"markdownlint-cli"},
+    "semgrep": {"semgrep"},
+    "semgrep-ci": {"semgrep"},
+    "osv-scanner": {"osv-scanner"},
+    "osv-scanner-lockfile": {"osv-scanner"},
+    "syft": {"syft"},
+    "grype": {"grype"},
+    "grype-sbom": {"grype"},
 }
 
 
@@ -180,33 +257,39 @@ def validate_starter_configs(root: Path, hooks: list[dict]) -> list[str]:
     if not starter_files:
         return ["No starter-configs/*.pre-commit-config.yaml files found"]
 
+    toolchain_path = root / "scripts" / "toolchain.sh"
+    toolchain_text = (
+        toolchain_path.read_text(encoding="utf-8") if toolchain_path.is_file() else ""
+    )
+
+    for hid, hdef in hook_map.items():
+        if hdef.get("language") in {"system", "unsupported"} and hid not in AMBIENT_SYSTEM_HOOKS:
+            if hid not in HOOK_FORMULAE:
+                errors.append(
+                    f"{hid}: system/unsupported hook missing from HOOK_FORMULAE mapping"
+                )
+            else:
+                for formula in HOOK_FORMULAE[hid]:
+                    prof = FORMULA_PROFILE.get(formula)
+                    if not prof:
+                        errors.append(
+                            f"{hid}: formula '{formula}' missing from FORMULA_PROFILE"
+                        )
+                    elif not (root / "brewfiles" / f"{prof}.Brewfile").is_file():
+                        errors.append(
+                            f"{hid}: formula '{formula}' profile '{prof}.Brewfile' missing"
+                        )
+            if toolchain_text and hid not in toolchain_text:
+                errors.append(
+                    f"{hid}: system/unsupported hook missing from scripts/toolchain.sh"
+                )
+
     for cfg_path in starter_files:
         text = cfg_path.read_text(encoding="utf-8")
-        lines = text.splitlines()
-        declared_profiles: list[str] = []
-        in_profiles = False
-        for line in lines:
-            if "Paired `.caulking-profiles`" in line:
-                in_profiles = True
-                continue
-            if in_profiles:
-                stripped = line.lstrip("#").strip()
-                if not stripped or stripped.startswith("("):
-                    break
-                declared_profiles.append(stripped)
-
-        if not declared_profiles or "baseline" not in declared_profiles:
+        if ".caulking-profiles" in text:
             errors.append(
-                f"{cfg_path.name}: missing Paired .caulking-profiles header with baseline"
+                f"{cfg_path.name}: contains deprecated .caulking-profiles reference"
             )
-            continue
-
-        available_bins: set[str] = set()
-        for prof in declared_profiles:
-            bf = root / "brewfiles" / f"{prof}.Brewfile"
-            if not bf.is_file():
-                errors.append(f"{cfg_path.name}: unknown profile '{prof}' (missing {bf.name})")
-            available_bins.update(PROFILE_BINARIES.get(prof, set()))
 
         try:
             cfg = yaml.safe_load(text)
@@ -224,13 +307,20 @@ def validate_starter_configs(root: Path, hooks: list[dict]) -> list[str]:
                     errors.append(f"{cfg_path.name}: unknown caulking hook id '{hid}'")
                     continue
                 hdef = hook_map[hid]
-                if hdef.get("language") in {"system", "unsupported"}:
-                    exe = str(hdef.get("entry", "")).split()[0]
-                    if exe not in available_bins:
+                if hdef.get("language") in {"system", "unsupported"} and hid not in AMBIENT_SYSTEM_HOOKS:
+                    formulae = HOOK_FORMULAE.get(hid, set())
+                    if not formulae:
                         errors.append(
-                            f"{cfg_path.name}: hook '{hid}' requires '{exe}' not covered by "
-                            f"declared profiles {declared_profiles}"
+                            f"{cfg_path.name}: hook '{hid}' has no Homebrew formula mapping"
                         )
+                    for formula in formulae:
+                        prof = FORMULA_PROFILE.get(formula, "")
+                        bf = root / "brewfiles" / f"{prof}.Brewfile"
+                        if not prof or not bf.is_file():
+                            errors.append(
+                                f"{cfg_path.name}: hook '{hid}' formula '{formula}' "
+                                f"not covered by brewfiles/{prof}.Brewfile"
+                            )
     return errors
 
 
