@@ -127,6 +127,30 @@ def validate_hooks(filepath: str = ".pre-commit-hooks.yaml") -> tuple[list[str],
                 elif not (script_path.stat().st_mode & 0o111):
                     errors.append(f"{hook_id}: script entry not executable {script_path}")
 
+        if (path.parent / "starter-configs").is_dir():
+            has_selector = any(
+                k in hook for k in ("types", "types_or", "files", "always_run")
+            ) or hook.get("pass_filenames") is False
+            if not has_selector:
+                errors.append(
+                    f"{hook_id}: missing file selector (types, types_or, files, always_run, or pass_filenames: false)"
+                )
+            repo_wide_markers = (
+                " -d .",
+                " -r .",
+                " ./...",
+                "scan source",
+                "dir:.",
+                "bundler-audit check",
+                "npm audit",
+                "yarn audit",
+                "pnpm audit",
+            )
+            if any(m in entry for m in repo_wide_markers) and hook.get("pass_filenames") is not False:
+                errors.append(
+                    f"{hook_id}: repo-wide entry '{entry}' must set pass_filenames: false"
+                )
+
     if (path.parent / "starter-configs").is_dir() and (path.parent / "brewfiles").is_dir():
         errors.extend(validate_starter_configs(path.parent, hooks))
 
@@ -137,14 +161,14 @@ PROFILE_BINARIES: dict[str, set[str]] = {
     "baseline": {"gitleaks", "prek", "bash"},
     "shell": {"shellcheck", "shfmt"},
     "container": {"hadolint"},
-    "python": {"ruff", "mypy", "bandit", "pip-audit"},
-    "go": {"go", "gofmt", "golangci-lint"},
+    "python": {"ruff", "mypy", "pyright", "bandit", "pip-audit"},
+    "go": {"go", "gofmt", "golangci-lint", "gosec", "govulncheck"},
     "javascript": {"node", "npx", "npm"},
-    "ruby": {"ruby", "rubocop"},
+    "ruby": {"ruby", "rubocop", "bundle"},
     "opentofu": {"tofu", "tflint"},
     "terraform": {"terraform", "tflint"},
-    "docs": {"yamllint", "actionlint", "markdownlint"},
-    "security": {"semgrep", "osv-scanner", "syft", "grype"},
+    "docs": {"yamllint", "yamlfmt", "actionlint", "zizmor", "markdownlint"},
+    "security": {"semgrep", "osv-scanner", "syft", "grype", "checkov"},
 }
 
 

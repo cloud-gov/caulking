@@ -35,7 +35,7 @@ Move all reusable hook assets from `cloud-gov/pre-commit-templates` into
 `.release-please-manifest.json`, `release-please-config.json` per
 [ADR-0001](ADR-0001-release-management.md)):
 
-- `.pre-commit-hooks.yaml` (all 56 standard and opt-in `-selfcontained` Go and
+- `.pre-commit-hooks.yaml` (all 65 standard and opt-in `-selfcontained` Go and
   Python hooks at the repository root)
 - `starter-configs/*.pre-commit-config.yaml` (all 9 starter configurations pointing `repo:` at
   `https://github.com/cloud-gov/caulking`, with a note referencing the frozen
@@ -52,19 +52,35 @@ Move all reusable hook assets from `cloud-gov/pre-commit-templates` into
 ### 2. Replace Monolithic `Brewfile` with Composable `brewfiles/<profile>.Brewfile` Bundles
 
 Replace the single all-languages `Brewfile` with 11 selective, composable
-Homebrew Bundle files under `brewfiles/<profile>.Brewfile`:
+Homebrew Bundle files under `brewfiles/<profile>.Brewfile` aligned to the
+5-Pillar Per-Language Minimum Baseline Matrix (`FMT`, `LINT`, `CHECK`, `SAST`,
+`SCA`):
+
+| Ecosystem | Profiles | `FMT` (Format) | `LINT` (Quality) | `CHECK` (Syntax / Types) | `SAST` (Static Security) | `SCA` (Dependencies / SBOM) |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Baseline (All)** | `baseline` | `trailing-whitespace`, `end-of-file-fixer` | `check-merge-conflict`, `check-added-large-files` | `check-yaml-selfcontained`, `check-json-selfcontained`, `check-gsa-email` | Global `gitleaks` (`pre-commit` + `pre-push`) | — |
+| **Shell** | `baseline`, `shell` | `shfmt` / `shfmt-check` | `shellcheck` | `bash-syntax` (`bash -n`) | `shellcheck` + `semgrep` | — |
+| **Python** | `baseline`, `python` | `ruff-format` / `ruff-format-check` | `ruff-check` | `mypy` / `pyright` | `bandit` | `pip-audit` |
+| **Go** | `baseline`, `go` | `go-fmt` / `gofmt-selfcontained` | `golangci-lint` | `go-vet` / `go-vet-selfcontained` | `gosec` / `gosec-selfcontained` | `govulncheck` / `govulncheck-selfcontained` |
+| **JS / TS** | `baseline`, `javascript`, `security` | `prettier` / `biome-check` | `eslint` / `biome-check` | `tsc` | `semgrep` | `npm-audit` / `pnpm-audit` / `yarn-audit` / `retire-js` / `osv-scanner-lockfile` |
+| **Ruby / InSpec** | `baseline`, `ruby`, `security` | `rubocop` | `rubocop` / `rubocop-check` | `ruby-check` (`ruby -c`) | `semgrep` | `osv-scanner-lockfile` / `bundle-audit` |
+| **OpenTofu / Terraform** | `baseline`, `opentofu` \| `terraform`, `security` | `tofu-fmt` \| `terraform-fmt` | `tflint` | `tofu-validate` \| `terraform-validate` | `semgrep` / `checkov` | `osv-scanner` |
+| **Containers** | `baseline`, `container`, `security` | — | `hadolint` | `hadolint` | `semgrep` | `grype` + `syft` |
+| **Docs / YAML / CI** | `baseline`, `docs` | `yamlfmt` / `markdownlint` | `yamllint` / `markdownlint-check` | `actionlint` / `check-yaml-selfcontained` | `zizmor` | — |
+
+The 11 composable Homebrew Bundle files are:
 
 - `brewfiles/baseline.Brewfile` (`bash`, `gitleaks`, `prek`)
 - `brewfiles/shell.Brewfile` (`shellcheck`, `shfmt`)
 - `brewfiles/container.Brewfile` (`hadolint`)
-- `brewfiles/python.Brewfile` (`ruff`, `mypy`, `bandit`, `pip-audit`)
-- `brewfiles/go.Brewfile` (`go`, `golangci-lint`)
+- `brewfiles/python.Brewfile` (`ruff`, `mypy`, `pyright`, `bandit`, `pip-audit`)
+- `brewfiles/go.Brewfile` (`go`, `golangci-lint`, `gosec`, `govulncheck`)
 - `brewfiles/javascript.Brewfile` (`node`)
 - `brewfiles/ruby.Brewfile` (`ruby`, `rubocop`)
 - `brewfiles/opentofu.Brewfile` (`terraform-linters/tap`, `opentofu`, `terraform-linters/tap/tflint` cask)
 - `brewfiles/terraform.Brewfile` (`hashicorp/tap`, `terraform-linters/tap`, `hashicorp/tap/terraform`, `terraform-linters/tap/tflint` cask)
-- `brewfiles/docs.Brewfile` (`yamllint`, `actionlint`, `markdownlint-cli`)
-- `brewfiles/security.Brewfile` (`semgrep`, `osv-scanner`, `syft`, `grype`)
+- `brewfiles/docs.Brewfile` (`yamllint`, `yamlfmt`, `actionlint`, `zizmor`, `markdownlint-cli`)
+- `brewfiles/security.Brewfile` (`semgrep`, `osv-scanner`, `syft`, `grype`, `checkov`)
 
 Repositories declare their required profiles explicitly in `.caulking-profiles`
 (no profiles are implicitly assumed; `run` and `hook-run` require `baseline` to
@@ -81,13 +97,15 @@ Homebrew `Brewfile` syntax selects package names rather than enforcing `>=`
 SemVer constraints. To balance supply-chain safety with developer ergonomics:
 
 - `scripts/toolchain.sh` defines justified minimum supported SemVer floors for
-  all 25 profile tools (`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
+  all 31 profile tools (`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
   `shellcheck >=0.9.0`, `shfmt >=3.6.0`, `hadolint >=2.12.0`, `ruff >=0.4.0`,
-  `mypy >=1.8.0`, `bandit >=1.7.5`, `pip-audit >=2.7.0`, `go >=1.22.0`,
-  `golangci-lint >=1.59.0`, `node >=20.0.0`, `ruby >=3.2.0`, `rubocop >=1.60.0`,
+  `mypy >=1.8.0`, `pyright >=1.1.350`, `bandit >=1.7.5`, `pip-audit >=2.7.0`,
+  `go >=1.22.0`, `golangci-lint >=1.59.0`, `gosec >=2.18.0`,
+  `govulncheck >=1.0.0`, `node >=20.0.0`, `ruby >=3.2.0`, `rubocop >=1.60.0`,
   `opentofu >=1.6.0`, `terraform >=1.5.0`, `tflint >=0.50.0`, `yamllint >=1.35.0`,
-  `actionlint >=1.7.0`, `markdownlint-cli >=0.39.0`, `semgrep >=1.50.0`,
-  `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0`) and verifies installed
+  `yamlfmt >=0.13.0`, `actionlint >=1.7.0`, `zizmor >=1.0.0`,
+  `markdownlint-cli >=0.39.0`, `semgrep >=1.50.0`, `osv-scanner >=1.7.0`,
+  `syft >=1.0.0`, `grype >=0.74.0`, `checkov >=3.2.0`) and verifies installed
   versions in `caulking.sh doctor` (and before `run`/`hook-run`) with 5-second
   telemetry-disabled version probes.
 - Developers may run `brew upgrade` freely to pick up upstream security fixes

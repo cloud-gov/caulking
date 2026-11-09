@@ -60,36 +60,44 @@ has not been performed during development.
 
 Brewfiles (`brewfiles/<profile>.Brewfile`) declare package names, not arbitrary `>=`
 version constraints. Homebrew installs rolling current versions. Compatibility
-checks in `caulking doctor` enforce minimum supported versions from reviewed
-tool requirements, without pinning each upstream patch:
+checks in `caulking doctor` enforce minimum supported versions across all **11 profiles**
+and **31 profile tools** (backing all **65 reusable hooks** and **9 starter configs**
+under the 5-Pillar Per-Language Minimum Baseline Matrix: `FMT`, `LINT`, `CHECK`,
+`SAST`, `SCA`), without pinning each upstream patch:
 
 | Profile | Tool | Minimum enforced by `caulking doctor` | Rationale |
 | --- | --- | --- | --- |
 | `baseline` | `gitleaks` | `>= 8.21.0` | `[extend] useDefault = true` and modern rule schema |
 | `baseline` | `prek` | `>= 0.4.0` | `--hook-stage` and `--show-diff-on-failure` CLI contract |
-| `baseline` | `bash` | `>= 4.0.0` | Associative/array safety for `install.sh` and global hooks |
+| `baseline` | `bash` | `>= 4.0.0` | Associative/array safety for `install.sh`, global hooks, and `bash-syntax` (`bash -n`) |
 | `shell` | `shellcheck` | `>= 0.9.0` | `-x` external source following and stable directive support |
-| `shell` | `shfmt` | `>= 3.6.0` | `-d` diff-check flag stability |
+| `shell` | `shfmt` | `>= 3.6.0` | `-d` diff-check and `-w -i 2 -ci -sr` formatting flag stability |
 | `container` | `hadolint` | `>= 2.12.0` | Modern OCI/BuildKit `Dockerfile` syntax support |
-| `python` | `ruff` | `>= 0.4.0` | Unified `ruff check` and `ruff format` CLI |
+| `python` | `ruff` | `>= 0.4.0` | Unified `ruff check` and `ruff format` (`--check`) CLI |
 | `python` | `mypy` | `>= 1.8.0` | Modern `pyproject.toml` configuration support |
+| `python` | `pyright` | `>= 1.1.350` | Fast Python static type checking with `pyproject.toml` support |
 | `python` | `bandit` | `>= 1.7.5` | Python SAST CLI with `pyproject.toml` config support |
 | `python` | `pip-audit` | `>= 2.7.0` | PyPA vulnerability scanner for `requirements.txt` / `pyproject.toml` |
 | `go` | `go` | `>= 1.22.0` | Modern module/workspace routing (`go version`) |
 | `go` | `golangci-lint` | `>= 1.59.0` | Supports late v1 and v2 (`version: "2"` in `.golangci.yml` for v2) |
+| `go` | `gosec` | `>= 2.18.0` | Go security SAST checker (`gosec ./...`) |
+| `go` | `govulncheck` | `>= 1.0.0` | Official Go vulnerability scanner (`govulncheck ./...`) |
 | `javascript` | `node` | `>= 20.0.0` | Active LTS floor for `npx` project-local linters |
-| `ruby` | `ruby` | `>= 3.2.0` | Supported Ruby 3.2+ floor for syntax validation (`ruby -c`) and InSpec overlays |
+| `ruby` | `ruby` | `>= 3.2.0` | Supported Ruby 3.2+ floor for syntax validation (`ruby -c`), Bundler, and InSpec overlays |
 | `ruby` | `rubocop` | `>= 1.60.0` | Modern RuboCop plugin/department configuration floor |
 | `opentofu` | `opentofu` (`tofu`) | `>= 1.6.0` | `tofu fmt` / `tofu validate` GA floor |
 | `terraform` | `terraform` | `>= 1.5.0` | `terraform fmt` / `terraform validate` floor |
-| `opentofu` / `terraform` | `tflint` | `>= 0.50.0` | HCL2 plugin configuration floor |
+| `opentofu` / `terraform` | `tflint` | `>= 0.50.0` | HCL2 plugin configuration floor (`tflint` shared across both profiles; 31 profile-tool entries across 11 profiles, 30 unique formulae/casks) |
 | `docs` | `yamllint` | `>= 1.35.0` | `-d relaxed` preset and modern Python 3.12+ compatibility |
+| `docs` | `yamlfmt` | `>= 0.13.0` | Google YAML formatter and `-lint` check mode |
 | `docs` | `actionlint` | `>= 1.7.0` | Current GitHub Actions runner/context schema support |
+| `docs` | `zizmor` | `>= 1.0.0` | Static security analysis for GitHub Actions workflows |
 | `docs` | `markdownlint-cli` (`markdownlint`) | `>= 0.39.0` | `--fix` flag and modern CommonMark rule floor |
 | `security` | `semgrep` | `>= 1.50.0` | `semgrep scan --config=auto --error --metrics=off` |
 | `security` | `osv-scanner` | `>= 1.7.0` | `osv-scanner scan` subcommand syntax |
 | `security` | `syft` | `>= 1.0.0` | `-o cyclonedx-json=...` v1 CLI contract |
 | `security` | `grype` | `>= 0.74.0` | `dir:. --fail-on` CLI contract |
+| `security` | `checkov` | `>= 3.2.0` | Policy-as-code IaC SAST scanner (`checkov -d . --quiet --compact`) |
 
 Use explicit `brew upgrade` to maintain tools independently of caulking releases.
 Onboarding can use `caulking bootstrap` or `brew bundle install --file=brewfiles/<profile>.Brewfile --no-upgrade`

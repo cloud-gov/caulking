@@ -29,23 +29,50 @@ The tools listed here have been security-assessed and are pre-approved for use, 
 ### Approved Tools (LOW risk)
 
 | Tool | Owner | License | Risk | Notes |
-|------|-------|---------|------|-------|
-| pre-commit | Anthony Sottile | MIT | LOW | 10+ year track record, no CVEs |
-| shellcheck | Vidar Holen | GPL-3.0 | LOW | Single maintainer, but 13+ year history |
-| shfmt | Daniel Martí | BSD-3 | LOW | Single maintainer, well-distributed |
-| ruff | Astral/OpenAI | MIT | LOW | VC-backed, OpenAI acquisition |
-| mypy | Python/PSF | MIT | LOW | Foundation governance, 13 maintainers |
-| golangci-lint | Community | GPL-3.0 | LOW | Multi-maintainer, SBOMs provided |
-| ruby | Ruby Core Team | Ruby/BSD-2-Clause | LOW | Multi-decade core language governance |
-| rubocop | RuboCop Core Team | MIT | LOW | Community governance, standard Ruby analyzer |
-| yamllint | Adrien Vergé | GPL-3.0 | LOW | Read-only Python YAML linter, widely packaged |
-| actionlint | rhysd | MIT | LOW | Static GitHub Actions workflow analyzer |
-| markdownlint-cli | Igor Shubovych / David Anson | MIT | LOW | Standard Markdown CLI linter |
-| hadolint | Community | GPL-3.0 | LOW | No CVEs, read-only operation |
-| tflint | terraform-linters | MPL-2.0/BUSL | LOW-MEDIUM | Attestation support, plugin model |
+|---|---|---|---|---|
+| pre-commit / prek | Anthony Sottile / Jo | MIT | LOW | Standard hook managers; `prek >=0.4.0` used by caulking |
+| gitleaks | Zachary Rice / Gitleaks | MIT | LOW | Mandatory global secret scanner (`>=8.21.0`) |
+| shellcheck | Vidar Holen | GPL-3.0 | LOW | Single maintainer, 13+ year history (`>=0.9.0`) |
+| shfmt | Daniel Martí | BSD-3 | LOW | Shell formatter and diff checker (`>=3.6.0`) |
+| ruff | Astral/OpenAI | MIT | LOW | Fast Python linter and formatter (`>=0.4.0`) |
+| mypy | Python/PSF | MIT | LOW | Foundation governance, 13 maintainers (`>=1.8.0`) |
+| pyright | Microsoft | MIT | LOW | Fast Python static type checker (`>=1.1.350`) |
+| bandit | PyCQA | Apache-2.0 | LOW | Python security SAST linter (`>=1.7.5`) |
+| pip-audit | PyPA / Trail of Bits | Apache-2.0 | LOW | Official PyPA dependency vulnerability scanner (`>=2.7.0`) |
+| golangci-lint | Community | GPL-3.0 | LOW | Multi-maintainer Go meta-linter (`>=1.59.0`) |
+| gosec | securego | Apache-2.0 | LOW | Go security SAST checker (`>=2.18.0`) |
+| govulncheck | Go Team (Google) | BSD-3-Clause | LOW | Official Go vulnerability scanner (`>=1.0.0`) |
+| ruby | Ruby Core Team | Ruby/BSD-2-Clause | LOW | Multi-decade core language governance (`>=3.2.0`) |
+| rubocop | RuboCop Core Team | MIT | LOW | Community governance, standard Ruby analyzer (`>=1.60.0`) |
+| bundler-audit | rubysec | GPL-3.0 | LOW | Ruby `Gemfile.lock` advisory scanner (`bundle-audit` hook) |
+| yamllint | Adrien Vergé | GPL-3.0 | LOW | Read-only Python YAML linter (`>=1.35.0`) |
+| yamlfmt | Google | Apache-2.0 | LOW | Official Google YAML formatter (`>=0.13.0`) |
+| actionlint | rhysd | MIT | LOW | Static GitHub Actions workflow analyzer (`>=1.7.0`) |
+| zizmor | William Woodruff | MIT | LOW | Static security scanner for GitHub Actions workflows (`>=1.0.0`) |
+| markdownlint-cli | Igor Shubovych / David Anson | MIT | LOW | Standard Markdown CLI linter (`>=0.39.0`) |
+| hadolint | Community | GPL-3.0 | LOW | Dockerfile linter, no CVEs, read-only operation (`>=2.12.0`) |
+| tflint | terraform-linters | MPL-2.0/BUSL | LOW-MEDIUM | Attestation support, plugin model (`>=0.50.0`) |
 | git-cliff | orhun | Apache-2.0/MIT | LOW | Single maintainer, monitor quarterly |
-| semgrep | Semgrep Inc. | LGPL-2.1 | LOW | US company, NOT Aqua-affiliated |
-| grype | Anchore Inc. | Apache-2.0 | LOW | US company, NOT Aqua-affiliated |
+| semgrep | Semgrep Inc. | LGPL-2.1 | LOW | US company, NOT Aqua-affiliated (`>=1.50.0`) |
+| osv-scanner | Google | Apache-2.0 | LOW | Universal OSV lockfile and source vulnerability scanner (`>=1.7.0`) |
+| syft | Anchore Inc. | Apache-2.0 | LOW | CycloneDX / SPDX SBOM generator (`>=1.0.0`) |
+| grype | Anchore Inc. | Apache-2.0 | LOW | US company, NOT Aqua-affiliated (`>=0.74.0`) |
+| checkov | Bridgecrew / Palo Alto Networks | Apache-2.0 | LOW | Policy-as-code SAST scanner for OpenTofu/Terraform/IaC (`>=3.2.0`) |
+
+### 5-Pillar Per-Language Minimum Baseline Matrix
+
+Across all **11 profiles**, **31 profile tools**, **65 reusable hooks**, and **9 starter configs**, caulking standardizes five verification pillars (`FMT`, `LINT`, `CHECK`, `SAST`, `SCA`):
+
+| Ecosystem | Profiles | `FMT` | `LINT` | `CHECK` | `SAST` | `SCA` |
+|---|---|---|---|---|---|---|
+| **Shell** | `baseline`, `shell` | `shfmt` / `shfmt-check` | `shellcheck` | `bash-syntax` (`bash -n`) | `shellcheck` + `semgrep` | — |
+| **Python** | `baseline`, `python` | `ruff-format` / `ruff-format-check` | `ruff-check` | `mypy` / `pyright` | `bandit` | `pip-audit` |
+| **Go** | `baseline`, `go` | `go-fmt` / `gofmt-selfcontained` | `golangci-lint` | `go-vet` / `go-vet-selfcontained` | `gosec` / `gosec-selfcontained` | `govulncheck` / `govulncheck-selfcontained` |
+| **JS / TS** | `baseline`, `javascript`, `security` | `prettier` / `biome-check` | `eslint` / `biome-check` | `tsc` | `semgrep` | `npm-audit` / `pnpm-audit` / `yarn-audit` / `retire-js` / `osv-scanner-lockfile` |
+| **Ruby / InSpec** | `baseline`, `ruby`, `security` | `rubocop` | `rubocop` / `rubocop-check` | `ruby-check` (`ruby -c`) | `semgrep` | `osv-scanner-lockfile` / `bundle-audit` |
+| **OpenTofu / Terraform** | `baseline`, `opentofu` \| `terraform`, `security` | `tofu-fmt` \| `terraform-fmt` | `tflint` | `tofu-validate` \| `terraform-validate` | `semgrep` / `checkov` | `osv-scanner` |
+| **Containers** | `baseline`, `container`, `security` | — | `hadolint` | `hadolint` | `semgrep` | `grype` + `syft` |
+| **Docs / YAML / CI** | `baseline`, `docs` | `yamlfmt` / `markdownlint` | `yamllint` / `markdownlint-check` | `actionlint` / `check-yaml-selfcontained` | `zizmor` | — |
 
 ### JavaScript/TypeScript Tools (LOW risk)
 

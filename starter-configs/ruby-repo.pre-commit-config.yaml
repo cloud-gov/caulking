@@ -73,6 +73,9 @@ repos:
       # =========================================================================
       # DEFAULT: osv-scanner-lockfile — Scans Gemfile.lock for known CVEs
       - id: osv-scanner-lockfile
+      #
+      # ALTERNATIVE: bundle-audit (built-in caulking hook; runs `bundle exec bundler-audit check`)
+      # - id: bundle-audit
 
       # =========================================================================
       # Shell scripts (if present in repo)

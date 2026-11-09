@@ -65,7 +65,7 @@ tool="${0##*/}"
 if [[ "$tool" == prek && "${1:-}" == run ]]; then
   if [[ -n "${FAKE_ORDER:-}" ]]; then printf 'suite\n' >> "$FAKE_ORDER"; fi
   printf 'cwd=%s\nargs=%s\npath=%s\n' "$PWD" "$*" "$PATH" > "$FAKE_RUN"
-  for name in gitleaks prek bash shellcheck shfmt hadolint ruff mypy bandit pip-audit go golangci-lint node ruby rubocop tofu terraform tflint yamllint actionlint markdownlint semgrep osv-scanner syft grype git; do
+  for name in gitleaks prek bash shellcheck shfmt hadolint ruff mypy pyright bandit pip-audit go golangci-lint gosec govulncheck node ruby rubocop tofu terraform tflint yamllint yamlfmt actionlint zizmor markdownlint semgrep osv-scanner syft grype checkov git; do
     if command -v "$name" > /dev/null; then
       printf '%s=%s\n' "$name" "$(command -v "$name")" >> "$FAKE_RUN"
     fi
@@ -96,9 +96,12 @@ case "$tool" in
   hadolint) [[ "$1" == --version ]]; printf 'Haskell Dockerfile Linter 2.15.1\n' ;;
   ruff) [[ "$1" == --version ]]; printf 'ruff 0.11.2\n' ;;
   mypy) [[ "$1" == --version ]]; printf 'mypy 1.15.0\n' ;;
+  pyright) [[ "$1" == --version ]]; printf 'pyright 1.1.400\n' ;;
   bandit) [[ "$1" == --version ]]; printf 'bandit 1.9.4\n' ;;
   pip-audit) [[ "$1" == --version ]]; printf 'pip-audit 2.10.1\n' ;;
   golangci-lint) [[ "$1" == --version ]]; printf 'golangci-lint has version 2.15.0\n' ;;
+  gosec) [[ "$1" == --version ]]; printf 'Version: 2.21.0\n' ;;
+  govulncheck) [[ "$1" == --version ]]; printf 'Go: go1.27.3\nScanner: govulncheck@v1.9.0\n' ;;
   node) [[ "$1" == --version ]]; printf 'v26.13.0\n' ;;
   ruby) [[ "$1" == --version ]]; printf 'ruby 3.4.2 (2025-02-15 revision 12345) [arm64-darwin24]\n' ;;
   rubocop) [[ "$1" == --version ]]; printf '1.75.0\n' ;;
@@ -106,12 +109,15 @@ case "$tool" in
   terraform) [[ "$1" == --version ]]; printf 'Terraform v1.11.0\n' ;;
   tflint) [[ "$1" == --version ]]; printf 'TFLint version 0.55.1\n' ;;
   yamllint) [[ "$1" == --version ]]; printf 'yamllint 1.38.0\n' ;;
+  yamlfmt) [[ "$1" == --version ]]; printf '0.16.0\n' ;;
   actionlint) [[ "$1" == --version ]]; printf '1.7.12\ninstalled by building from source\n' ;;
+  zizmor) [[ "$1" == --version ]]; printf 'zizmor 1.5.0\n' ;;
   markdownlint) [[ "$1" == --version ]]; printf '0.50.0\n' ;;
   semgrep) [[ "$1" == --version ]]; printf '1.110.0\n' ;;
   osv-scanner) [[ "$1" == --version ]]; printf 'osv-scanner version: 2.0.0\n' ;;
   syft) [[ "$1" == --version ]]; printf 'syft 1.20.0\n' ;;
   grype) [[ "$1" == --version ]]; printf 'grype 0.89.0\n' ;;
+  checkov) [[ "$1" == --version ]]; printf '3.2.400\n' ;;
   *) [[ "$1" == --version ]]; printf '%s 1.2.3\n' "$tool" ;;
 esac
 FAKE
@@ -121,7 +127,7 @@ FAKE
   fi
 }
 
-for formula in gitleaks prek bash shellcheck shfmt hadolint ruff mypy bandit pip-audit go golangci-lint node ruby rubocop opentofu terraform tflint yamllint actionlint markdownlint-cli semgrep osv-scanner syft grype; do
+for formula in gitleaks prek bash shellcheck shfmt hadolint ruff mypy pyright bandit pip-audit go golangci-lint gosec govulncheck node ruby rubocop opentofu terraform tflint yamllint yamlfmt actionlint zizmor markdownlint-cli semgrep osv-scanner syft grype checkov; do
   make_binary "$formula"
 done
 chmod +x "$FAKE_HOME/bin/brew" "$TMP/bin/uname"
@@ -287,9 +293,12 @@ expect 0 bootstrap --repo "$TMP/other repo" \
   --profile python --profile go --profile javascript --profile ruby \
   --profile opentofu --profile terraform --profile docs --profile security --dry-run
 contains "$TMP/output" 'Would install Homebrew formula: ruff'
+contains "$TMP/output" 'Would install Homebrew formula: pyright'
 contains "$TMP/output" 'Would install Homebrew formula: bandit'
 contains "$TMP/output" 'Would install Homebrew formula: pip-audit'
 contains "$TMP/output" 'Would install Homebrew formula: golangci-lint'
+contains "$TMP/output" 'Would install Homebrew formula: gosec'
+contains "$TMP/output" 'Would install Homebrew formula: govulncheck'
 contains "$TMP/output" 'Would install Homebrew formula: node'
 contains "$TMP/output" 'Would install Homebrew formula: ruby'
 contains "$TMP/output" 'Would install Homebrew formula: rubocop'
@@ -297,9 +306,12 @@ contains "$TMP/output" 'Would install Homebrew formula: opentofu'
 contains "$TMP/output" 'Would install Homebrew formula: hashicorp/tap/terraform'
 contains "$TMP/output" 'Would install Homebrew formula: --cask terraform-linters/tap/tflint'
 contains "$TMP/output" 'Would install Homebrew formula: yamllint'
+contains "$TMP/output" 'Would install Homebrew formula: yamlfmt'
 contains "$TMP/output" 'Would install Homebrew formula: actionlint'
+contains "$TMP/output" 'Would install Homebrew formula: zizmor'
 contains "$TMP/output" 'Would install Homebrew formula: markdownlint-cli'
 contains "$TMP/output" 'Would install Homebrew formula: osv-scanner'
+contains "$TMP/output" 'Would install Homebrew formula: checkov'
 # Selecting both opentofu and terraform must deduplicate tflint in the plan.
 [[ "$(/usr/bin/grep -c 'tflint' "$TMP/output")" == 1 ]]
 no_installs
@@ -309,7 +321,7 @@ export FAKE_TFLINT_MODE=cask
 expect 0 bootstrap --repo "$TMP/other repo" \
   --profile python --profile go --profile javascript --profile ruby \
   --profile opentofu --profile terraform --profile docs --profile security
-[[ "$(/usr/bin/grep -c '^install ' "$FAKE_LOG")" == 19 ]]
+[[ "$(/usr/bin/grep -c '^install ' "$FAKE_LOG")" == 25 ]]
 [[ "$(/usr/bin/grep -c 'tflint' "$FAKE_LOG")" == 1 ]]
 : > "$FAKE_LOG"
 expect 0 doctor --repo "$TMP/other repo" \
@@ -335,7 +347,7 @@ contains "$FAKE_RUN" "tofu=$FAKE_HOME/opt/opentofu/bin/tofu"
 contains "$FAKE_RUN" "terraform=$FAKE_HOME/opt/terraform/bin/terraform"
 contains "$FAKE_RUN" "tflint=$FAKE_HOME/opt/tflint/bin/tflint"
 contains "$FAKE_RUN" "markdownlint=$FAKE_HOME/opt/markdownlint-cli/bin/markdownlint"
-for formula in ruff mypy bandit pip-audit go golangci-lint node ruby rubocop yamllint actionlint semgrep osv-scanner syft grype; do
+for formula in ruff mypy pyright bandit pip-audit go golangci-lint gosec govulncheck node ruby rubocop yamllint yamlfmt actionlint zizmor semgrep osv-scanner syft grype checkov; do
   contains "$FAKE_RUN" "$formula=$FAKE_HOME/opt/$formula/bin/$formula"
 done
 no_installs
@@ -346,10 +358,13 @@ for spec in \
   "hadolint|container|Haskell Dockerfile Linter 2.10.0|hadolint >=2.12.0 required" \
   "ruff|python|ruff 0.3.0|ruff >=0.4.0 required" \
   "mypy|python|mypy 1.7.1|mypy >=1.8.0 required" \
+  "pyright|python|pyright 1.1.349|pyright >=1.1.350 required" \
   "bandit|python|bandit 1.7.4|bandit >=1.7.5 required" \
   "pip-audit|python|pip-audit 2.6.3|pip-audit >=2.7.0 required" \
   "go|go|go version go1.21.0 darwin/arm64|go >=1.22.0 required" \
   "golangci-lint|go|golangci-lint has version 1.58.2|golangci-lint >=1.59.0 required" \
+  "gosec|go|Version: 2.17.0|gosec >=2.18.0 required" \
+  "govulncheck|go|govulncheck@v0.9.0|govulncheck >=1.0.0 required" \
   "node|javascript|v18.19.0|node >=20.0.0 required" \
   "ruby|ruby|ruby 3.1.4 (2023-03-30 revision 957bb7cb81) [arm64-darwin22]|ruby >=3.2.0 required" \
   "rubocop|ruby|1.59.0|rubocop >=1.60.0 required" \
@@ -357,18 +372,28 @@ for spec in \
   "terraform|terraform|Terraform v1.4.6|terraform >=1.5.0 required" \
   "tflint|terraform|TFLint version 0.49.0|tflint >=0.50.0 required" \
   "yamllint|docs|yamllint 1.34.0|yamllint >=1.35.0 required" \
+  "yamlfmt|docs|0.12.0|yamlfmt >=0.13.0 required" \
   "actionlint|docs|1.6.27|actionlint >=1.7.0 required" \
+  "zizmor|docs|zizmor 0.9.0|zizmor >=1.0.0 required" \
   "markdownlint|docs|0.38.0|markdownlint-cli >=0.39.0 required" \
   "semgrep|security|1.49.0|semgrep >=1.50.0 required" \
   "osv-scanner|security|osv-scanner version: 1.6.2|osv-scanner >=1.7.0 required" \
   "syft|security|syft 0.105.0|syft >=1.0.0 required" \
-  "grype|security|grype 0.73.0|grype >=0.74.0 required"; do
+  "grype|security|grype 0.73.0|grype >=0.74.0 required" \
+  "checkov|security|3.1.9|checkov >=3.2.0 required"; do
   IFS='|' read -r vtool vprofile vout verr <<< "$spec"
   [[ "$vprofile" != prek ]] || vprofile=baseline
   export FAKE_VERSION_TOOL="$vtool" FAKE_VERSION_OUTPUT="$vout"
   expect 1 doctor --repo "$TMP/other repo" --profile "$vprofile"
   contains "$TMP/output" "$verr"
 done
+export FAKE_VERSION_TOOL=govulncheck
+export FAKE_VERSION_OUTPUT
+FAKE_VERSION_OUTPUT="$(printf 'Go: go1.27.3\nScanner: govulncheck@v0.9.0\n')"
+expect 1 doctor --repo "$TMP/other repo" --profile go
+contains "$TMP/output" 'govulncheck >=1.0.0 required'
+FAKE_VERSION_OUTPUT="$(printf 'Go: go1.27.3\nScanner: govulncheck@v1.9.0\n')"
+expect 0 doctor --repo "$TMP/other repo" --profile go
 for spec in \
   "golangci-lint|go|golangci-lint has version 2.15.0" \
   "node|javascript|v26.13.0" \

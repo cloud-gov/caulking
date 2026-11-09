@@ -42,6 +42,7 @@
   description: Prevents committing files larger than 500KB
   entry: scripts/check-large-files.sh
   language: script
+  types: [file]
   stages: [pre-commit]
   args: ['--maxkb=500']
 
@@ -118,6 +119,14 @@
   types: [shell]
   stages: [pre-commit]
 
+- id: shfmt
+  name: Shell formatter (shfmt)
+  description: Formats shell scripts in-place with shfmt (-w -i 2 -ci -sr)
+  entry: shfmt -w -i 2 -ci -sr
+  language: system
+  types: [shell]
+  stages: [pre-commit]
+
 - id: shfmt-check
   name: Shell format check
   description: Checks shell script formatting (does not modify)
@@ -126,9 +135,17 @@
   types: [shell]
   stages: [pre-commit]
 
+- id: bash-syntax
+  name: Bash syntax check
+  description: Validates shell script syntax with bash -n
+  entry: bash -n
+  language: system
+  types: [shell]
+  stages: [pre-commit]
+
 # =============================================================================
 # PYTHON HOOKS (recommended)
-# Alternatives: black, isort, flake8, pylint, pyright
+# Alternatives: black, isort, flake8, pylint
 # =============================================================================
 
 - id: ruff-check
@@ -147,10 +164,27 @@
   types: [python]
   stages: [pre-commit]
 
+- id: ruff-format-check
+  name: Ruff formatter (check only)
+  description: Checks Python formatting without modifying files
+  entry: ruff format --check
+  language: system
+  types: [python]
+  stages: [pre-commit]
+
 - id: mypy
   name: Mypy type checker
   description: Static type checking for Python
   entry: mypy
+  language: system
+  types: [python]
+  stages: [pre-commit]
+  require_serial: true
+
+- id: pyright
+  name: Pyright type checker
+  description: Fast static type checker for Python (Microsoft, MIT)
+  entry: pyright
   language: system
   types: [python]
   stages: [pre-commit]
@@ -355,6 +389,15 @@
   types: [ruby]
   stages: [pre-commit]
 
+- id: bundle-audit
+  name: bundler-audit
+  description: Scans Gemfile.lock for vulnerable Ruby gems via bundler-audit
+  entry: bundle exec bundler-audit check
+  language: system
+  files: ^Gemfile\.lock$
+  pass_filenames: false
+  stages: [pre-commit]
+
 # =============================================================================
 # TERRAFORM / IAC HOOKS
 # Both Terraform (HashiCorp) and OpenTofu (Linux Foundation) supported
@@ -411,6 +454,17 @@
   pass_filenames: false
   stages: [pre-commit]
 
+# --- Checkov (IaC policy-as-code SAST scanner; security profile) ---
+
+- id: checkov
+  name: Checkov IaC security scanner
+  description: Policy-as-code SAST scanner for OpenTofu/Terraform/IaC (Apache-2.0)
+  entry: checkov -d . --quiet --compact
+  language: system
+  files: \.tf$
+  pass_filenames: false
+  stages: [pre-commit]
+
 # =============================================================================
 # CONTAINER HOOKS
 # =============================================================================
@@ -427,6 +481,22 @@
 # DOCUMENTATION, YAML & CI WORKFLOW HOOKS
 # =============================================================================
 
+- id: yamlfmt
+  name: yamlfmt
+  description: Formats YAML files with Google yamlfmt
+  entry: yamlfmt
+  language: system
+  types: [yaml]
+  stages: [pre-commit]
+
+- id: yamlfmt-check
+  name: yamlfmt (check only)
+  description: Checks YAML formatting with yamlfmt -lint without modifying files
+  entry: yamlfmt -lint
+  language: system
+  types: [yaml]
+  stages: [pre-commit]
+
 - id: yamllint
   name: yamllint
   description: Lints YAML files for syntax, duplicate keys, and formatting
@@ -439,6 +509,14 @@
   name: actionlint
   description: Static checker for GitHub Actions workflow files
   entry: actionlint
+  language: system
+  files: ^\.github/workflows/.*\.(yml|yaml)$
+  stages: [pre-commit]
+
+- id: zizmor
+  name: zizmor GitHub Actions security scanner
+  description: Static security analysis for GitHub Actions workflows (MIT)
+  entry: zizmor
   language: system
   files: ^\.github/workflows/.*\.(yml|yaml)$
   stages: [pre-commit]

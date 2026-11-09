@@ -48,12 +48,17 @@ repos:
       - id: check-json-selfcontained
 
       # =========================================================================
-      # YAML & WORKFLOW LINTING: YAML formatting and GitHub Actions workflows
-      # Satisfies: NIST SA-11 (Developer Testing), SSDF PW.7
+      # YAML & WORKFLOW LINTING: YAML formatting, linting, and Actions security
+      # Satisfies: NIST SA-11 (Developer Testing), SA-11(1), SSDF PW.7
       # =========================================================================
-      # DEFAULT: yamllint + actionlint
+      # DEFAULT: yamlfmt + yamllint + actionlint + zizmor (all in `docs` profile)
+      - id: yamlfmt
       - id: yamllint
       - id: actionlint
+      - id: zizmor
+      #
+      # ALTERNATIVE: yamlfmt-check (check-only YAML formatting without modifying files)
+      # - id: yamlfmt-check
 
       # =========================================================================
       # DOCUMENTATION LINTING: Markdown quality and formatting

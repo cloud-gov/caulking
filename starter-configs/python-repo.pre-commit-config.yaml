@@ -56,8 +56,15 @@ repos:
       - id: ruff-check
       - id: ruff-format
       #
+      # ALTERNATIVE: ruff-format-check (check-only mode without modifying files)
+      # - id: ruff-format-check
+      #
       # OPTIONAL: mypy — Static type checking (use with ruff)
       - id: mypy
+      #
+      # ALTERNATIVE: pyright — Fast static type checker for Python (Microsoft, MIT;
+      # built-in caulking hook installed by `python` profile via Homebrew)
+      # - id: pyright
       #
       # ALTERNATIVE: pylint (category: LINTING)
       # More verbose, configurable linting

@@ -255,7 +255,15 @@ Conventional Commits, and independent Homebrew tool upgrades.
 ### Selective workstation toolchain & Brewfile bundles
 
 Caulking includes 11 selective Homebrew bundles (`brewfiles/<profile>.Brewfile`)
-covering 25 profile tools, plus profile-aware bootstrap/diagnostics for
+covering 31 profile tools (`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
+`shellcheck >=0.9.0`, `shfmt >=3.6.0`, `hadolint >=2.12.0`, `ruff >=0.4.0`,
+`mypy >=1.8.0`, `pyright >=1.1.350`, `bandit >=1.7.5`, `pip-audit >=2.7.0`,
+`go >=1.22.0`, `golangci-lint >=1.59.0`, `gosec >=2.18.0`, `govulncheck >=1.0.0`,
+`node >=20.0.0`, `ruby >=3.2.0`, `rubocop >=1.60.0`, `opentofu >=1.6.0`,
+`terraform >=1.5.0`, `tflint >=0.50.0`, `yamllint >=1.35.0`, `yamlfmt >=0.13.0`,
+`actionlint >=1.7.0`, `zizmor >=1.0.0`, `markdownlint-cli >=0.39.0`,
+`semgrep >=1.50.0`, `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0`,
+`checkov >=3.2.0`), plus profile-aware bootstrap/diagnostics for
 `baseline`, `shell`, `container`, `python`, `go`, `javascript`, `ruby`,
 `opentofu`, `terraform`, `docs`, and `security`:
 
@@ -276,14 +284,19 @@ Caulking is the consolidated home for cloud.gov's reusable pre-commit hooks
 (`.pre-commit-hooks.yaml`) and copy-to-start configurations (`starter-configs/`),
 superseding the frozen `cloud-gov/pre-commit-templates` repository:
 
-- **56 reusable hooks** across hygiene, shell (`shellcheck`, `shfmt-check`),
-  Python (`ruff-check`, `ruff-format`, `mypy`, `bandit`, `pip-audit`), Go
-  (`go-fmt`, `go-vet`, `golangci-lint`, `gosec`, `govulncheck`), JS/TS (`eslint`,
+- **65 reusable hooks** across hygiene, shell (`shellcheck`, `shfmt`,
+  `shfmt-check`, `bash-syntax`), Python (`ruff-check`, `ruff-format`,
+  `ruff-format-check`, `mypy`, `pyright`, `bandit`, `pip-audit`), Go (`go-fmt`,
+  `go-vet`, `golangci-lint`, `gosec`, `govulncheck`), JS/TS (`eslint`,
   `prettier`, `tsc`, `biome-check`), Ruby (`ruby-check`, `rubocop`,
-  `rubocop-check`), IaC (`opentofu`, `terraform`, `tflint`), containers
-  (`hadolint`), documentation/YAML/CI (`yamllint`, `actionlint`, `markdownlint`,
+  `rubocop-check`, `bundle-audit`), IaC (`opentofu`, `terraform`, `tflint`,
+  `checkov`), containers (`hadolint`), documentation/YAML/CI (`yamlfmt`,
+  `yamlfmt-check`, `yamllint`, `actionlint`, `zizmor`, `markdownlint`,
   `markdownlint-check`), compliance (`check-gsa-email`), and universal scanners
   (`semgrep`, `osv-scanner`, `syft`, `grype`).
+- **5-Pillar Per-Language Minimum Baseline Matrix (`FMT`, `LINT`, `CHECK`, `SAST`, `SCA`)**
+  spanning all 11 profiles, 31 profile tools, 65 reusable hooks, and 9 starter
+  configurations.
 - **Self-contained syntax and Go hooks** (`check-yaml-selfcontained`,
   `check-json-selfcontained`, `gofmt-selfcontained`, `go-vet-selfcontained`,
   `gosec-selfcontained`, `govulncheck-selfcontained`) that provision isolated

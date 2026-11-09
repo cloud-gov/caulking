@@ -73,10 +73,9 @@ repos:
       # DEFAULT: semgrep — Multi-language SAST with Terraform/HCL rules
       - id: semgrep
       #
-      # ALTERNATIVE: checkov (category: SAST)
-      # Palo Alto Networks (Bridgecrew) — policy-as-code scanner
-      # Install: pip install checkov
-      # Use local hook with: checkov -d . --framework terraform
+      # ALTERNATIVE: checkov — Policy-as-code SAST scanner for OpenTofu/Terraform
+      # (built-in caulking hook; installed by `security` profile via Homebrew)
+      # - id: checkov
 
       # =========================================================================
       # SCA: Dependency/Module vulnerability scanning

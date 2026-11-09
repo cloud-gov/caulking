@@ -7,14 +7,14 @@ toolchain_usage() {
     'Profiles: baseline (gitleaks >=8.21.0, prek >=0.4.0, bash >=4),' \
     '          shell (shellcheck >=0.9.0, shfmt >=3.6.0),' \
     '          container (hadolint >=2.12.0),' \
-    '          python (ruff >=0.4.0, mypy >=1.8.0, bandit >=1.7.5, pip-audit >=2.7.0),' \
-    '          go (go >=1.22.0, golangci-lint >=1.59.0),' \
+    '          python (ruff >=0.4.0, mypy >=1.8.0, pyright >=1.1.350, bandit >=1.7.5, pip-audit >=2.7.0),' \
+    '          go (go >=1.22.0, golangci-lint >=1.59.0, gosec >=2.18.0, govulncheck >=1.0.0),' \
     '          javascript (node >=20.0.0),' \
     '          ruby (ruby >=3.2.0, rubocop >=1.60.0),' \
     '          opentofu (opentofu >=1.6.0, tflint >=0.50.0),' \
     '          terraform (terraform >=1.5.0, tflint >=0.50.0),' \
-    '          docs (yamllint >=1.35.0, actionlint >=1.7.0, markdownlint-cli >=0.39.0),' \
-    '          security (semgrep >=1.50.0, osv-scanner >=1.7.0, syft >=1.0.0, grype >=0.74.0).' \
+    '          docs (yamllint >=1.35.0, yamlfmt >=0.13.0, actionlint >=1.7.0, zizmor >=1.0.0, markdownlint-cli >=0.39.0),' \
+    '          security (semgrep >=1.50.0, osv-scanner >=1.7.0, syft >=1.0.0, grype >=0.74.0, checkov >=3.2.0).' \
     '          No default or implied profiles. Bundles live in brewfiles/<profile>.Brewfile.' \
     'Profiles also come from REPO/.caulking-profiles: one name per line, # comments.' \
     'bootstrap: macOS only; install missing formulae. --dry-run prints the plan.' \
@@ -229,6 +229,12 @@ toolchain_check() {
   minor="${BASH_REMATCH[2]}"
   patch="${BASH_REMATCH[4]:-0}"
   suffix="${BASH_REMATCH[5]:-}"
+  if [[ "$formula" == govulncheck && "$output" =~ govulncheck@v?([0-9]{1,6})\.([0-9]{1,6})(\.([0-9]{1,6}))?([-+][^[:space:]]*)? ]]; then
+    major="${BASH_REMATCH[1]}"
+    minor="${BASH_REMATCH[2]}"
+    patch="${BASH_REMATCH[4]:-0}"
+    suffix="${BASH_REMATCH[5]:-}"
+  fi
   if [[ "$formula" == gitleaks ]]; then
     if [[ ! "$output" =~ (^|[[:space:]])v?([0-9]{1,6})\.([0-9]{1,6})\.([0-9]{1,6})([-+][^[:space:]]*)?($|[[:space:]]) ]]; then
       toolchain_error "unrecognized gitleaks semantic version: $output"
@@ -259,10 +265,13 @@ toolchain_check() {
       hadolint) min_version=2.12.0 ;;
       ruff) min_version=0.4.0 ;;
       mypy) min_version=1.8.0 ;;
+      pyright) min_version=1.1.350 ;;
       bandit) min_version=1.7.5 ;;
       pip-audit) min_version=2.7.0 ;;
       go) min_version=1.22.0 ;;
       golangci-lint) min_version=1.59.0 ;;
+      gosec) min_version=2.18.0 ;;
+      govulncheck) min_version=1.0.0 ;;
       node) min_version=20.0.0 ;;
       ruby) min_version=3.2.0 ;;
       rubocop) min_version=1.60.0 ;;
@@ -270,12 +279,15 @@ toolchain_check() {
       terraform) min_version=1.5.0 ;;
       tflint) min_version=0.50.0 ;;
       yamllint) min_version=1.35.0 ;;
+      yamlfmt) min_version=0.13.0 ;;
       actionlint) min_version=1.7.0 ;;
+      zizmor) min_version=1.0.0 ;;
       markdownlint-cli) min_version=0.39.0 ;;
       semgrep) min_version=1.50.0 ;;
       osv-scanner) min_version=1.7.0 ;;
       syft) min_version=1.0.0 ;;
       grype) min_version=0.74.0 ;;
+      checkov) min_version=3.2.0 ;;
     esac
     if [[ -n "$min_version" ]]; then
       min_major="${min_version%%.*}"
@@ -407,14 +419,14 @@ toolchain_main() {
         ;;
       shell) toolchain_add_formula shellcheck shfmt ;;
       container) toolchain_add_formula hadolint ;;
-      python) toolchain_add_formula ruff mypy bandit pip-audit ;;
-      go) toolchain_add_formula go golangci-lint ;;
+      python) toolchain_add_formula ruff mypy pyright bandit pip-audit ;;
+      go) toolchain_add_formula go golangci-lint gosec govulncheck ;;
       javascript) toolchain_add_formula node ;;
       ruby) toolchain_add_formula ruby rubocop ;;
       opentofu) toolchain_add_formula opentofu tflint ;;
       terraform) toolchain_add_formula terraform tflint ;;
-      docs) toolchain_add_formula yamllint actionlint markdownlint-cli ;;
-      security) toolchain_add_formula semgrep osv-scanner syft grype ;;
+      docs) toolchain_add_formula yamllint yamlfmt actionlint zizmor markdownlint-cli ;;
+      security) toolchain_add_formula semgrep osv-scanner syft grype checkov ;;
     esac
   done
   if [[ "$action" == run || "$action" == hook-run ]] && ((has_baseline == 0)); then

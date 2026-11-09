@@ -68,9 +68,12 @@ repos:
       # SAST: Security static analysis
       # Satisfies: NIST SA-11(1) (Static Analysis), SSDF PW.7, RA-5
       # =========================================================================
-      # DEFAULT: gosec-selfcontained — Go security checker (self-installs via
-      # language: golang; legacy `- id: gosec` available if installed via `go install`)
-      - id: gosec-selfcontained
+      # DEFAULT: gosec — Go security checker (installed by `go` profile via Homebrew;
+      # use `- id: gosec-selfcontained` for bare Linux/CI without a pre-installed toolchain)
+      - id: gosec
+      #
+      # ALTERNATIVE: gosec-selfcontained (self-installs via language: golang)
+      # - id: gosec-selfcontained
       #
       # ALTERNATIVE: semgrep with Go rules (category: SAST; requires `security` profile)
       # - id: semgrep
@@ -80,9 +83,12 @@ repos:
       # SCA: Dependency vulnerability scanning
       # Satisfies: NIST RA-5 (Vulnerability Scanning), SSDF PW.4, RV.1
       # =========================================================================
-      # DEFAULT: govulncheck-selfcontained — Official Go vulnerability scanner
-      # (self-installs via language: golang; `- id: govulncheck` available via `go install`)
-      - id: govulncheck-selfcontained
+      # DEFAULT: govulncheck — Official Go vulnerability scanner (installed by `go`
+      # profile via Homebrew; use `- id: govulncheck-selfcontained` for bare Linux/CI)
+      - id: govulncheck
+      #
+      # ALTERNATIVE: govulncheck-selfcontained (self-installs via language: golang)
+      # - id: govulncheck-selfcontained
       #
       # ALTERNATIVE: osv-scanner (category: SCA)
       # Universal scanner supporting Go + other languages

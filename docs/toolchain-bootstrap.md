@@ -30,14 +30,14 @@ container
 | `baseline` | `brewfiles/baseline.Brewfile` | `gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0` |
 | `shell` | `brewfiles/shell.Brewfile` | `shellcheck >=0.9.0`, `shfmt >=3.6.0` |
 | `container` | `brewfiles/container.Brewfile` | `hadolint >=2.12.0` |
-| `python` | `brewfiles/python.Brewfile` | `ruff >=0.4.0`, `mypy >=1.8.0`, `bandit >=1.7.5`, `pip-audit >=2.7.0` |
-| `go` | `brewfiles/go.Brewfile` | `go >=1.22.0`, `golangci-lint >=1.59.0` |
+| `python` | `brewfiles/python.Brewfile` | `ruff >=0.4.0`, `mypy >=1.8.0`, `pyright >=1.1.350`, `bandit >=1.7.5`, `pip-audit >=2.7.0` |
+| `go` | `brewfiles/go.Brewfile` | `go >=1.22.0`, `golangci-lint >=1.59.0`, `gosec >=2.18.0`, `govulncheck >=1.0.0` |
 | `javascript` | `brewfiles/javascript.Brewfile` | `node >=20.0.0` |
 | `ruby` | `brewfiles/ruby.Brewfile` | `ruby >=3.2.0`, `rubocop >=1.60.0` |
 | `opentofu` | `brewfiles/opentofu.Brewfile` | `opentofu` (`tofu >=1.6.0`), `terraform-linters/tap/tflint >=0.50.0` |
 | `terraform` | `brewfiles/terraform.Brewfile` | `hashicorp/tap/terraform >=1.5.0`, `terraform-linters/tap/tflint >=0.50.0` |
-| `docs` | `brewfiles/docs.Brewfile` | `yamllint >=1.35.0`, `actionlint >=1.7.0`, `markdownlint-cli` (`markdownlint >=0.39.0`) |
-| `security` | `brewfiles/security.Brewfile` | `semgrep >=1.50.0`, `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0` |
+| `docs` | `brewfiles/docs.Brewfile` | `yamllint >=1.35.0`, `yamlfmt >=0.13.0`, `actionlint >=1.7.0`, `zizmor >=1.0.0`, `markdownlint-cli` (`markdownlint >=0.39.0`) |
+| `security` | `brewfiles/security.Brewfile` | `semgrep >=1.50.0`, `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0`, `checkov >=3.2.0` |
 
 No profiles are implied. Repeated `--profile` flags add to the file's selections,
 and shared tools (such as `tflint` across `opentofu` and `terraform`) are
@@ -100,10 +100,26 @@ Exit codes: `0` means selected tools are healthy; `1` means a missing, outdated,
 or broken dependency or installation/probe failure; `2` means invalid input.
 `run` propagates the runner's exit code, including genuine lint failures.
 
+## 5-Pillar Per-Language Minimum Baseline Matrix
+
+Across all **11 profiles**, **31 profile tools**, **65 reusable hooks**, and **9 starter configs**, caulking covers five verification pillars (`FMT`, `LINT`, `CHECK`, `SAST`, `SCA`):
+
+| Ecosystem | Profiles | `FMT` | `LINT` | `CHECK` | `SAST` | `SCA` |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Baseline (All)** | `baseline` | `trailing-whitespace`, `end-of-file-fixer` | `check-merge-conflict`, `check-added-large-files` | `check-yaml-selfcontained`, `check-json-selfcontained`, `check-gsa-email` | Global `gitleaks` (`pre-commit` + `pre-push`) | — |
+| **Shell** | `baseline`, `shell` | `shfmt` / `shfmt-check` | `shellcheck` | `bash-syntax` (`bash -n`) | `shellcheck` + `semgrep` | — |
+| **Python** | `baseline`, `python` | `ruff-format` / `ruff-format-check` | `ruff-check` | `mypy` / `pyright` | `bandit` | `pip-audit` |
+| **Go** | `baseline`, `go` | `go-fmt` / `gofmt-selfcontained` | `golangci-lint` | `go-vet` / `go-vet-selfcontained` | `gosec` / `gosec-selfcontained` | `govulncheck` / `govulncheck-selfcontained` |
+| **JS / TS** | `baseline`, `javascript`, `security` | `prettier` / `biome-check` | `eslint` / `biome-check` | `tsc` | `semgrep` | `npm-audit` / `pnpm-audit` / `yarn-audit` / `retire-js` / `osv-scanner-lockfile` |
+| **Ruby / InSpec** | `baseline`, `ruby`, `security` | `rubocop` | `rubocop` / `rubocop-check` | `ruby-check` (`ruby -c`) | `semgrep` | `osv-scanner-lockfile` / `bundle-audit` |
+| **OpenTofu / Terraform** | `baseline`, `opentofu` \| `terraform`, `security` | `tofu-fmt` \| `terraform-fmt` | `tflint` | `tofu-validate` \| `terraform-validate` | `semgrep` / `checkov` | `osv-scanner` |
+| **Containers** | `baseline`, `container`, `security` | — | `hadolint` | `hadolint` | `semgrep` | `grype` + `syft` |
+| **Docs / YAML / CI** | `baseline`, `docs` | `yamlfmt` / `markdownlint` | `yamllint` / `markdownlint-check` | `actionlint` / `check-yaml-selfcontained` | `zizmor` | — |
+
 ## Coverage boundaries
 
 - **Reusable hooks and starter configs:** `.pre-commit-hooks.yaml` at the root
-  of `cloud-gov/caulking` defines all 56 reusable hooks. All 9 copy-to-start
+  of `cloud-gov/caulking` defines all 65 reusable hooks. All 9 copy-to-start
   configurations in `starter-configs/` include `.caulking-profiles` pairings.
 - **Self-contained syntax hooks:** `check-yaml-selfcontained` and
   `check-json-selfcontained` use runner-managed Python environments (`PyYAML==6.0.3`
@@ -126,13 +142,13 @@ or broken dependency or installation/probe failure; `2` means invalid input.
   `make verify-hooks`, `make test-python`, and `make verify-release`.
 - `/bin/bash tests/toolchain.sh` and `./tests/toolchain.sh`: isolated checks
   exercising all 11 profiles (`baseline`, `shell`, `container`, `python`, `go`,
-  `javascript`, `ruby`, `opentofu`, `terraform`, `docs`, `security`), all 25
+  `javascript`, `ruby`, `opentofu`, `terraform`, `docs`, `security`), all 31
   profile tools, minimum-version floor rejection, upgraded-version acceptance,
   `opentofu` (`tofu`) and `markdownlint-cli` (`markdownlint`) binary resolution,
   `go version` probing, `tflint` Caskroom/opt resolution, and `brewfiles/*.Brewfile`
   presence.
 - `python3 scripts/validate-hooks.py` and `bash scripts/test-validate-hooks.sh`:
-  validates all 56 hooks in `.pre-commit-hooks.yaml` and all 9 `starter-configs/*.yaml`
+  validates all 65 hooks in `.pre-commit-hooks.yaml` and all 9 `starter-configs/*.yaml`
   files against `PROFILE_BINARIES`.
 - `python3 -m unittest discover -s tests -p "test_python_checks.py" -v` and
   `python3 tests/try_repo_python_checks.py`: verifies isolated YAML/JSON hooks.

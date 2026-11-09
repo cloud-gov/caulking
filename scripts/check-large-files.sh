@@ -10,6 +10,7 @@ set -euo pipefail
 
 # Parse arguments
 MAX_KB=500
+FILES=()
 for arg in "$@"; do
   case $arg in
     --maxkb=*)
@@ -19,7 +20,9 @@ for arg in "$@"; do
         echo "ERROR: --maxkb must be a positive integer, got: $MAX_KB" >&2
         exit 1
       fi
-      shift
+      ;;
+    *)
+      FILES+=("$arg")
       ;;
   esac
 done
@@ -27,15 +30,26 @@ done
 MAX_BYTES=$((MAX_KB * 1024))
 EXIT_CODE=0
 
-# Use null-delimited output to handle filenames with spaces safely
-while IFS= read -r -d '' file; do
-  if [[ -f "$file" ]]; then
-    size=$(wc -c < "$file")
+check_file() {
+  local file="$1" size
+  if [[ -f "$file" && ! -L "$file" ]]; then
+    size=$(LC_ALL=C wc -c < "$file")
     if ((size > MAX_BYTES)); then
       echo "ERROR: $file is $((size / 1024))KB (max: ${MAX_KB}KB)" >&2
       EXIT_CODE=1
     fi
   fi
-done < <(git diff --cached --name-only --diff-filter=ACM -z 2> /dev/null || true)
+}
 
-exit $EXIT_CODE
+if ((${#FILES[@]} > 0)); then
+  for file in "${FILES[@]}"; do
+    check_file "$file"
+  done
+else
+  # Use null-delimited output to handle filenames with spaces safely
+  while IFS= read -r -d '' file; do
+    check_file "$file"
+  done < <(git diff --cached --name-only --diff-filter=ACM -z 2> /dev/null || true)
+fi
+
+exit "$EXIT_CODE"
