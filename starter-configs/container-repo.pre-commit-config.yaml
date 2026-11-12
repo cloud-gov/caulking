@@ -1,0 +1,157 @@
+# ===========================================================================
+# Pre-commit Configuration for Container/Dockerfile Repositories
+# ===========================================================================
+# This configuration follows cloud.gov pre-commit standardization.
+# Each category has ONE default tool enabled; alternatives are commented.
+#
+# This example covers TWO use cases:
+#   1. CONTAINER PROJECTS: Repos that build and deploy container images
+#   2. DOCKER-AS-TESTING: Repos that use Docker for local testing/dev
+#
+# Categories:
+#   - HYGIENE: Generic file quality (all repos)
+#   - CONTAINER LINTING: Dockerfile best practices
+#   - CONTAINER SECURITY: Image vulnerability scanning
+#   - SBOM: Software Bill of Materials generation
+#
+# Setup (cloud.gov staff):
+#   1. Install caulking first: https://github.com/cloud-gov/caulking
+#   2. Copy this file to your repo root as .pre-commit-config.yaml
+#   3. Run `caulking.sh bootstrap --repo .` and `caulking.sh doctor --repo .`
+#      (Caulking reads .pre-commit-config.yaml directly and installs/verifies
+#      only the Homebrew tools required by the hooks enabled in this file.)
+#   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
+#
+# References:
+#   - ADR-0004: Supply chain security assessment
+#   - ADR-0006: Language security tool selection
+# ===========================================================================
+
+repos:
+  # Canonical consolidated hook provider endpoint.
+  # Legacy compatibility endpoint (frozen until the first consolidated caulking tag
+  # is published): https://github.com/cloud-gov/pre-commit-templates (rev: v0.6.0)
+  - repo: https://github.com/cloud-gov/caulking
+    rev: v3.4.0  # Pin to specific version
+    hooks:
+      # =========================================================================
+      # HYGIENE: Generic file quality checks
+      # Satisfies: NIST SA-15 (Development Process), SSDF PO.3
+      # =========================================================================
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      # Isolated self-contained syntax checks (legacy `check-yaml` / `check-json`
+      # remain supported if ambient `python3` + `PyYAML` is preferred):
+      - id: check-yaml-selfcontained
+      - id: check-json-selfcontained
+
+      # =========================================================================
+      # CONTAINER LINTING: Dockerfile best practices
+      # Satisfies: NIST SA-11 (Developer Testing), SSDF PW.7
+      # =========================================================================
+      # DEFAULT: hadolint — Dockerfile linter with best practice rules
+      - id: hadolint
+      #
+      # hadolint checks for:
+      # - Pinned base image versions (DL3006)
+      # - Avoiding latest tag (DL3007)
+      # - Package pinning in apt-get (DL3008)
+      # - Multi-stage build optimization
+      # - Security anti-patterns
+
+      # =========================================================================
+      # CONTAINER SECURITY: Vulnerability scanning
+      # Satisfies: NIST RA-5 (Vulnerability Scanning), SSDF PW.4, RV.1
+      # =========================================================================
+      # NOTE: grype scans are typically run in CI after image build.
+      # For pre-commit, use grype to scan the project directory for
+      # vulnerable dependencies that would be copied into the image.
+      #
+      # DEFAULT: grype — Scans project dependencies (not built images)
+      - id: grype
+      #
+      # To scan a built image, run manually:
+      #   grype <image-name>:<tag> --fail-on high
+
+      # =========================================================================
+      # SBOM: Software Bill of Materials (manual stage)
+      # Satisfies: NIST SA-12 (Supply Chain), EO 14028
+      # =========================================================================
+      # SBOM generation is typically done in CI after image build.
+      # This hook is available for manual invocation:
+      #   pre-commit run syft --hook-stage manual
+      #
+      # - id: syft
+      #   # Generates CycloneDX SBOM from project directory
+
+      # =========================================================================
+      # Shell scripts (entrypoints, build scripts)
+      # =========================================================================
+      - id: shellcheck
+
+      # =========================================================================
+      # GSA compliance
+      # =========================================================================
+      - id: check-gsa-email
+
+# =============================================================================
+# USE CASE: Docker-as-Testing-Tool
+# =============================================================================
+# If your repo uses Docker only for local testing (not deploying containers),
+# you may want a lighter configuration. Keep hadolint for Dockerfile quality,
+# but skip grype since you're not shipping container images.
+#
+# Minimal config for testing-only Docker usage:
+#
+# repos:
+#   - repo: https://github.com/cloud-gov/caulking
+#     rev: v3.4.0
+#     hooks:
+#       - id: check-merge-conflict
+#       - id: check-added-large-files
+#       - id: trailing-whitespace
+#       - id: end-of-file-fixer
+#       - id: check-yaml-selfcontained
+#       - id: check-json-selfcontained
+#       - id: hadolint           # Still lint Dockerfiles for best practices
+#       - id: shellcheck         # Lint any shell scripts
+#       - id: check-gsa-email
+#
+# Then add your language-specific hooks (Python, Go, etc.) as needed.
+# =============================================================================
+
+# =============================================================================
+# MULTI-LANGUAGE CONTAINER PROJECTS
+# =============================================================================
+# If your container project includes application code, combine this config
+# with the appropriate language hooks. Example for a Python app in a container:
+#
+# repos:
+#   - repo: https://github.com/cloud-gov/caulking
+#     rev: v3.4.0
+#     hooks:
+#       # Hygiene
+#       - id: check-merge-conflict
+#       - id: check-added-large-files
+#       - id: check-yaml-selfcontained
+#       - id: check-json-selfcontained
+#
+#       # Container
+#       - id: hadolint
+#       - id: grype
+#
+#       # Python (the app inside the container)
+#       - id: ruff-check
+#       - id: ruff-format
+#       - id: bandit
+#       - id: pip-audit
+#
+#       # Shell (entrypoint scripts)
+#       - id: shellcheck
+#
+#       # Compliance
+#       - id: check-gsa-email
+# =============================================================================

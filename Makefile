@@ -4,10 +4,15 @@
 
 CAULKING_VERSION := $(shell cat VERSION)
 MIN_GITLEAKS_VERSION := 8.21.0
+PYTHON_YAML := $(shell for py in python3 /opt/homebrew/opt/pre-commit/libexec/bin/python /usr/bin/python3; do if command -v "$$py" >/dev/null 2>&1 && "$$py" -c "import yaml" >/dev/null 2>&1; then echo "$$py"; break; fi; done)
+ifeq ($(PYTHON_YAML),)
+PYTHON_YAML := python3
+endif
 
 .DEFAULT_GOAL := help
 
 .PHONY: help install uninstall verify audit clean ensure-tools test lint status \
+        test-toolchain verify-hooks test-python test-python-try-repo verify-release check-consolidated \
         docker-test docker-full docker-shell docker-debian docker-alpine \
         docker-ci docker-fresh docker-upgrade docker-all
 
@@ -27,6 +32,11 @@ help:
 	@echo "  uninstall     Remove installed hooks and restore prior core.hooksPath (if recorded)"
 	@echo "  lint          Run repo lint/format hooks over all files (prek/pre-commit)"
 	@echo "  test          Run repo tests (fast bash tests)"
+	@echo "  test-toolchain Run selective profile, Brewfile, and SemVer floor tests"
+	@echo "  verify-hooks  Validate .pre-commit-hooks.yaml and hook language policy"
+	@echo "  test-python   Run self-contained Python syntax check unit tests"
+	@echo "  verify-release Validate VERSION and Release Please configuration"
+	@echo "  check-consolidated Run all local tests, toolchain, hook, Python, and release checks"
 	@echo "  clean         Print manual reset instructions (does not delete ~/.config)"
 	@echo ""
 	@echo "Docker (local Linux testing):"
@@ -54,6 +64,27 @@ help:
 
 test:
 	@./tests/run.sh
+
+test-toolchain:
+	@./tests/toolchain.sh
+
+verify-hooks:
+	@$(PYTHON_YAML) scripts/validate-hooks.py
+	@PYTHON_BIN="$(PYTHON_YAML)" bash scripts/test-validate-hooks.sh
+	@bash scripts/test-trailing-whitespace.sh
+	@bash scripts/test-end-of-file-fixer.sh
+
+test-python:
+	@$(PYTHON_YAML) -m unittest discover -s tests -p 'test_python_checks.py' -v
+
+test-python-try-repo:
+	@$(PYTHON_YAML) tests/try_repo_python_checks.py
+
+verify-release:
+	@python3 scripts/check-release-config.py
+
+check-consolidated: test test-toolchain verify-hooks test-python verify-release
+	@echo "✅ All consolidated caulking, toolchain, hook, Python, and release checks passed!"
 
 lint:
 	@./scripts/lint.sh

@@ -1,0 +1,105 @@
+# ===========================================================================
+# Pre-commit Configuration for Go Repositories
+# ===========================================================================
+# This configuration follows cloud.gov pre-commit standardization.
+# Each category has ONE default tool enabled; alternatives are commented.
+#
+# Categories:
+#   - HYGIENE: Generic file quality (all repos)
+#   - LINTING: Go code quality and formatting
+#   - SAST: Security static analysis
+#   - SCA: Dependency vulnerability scanning
+#
+# Setup (cloud.gov staff):
+#   1. Install caulking first: https://github.com/cloud-gov/caulking
+#   2. Copy this file to your repo root as .pre-commit-config.yaml
+#   3. Run `caulking.sh bootstrap --repo .` and `caulking.sh doctor --repo .`
+#      (Caulking reads .pre-commit-config.yaml directly and installs/verifies
+#      only the Homebrew tools required by the hooks enabled in this file.)
+#   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
+#   Note: golangci-lint v2 requires `version: "2"` in `.golangci.yml`.
+#
+# References:
+#   - ADR-0004: Supply chain security assessment
+#   - ADR-0006: Language security tool selection
+# ===========================================================================
+
+repos:
+  # Canonical consolidated hook provider endpoint.
+  # Legacy compatibility endpoint (frozen until the first consolidated caulking tag
+  # is published): https://github.com/cloud-gov/pre-commit-templates (rev: v0.6.0)
+  - repo: https://github.com/cloud-gov/caulking
+    rev: v3.4.0  # Pin to specific version
+    hooks:
+      # =========================================================================
+      # HYGIENE: Generic file quality checks
+      # Satisfies: NIST SA-15 (Development Process), SSDF PO.3
+      # =========================================================================
+      # DEFAULT: All hygiene hooks — required for all repositories
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      # Isolated self-contained syntax checks (legacy `check-yaml` / `check-json`
+      # remain supported if ambient `python3` + `PyYAML` is preferred):
+      - id: check-yaml-selfcontained
+      - id: check-json-selfcontained
+
+      # =========================================================================
+      # LINTING: Go code quality and formatting
+      # Satisfies: NIST SA-11 (Developer Testing), SSDF PW.7
+      # =========================================================================
+      # DEFAULT: golangci-lint — Fast meta-linter aggregating 100+ linters
+      - id: golangci-lint
+      #
+      # Supporting tools (recommended with golangci-lint):
+      - id: go-fmt
+      - id: go-vet
+      #
+      # ALTERNATIVE: staticcheck (category: LINTING)
+      # Deep code analysis, included in golangci-lint by default
+      # Install separately: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      # =========================================================================
+      # SAST: Security static analysis
+      # Satisfies: NIST SA-11(1) (Static Analysis), SSDF PW.7, RA-5
+      # =========================================================================
+      # DEFAULT: gosec — Go security checker (installed by `go` profile via Homebrew;
+      # use `- id: gosec-selfcontained` for bare Linux/CI without a pre-installed toolchain)
+      - id: gosec
+      #
+      # ALTERNATIVE: gosec-selfcontained (self-installs via language: golang)
+      # - id: gosec-selfcontained
+      #
+      # ALTERNATIVE: semgrep with Go rules (category: SAST; requires `security` profile)
+      # - id: semgrep
+      #   args: ["--config", "p/golang"]
+
+      # =========================================================================
+      # SCA: Dependency vulnerability scanning
+      # Satisfies: NIST RA-5 (Vulnerability Scanning), SSDF PW.4, RV.1
+      # =========================================================================
+      # DEFAULT: govulncheck — Official Go vulnerability scanner (installed by `go`
+      # profile via Homebrew; use `- id: govulncheck-selfcontained` for bare Linux/CI)
+      - id: govulncheck
+      #
+      # ALTERNATIVE: govulncheck-selfcontained (self-installs via language: golang)
+      # - id: govulncheck-selfcontained
+      #
+      # ALTERNATIVE: osv-scanner (category: SCA)
+      # Universal scanner supporting Go + other languages
+      # - id: osv-scanner
+      #
+      # ALTERNATIVE: nancy (category: SCA)
+      # Install separately: go install github.com/sonatype-nexus-community/nancy@latest
+
+      # =========================================================================
+      # Shell scripts (if present in repo)
+      # =========================================================================
+      - id: shellcheck
+
+      # =========================================================================
+      # GSA compliance
+      # =========================================================================
+      - id: check-gsa-email

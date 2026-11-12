@@ -82,46 +82,7 @@ Recommended (auto-installed via Homebrew on macOS):
 - `brew` (macOS package manager)
 - `prek` (fast Git hook manager, preferred) **or** `pre-commit` (for running repo-local hooks)
 
-**Note:** If you have `brew` installed, `make install` will automatically install `gitleaks`, `prek`, and `pre-commit` if they're missing. If `pre-commit` is installed from a non-Homebrew source (pip, pipx, mise), it will be migrated to Homebrew for easier updates and version consistency.
-
-### Installing gitleaks
-
-**macOS (Homebrew):**
-
-```bash
-brew install gitleaks
-```
-
-If gitleaks is missing during `make install`, Caulking will attempt to install it via Homebrew automatically.
-
-**Linux (manual):**
-
-```bash
-# Download latest release (adjust version and arch as needed)
-GITLEAKS_VERSION=8.30.1
-ARCH=x64  # or arm64 for ARM systems
-
-curl -sSfL -o /tmp/gitleaks.tar.gz \
-  "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz"
-
-sudo tar xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
-rm /tmp/gitleaks.tar.gz
-
-# Verify installation
-gitleaks version
-```
-
-**Linux (package managers):**
-
-```bash
-# Arch Linux (AUR)
-yay -S gitleaks
-
-# NixOS
-nix-env -iA nixpkgs.gitleaks
-```
-
-For other distributions, see the [gitleaks releases page](https://github.com/gitleaks/gitleaks/releases).
+**Note:** If you have `brew` installed, `make install` will automatically install `gitleaks` and `prek` if they're missing, while preserving any existing user-managed `pre-commit` installation.
 
 ### Installing gitleaks
 
@@ -283,6 +244,114 @@ If you use it often, your rules are wrong and you should fix them.
 ---
 
 ## Linting this repo (contributors)
+
+### Releases and stable versions
+
+Use the latest published non-prerelease tag for stable installation; `main` is
+development. Historical VERSION labels do not establish published tags. See
+[release management](docs/releases.md) for Release Please, initial bootstrap,
+Conventional Commits, and independent Homebrew tool upgrades.
+
+### Selective workstation toolchain & Brewfile bundles
+
+`.pre-commit-config.yaml` is the single repository configuration file—no
+separate `.caulking-profiles` file is needed. You can detect a repository's
+languages, audit an existing configuration, generate a tailored multi-stack
+`.pre-commit-config.yaml`, and provision its Homebrew dependencies in four
+commands:
+
+```bash
+./caulking.sh detect --repo /path/to/repo
+./caulking.sh init --repo /path/to/repo --write
+./caulking.sh bootstrap --repo /path/to/repo
+./caulking.sh doctor --repo /path/to/repo
+```
+
+- **`./caulking.sh detect --repo /path/to/repo`:** Scans tracked files in the
+  repository (ignoring `node_modules/`, `.venv/`, `venv/`, `vendor/`,
+  `fixtures/`, `testdata/`, `examples/`) to detect all active stacks (`shell`,
+  `container`, `python`, `go`, `javascript`, `ruby`, `opentofu` / `terraform`,
+  `docs`), recommends the exact 5-pillar hooks (`FMT`, `LINT`, `CHECK`, `SAST`,
+  `SCA`) and Homebrew profiles for the repository, and if
+  `.pre-commit-config.yaml` already exists, audits it for legacy
+  `cloud-gov/pre-commit-templates` URLs, legacy ambient `check-yaml`/`check-json`
+  hooks, and missing hooks for detected file types.
+- **`./caulking.sh init --repo /path/to/repo [--interactive|-i] [--stack NAME]... [--no-stack NAME]... [--write] [--force]`:**
+  Generates a tailored, multi-stack `.pre-commit-config.yaml` combining all
+  detected languages in the repository. Pass `--interactive` (`-i`) to launch a
+  9-row checkbox TUI pre-checked with the detected stacks (`↑`/`↓` or `j`/`k` +
+  `Space`, `1`–`9` to toggle, `Enter` to confirm, `q` to cancel), or pass
+  `--stack NAME` / `--no-stack NAME` to toggle stacks non-interactively. Prints
+  to stdout by default (dry-run preview); `--write` writes
+  `<repo>/.pre-commit-config.yaml` atomically (refusing to overwrite an existing
+  config unless `--force` is passed, and always refusing symlinks).
+
+`caulking.sh bootstrap --repo .`,
+`caulking.sh doctor --repo .`, `caulking.sh run --repo .`, and global hooks
+(`hook-run`) read hook IDs directly from `.pre-commit-config.yaml` (using a
+bounded `<=64 KiB`, `<=1024 lines`, NUL-rejected, `eval`-free parser and static
+allowlist) and map each enabled hook to the required Homebrew formulae alongside
+the `baseline` tools (`gitleaks`, `prek`, `bash`):
+
+```bash
+./caulking.sh bootstrap --repo . --dry-run
+./caulking.sh bootstrap --repo .
+./caulking.sh doctor --repo .
+make test-toolchain
+```
+
+Caulking also includes 11 selective Homebrew bundles (`brewfiles/<profile>.Brewfile`)
+and optional `--profile <name>` convenience flags covering 31 profile tools
+(`gitleaks >=8.21.0`, `prek >=0.4.0`, `bash >=4.0.0`,
+`shellcheck >=0.9.0`, `shfmt >=3.6.0`, `hadolint >=2.12.0`, `ruff >=0.4.0`,
+`mypy >=1.8.0`, `pyright >=1.1.350`, `bandit >=1.7.5`, `pip-audit >=2.7.0`,
+`go >=1.22.0`, `golangci-lint >=1.59.0`, `gosec >=2.18.0`, `govulncheck >=1.0.0`,
+`node >=20.0.0`, `ruby >=3.2.0`, `rubocop >=1.60.0`, `opentofu >=1.6.0`,
+`terraform >=1.5.0`, `tflint >=0.50.0`, `yamllint >=1.35.0`, `yamlfmt >=0.13.0`,
+`actionlint >=1.7.0`, `zizmor >=1.0.0`, `markdownlint-cli >=0.39.0`,
+`semgrep >=1.50.0`, `osv-scanner >=1.7.0`, `syft >=1.0.0`, `grype >=0.74.0`,
+`checkov >=3.2.0`) for `baseline`, `shell`, `container`, `python`, `go`,
+`javascript`, `ruby`, `opentofu`, `terraform`, `docs`, and `security`.
+`caulking doctor` enforces justified minimum supported SemVer floors for each
+tool while allowing developers to run `brew upgrade` freely without waiting for
+a caulking release. Global hooks automatically use toolchain-scoped `PATH` for
+repositories with `.pre-commit-config.yaml` when installed with `./caulking.sh setup --no-install`
+(with `CAULKING_NO_TOOLCHAIN_PATH=1` available as an opt-out escape hatch).
+
+### Reusable pre-commit hooks and starter configurations
+
+Caulking is the consolidated home for cloud.gov's reusable pre-commit hooks
+(`.pre-commit-hooks.yaml`) and copy-to-start configurations (`starter-configs/`),
+superseding the frozen `cloud-gov/pre-commit-templates` repository:
+
+- **65 reusable hooks** across hygiene, shell (`shellcheck`, `shfmt`,
+  `shfmt-check`, `bash-syntax`), Python (`ruff-check`, `ruff-format`,
+  `ruff-format-check`, `mypy`, `pyright`, `bandit`, `pip-audit`), Go (`go-fmt`,
+  `go-vet`, `golangci-lint`, `gosec`, `govulncheck`), JS/TS (`eslint`,
+  `prettier`, `tsc`, `biome-check`), Ruby (`ruby-check`, `rubocop`,
+  `rubocop-check`, `bundle-audit`), IaC (`opentofu`, `terraform`, `tflint`,
+  `checkov`), containers (`hadolint`), documentation/YAML/CI (`yamlfmt`,
+  `yamlfmt-check`, `yamllint`, `actionlint`, `zizmor`, `markdownlint`,
+  `markdownlint-check`), compliance (`check-gsa-email`), and universal scanners
+  (`semgrep`, `osv-scanner`, `syft`, `grype`).
+- **5-Pillar Per-Language Minimum Baseline Matrix (`FMT`, `LINT`, `CHECK`, `SAST`, `SCA`)**
+  spanning all 11 profiles, 31 profile tools, 65 reusable hooks, and 9 starter
+  configurations.
+- **Self-contained syntax and Go hooks** (`check-yaml-selfcontained`,
+  `check-json-selfcontained`, `gofmt-selfcontained`, `go-vet-selfcontained`,
+  `gosec-selfcontained`, `govulncheck-selfcontained`) that provision isolated
+  environments for CI and containers without ambient `PyYAML` or Go installations.
+- **9 starter configurations** in `starter-configs/` ready to copy directly as
+  `.pre-commit-config.yaml` (`container-repo`, `docs-yaml-repo`, `go-repo`,
+  `go-repo-selfcontained`, `javascript-repo`, `opentofu-repo`, `python-repo`,
+  `ruby-repo`, and `terraform-repo`).
+
+See [toolchain bootstrap](docs/toolchain-bootstrap.md),
+[release management](docs/releases.md), [ADR-0002](docs/adr/ADR-0002-template-consolidation-and-brewfile-bundles.md),
+and [troubleshooting](TROUBLESHOOTING.md) for details. Run `make check-consolidated`
+to validate all hooks, profiles, Python checks, and release invariants.
+
+### Repository linting
 
 This repo includes a local `.pre-commit-config.yaml` for formatting and linting itself.
 

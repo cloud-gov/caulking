@@ -1,0 +1,116 @@
+# ===========================================================================
+# Pre-commit Configuration for JavaScript/TypeScript Repositories
+# ===========================================================================
+# This configuration follows cloud.gov pre-commit standardization.
+# Each category has ONE default tool enabled; alternatives are commented.
+#
+# Categories:
+#   - HYGIENE: Generic file quality (all repos)
+#   - LINTING: Code quality and formatting
+#   - SAST: Security static analysis
+#   - SCA: Dependency vulnerability scanning
+#
+# Setup (cloud.gov staff):
+#   1. Install caulking first: https://github.com/cloud-gov/caulking
+#   2. Copy this file to your repo root as .pre-commit-config.yaml
+#   3. Run `caulking.sh bootstrap --repo .` and `caulking.sh doctor --repo .`
+#      (Caulking reads .pre-commit-config.yaml directly and installs/verifies
+#      only the Homebrew tools required by the hooks enabled in this file.)
+#   4. Install Node tools: npm install --save-dev eslint prettier typescript
+#   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
+#
+# References:
+#   - ADR-0004: Supply chain security assessment
+#   - ADR-0005: JavaScript/TypeScript tool selection
+#   - ADR-0006: Language security tool selection
+# ===========================================================================
+
+repos:
+  # Canonical consolidated hook provider endpoint.
+  # Legacy compatibility endpoint (frozen until the first consolidated caulking tag
+  # is published): https://github.com/cloud-gov/pre-commit-templates (rev: v0.6.0)
+  - repo: https://github.com/cloud-gov/caulking
+    rev: v3.4.0  # Pin to specific version
+    hooks:
+      # =========================================================================
+      # HYGIENE: Generic file quality checks
+      # Satisfies: NIST SA-15 (Development Process), SSDF PO.3
+      # =========================================================================
+      # DEFAULT: All hygiene hooks — required for all repositories
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      # Isolated self-contained syntax checks (legacy `check-yaml` / `check-json`
+      # remain supported if ambient `python3` + `PyYAML` is preferred):
+      - id: check-yaml-selfcontained
+      - id: check-json-selfcontained
+
+      # =========================================================================
+      # LINTING: JavaScript/TypeScript code quality and formatting
+      # Satisfies: NIST SA-11 (Developer Testing), SSDF PW.7
+      # =========================================================================
+      # DEFAULT: ESLint + Prettier — Industry standard toolchain
+      - id: eslint
+      - id: prettier
+      #
+      # OPTIONAL: TypeScript type checking (requires tsconfig.json)
+      - id: tsc
+      #
+      # ALTERNATIVE: Biome (category: LINTING)
+      # Faster Rust-based tool replacing ESLint + Prettier
+      # Uncomment below and remove eslint/prettier hooks above
+      # - id: biome-check
+
+      # =========================================================================
+      # SAST: Security static analysis
+      # Satisfies: NIST SA-11(1) (Static Analysis), SSDF PW.7, RA-5
+      # =========================================================================
+      # DEFAULT: semgrep — Cross-file dataflow analysis
+      - id: semgrep
+      #
+      # OPTIONAL: retire.js — Scans for vulnerable JS libraries (OWASP)
+      # Complements semgrep with known-vulnerable library detection
+      # Install: npm install -g retire
+      # - id: retire-js
+
+      # =========================================================================
+      # SCA: Dependency vulnerability scanning
+      # Satisfies: NIST RA-5 (Vulnerability Scanning), SSDF PW.4, RV.1
+      # =========================================================================
+      # DEFAULT: npm audit — Built-in npm vulnerability scanner
+      - id: npm-audit
+      #
+      # ALTERNATIVE: yarn audit (category: SCA)
+      # For yarn-based projects
+      # - id: yarn-audit
+      #
+      # ALTERNATIVE: pnpm audit (category: SCA)
+      # For pnpm-based projects
+      # - id: pnpm-audit
+      #
+      # ALTERNATIVE: osv-scanner (category: SCA)
+      # Universal scanner supporting multiple lockfile formats
+      # - id: osv-scanner-lockfile
+
+      # =========================================================================
+      # Shell scripts (CI/deployment scripts, npm wrappers)
+      # =========================================================================
+      - id: shellcheck
+
+      # =========================================================================
+      # GSA compliance
+      # =========================================================================
+      - id: check-gsa-email
+
+  # ===========================================================================
+  # Alternative: Biome (replaces ESLint + Prettier)
+  # ===========================================================================
+  # Uncomment below and remove eslint/prettier hooks above to use Biome
+  # Install: npm install --save-dev @biomejs/biome
+  #
+  # - repo: https://github.com/cloud-gov/caulking
+  #   rev: v3.4.0
+  #   hooks:
+  #     - id: biome-check

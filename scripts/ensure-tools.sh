@@ -10,7 +10,7 @@ enable_xtrace_if_debug
 
 # - gitleaks is REQUIRED
 # - prek is OPTIONAL
-MIN_GITLEAKS_VERSION="${MIN_GITLEAKS_VERSION:-8.18.0}"
+MIN_GITLEAKS_VERSION="${MIN_GITLEAKS_VERSION:-8.21.0}"
 
 ensure_gitleaks() {
   if have gitleaks; then

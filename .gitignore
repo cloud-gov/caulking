@@ -23,6 +23,13 @@ AGENTS.md
 .aider*
 .codex/
 
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
 # Removed workflows (delete manually)
 .github/workflows/dependency-review.yml
 .github/workflows/scorecard.yml

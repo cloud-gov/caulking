@@ -1,0 +1,61 @@
+# TEMPLATE ONLY: non-distributable until URL, version, and SHA256 are replaced
+# with a real immutable source archive and its verified checksum. This is a
+# starting point for the existing cloudgov tap, not a published release formula.
+require "shellwords"
+
+class Caulking < Formula
+  desc "Global Git hooks and explicit developer toolchain setup"
+  homepage "@CAULKING_HOMEPAGE@"
+  url "@CAULKING_SOURCE_ARCHIVE_URL@"
+  version "@CAULKING_VERSION@"
+  sha256 "@CAULKING_SOURCE_ARCHIVE_SHA256@"
+  license "CC0-1.0"
+
+  depends_on "bash"
+  depends_on "git"
+  depends_on "gitleaks"
+  depends_on "prek"
+
+  def install
+    app = libexec/"app"
+    app.install "caulking.sh", "install.sh", "uninstall.sh", "VERSION", "scripts", "hooks", "brewfiles"
+    runtime_bash = Formula["bash"].opt_bin/"bash"
+    runtime_git = Formula["git"].opt_bin/"git"
+    runtime_gitleaks = Formula["gitleaks"].opt_bin/"gitleaks"
+    runtime_runner = Formula["prek"].opt_bin/"prek"
+    baseline_path = %w[bash git gitleaks prek].map { |name| Formula[name].opt_bin }.join(":")
+    (app/"scripts/package-runtime.sh").write <<~SH
+      # Generated fixed Homebrew baseline; optional profiles belong to toolchain.sh.
+      RUNTIME_BASH=#{runtime_bash.to_s.shellescape}
+      RUNTIME_GIT=#{runtime_git.to_s.shellescape}
+      RUNTIME_GITLEAKS=#{runtime_gitleaks.to_s.shellescape}
+      RUNTIME_RUNNER=#{runtime_runner.to_s.shellescape}
+      RUNTIME_CLI=#{(opt_libexec/"app/caulking.sh").to_s.shellescape}
+      RUNTIME_PATH=#{baseline_path.shellescape}
+    SH
+    (bin/"caulking").write <<~SH
+      #!/bin/sh
+      unset BASH_ENV ENV
+      PATH=#{baseline_path.shellescape}:"${PATH:-/usr/bin:/bin}"
+      export PATH
+      exec #{runtime_bash.to_s.shellescape} #{(opt_libexec/"app/caulking.sh").to_s.shellescape} "$@"
+    SH
+    chmod 0755, bin/"caulking"
+  end
+
+  def caveats
+    <<~EOS
+      Configure global Git hooks explicitly:
+        caulking setup --no-install
+
+      The CLI and installed hooks use stable Homebrew opt paths for Bash, Git,
+      gitleaks (>=8.21.0), and prek, including in minimal-PATH Git/IDE environments.
+      Existing gitleaks config is preserved verbatim. Setup does not validate
+      custom policy or enable default rules in an existing config.
+    EOS
+  end
+
+  test do
+    assert_match "unsupported argument:", shell_output("#{bin}/caulking doctor --invalid-option 2>&1", 2)
+  end
+end
