@@ -18,8 +18,7 @@ class Caulking < Formula
 
   def install
     app = libexec/"app"
-    app.install "caulking.sh", "install.sh", "VERSION", "scripts", "hooks"
-    app.install "brewfiles" if Dir.exist?("brewfiles")
+    app.install "caulking.sh", "install.sh", "uninstall.sh", "VERSION", "scripts", "hooks", "brewfiles"
     runtime_bash = Formula["bash"].opt_bin/"bash"
     runtime_git = Formula["git"].opt_bin/"git"
     runtime_gitleaks = Formula["gitleaks"].opt_bin/"gitleaks"

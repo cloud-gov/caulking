@@ -20,8 +20,8 @@
 #   Note: golangci-lint v2 requires `version: "2"` in `.golangci.yml`.
 #
 # References:
-#   - ADR-0002: Supply chain security assessment
-#   - ADR-0004: Language security tool selection
+#   - ADR-0004: Supply chain security assessment
+#   - ADR-0006: Language security tool selection
 # ===========================================================================
 
 repos:

@@ -689,6 +689,42 @@ contains "$TMP/tui.stdout" 'Wrote '
 contains "$DETECT_REPO/.pre-commit-config.yaml" '- id: golangci-lint'
 checks=$((checks + 1))
 
+# Regression tests: starter config comments, commented terraform-fmt, and extensionless binary files.
+STARTER_REPO="$TMP/starter repo"
+mkdir -p "$STARTER_REPO"
+cp "$ROOT/starter-configs/container-repo.pre-commit-config.yaml" "$STARTER_REPO/.pre-commit-config.yaml"
+printf 'FROM alpine:3.20\n' > "$STARTER_REPO/Dockerfile"
+expect 0 detect --repo "$STARTER_REPO"
+if /usr/bin/grep -Fq 'migrate repo URL from cloud-gov/pre-commit-templates' "$TMP/output"; then
+  printf 'FAIL: commented legacy repo URL falsely triggered migration recommendation\n' >&2
+  exit 1
+fi
+
+TF_COMMENT_REPO="$TMP/tf comment repo"
+mkdir -p "$TF_COMMENT_REPO"
+printf 'terraform {}\n' > "$TF_COMMENT_REPO/main.tf"
+cat > "$TF_COMMENT_REPO/.pre-commit-config.yaml" << 'YAML'
+repos:
+  - repo: https://github.com/cloud-gov/caulking
+    rev: v3.4.0
+    hooks:
+      # - id: terraform-fmt
+      - id: tofu-fmt
+YAML
+expect 0 detect --repo "$TF_COMMENT_REPO"
+contains "$TMP/output" 'Detected stacks: hygiene opentofu docs'
+if /usr/bin/grep -Eq 'Detected stacks:.*\bterraform\b' "$TMP/output"; then
+  printf 'FAIL: commented terraform-fmt falsely selected terraform instead of opentofu\n' >&2
+  exit 1
+fi
+
+BIN_REPO="$TMP/bin repo"
+mkdir -p "$BIN_REPO"
+printf '%65536s' 'A' > "$BIN_REPO/extensionless_blob"
+printf '#!/usr/bin/env bash\necho hi\n' > "$BIN_REPO/extensionless_script"
+expect 0 detect --repo "$BIN_REPO"
+contains "$TMP/output" 'Detected stacks: hygiene shell'
+
 # Exercise generated installed launchers, the actual global wrapper, and parser.
 # Setup changes only this temporary HOME and isolated Git configuration.
 SETUP_BASH=/bin/bash

@@ -15,7 +15,7 @@
 #   - Linux Foundation governance (vendor-neutral)
 #   - No license ambiguity for federal procurement
 #   - Drop-in replacement for Terraform (same HCL syntax)
-#   - See ADR-0002 for full assessment
+#   - See ADR-0004 for full assessment
 #
 # Setup (cloud.gov staff):
 #   1. Install caulking first: https://github.com/cloud-gov/caulking
@@ -26,8 +26,8 @@
 #   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
 #
 # References:
-#   - ADR-0002: Supply chain security assessment
-#   - ADR-0004: Language security tool selection
+#   - ADR-0004: Supply chain security assessment
+#   - ADR-0006: Language security tool selection
 # ===========================================================================
 
 repos:

@@ -3,7 +3,7 @@
 #
 # Proves, in a CLEAN golang container with NOTHING pre-installed, that the
 # language: golang self-contained hooks bootstrap their tool and run, and that
-# the upstream gitleaks hook (ADR-0007 / Option C) both passes clean AND fails on
+# the upstream gitleaks hook (ADR-0009 / Option C) both passes clean AND fails on
 # a planted secret (fail-closed). This is the permanent guard against the class
 # of bug where a language: golang repo:local hook silently breaks in a sandbox
 # (missing repo-root go.mod, wrong entry shape, Go-version floor, etc).

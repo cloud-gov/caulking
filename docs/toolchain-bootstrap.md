@@ -222,3 +222,4 @@ Across all **11 profiles**, **31 profile tools**, **65 reusable hooks**, and **9
 - [Pre-commit supported languages](https://pre-commit.com/#supported-languages)
 - [ADR-0001: Release Management](adr/ADR-0001-release-management.md)
 - [ADR-0002: Template Consolidation and Brewfile Bundles](adr/ADR-0002-template-consolidation-and-brewfile-bundles.md)
+- [Glossary](../GLOSSARY.md)

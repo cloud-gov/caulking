@@ -20,9 +20,9 @@
 #   Note: Do NOT run `pre-commit install` — caulking handles hook execution.
 #
 # References:
-#   - ADR-0002: Supply chain security assessment
-#   - ADR-0003: JavaScript/TypeScript tool selection
-#   - ADR-0004: Language security tool selection
+#   - ADR-0004: Supply chain security assessment
+#   - ADR-0005: JavaScript/TypeScript tool selection
+#   - ADR-0006: Language security tool selection
 # ===========================================================================
 
 repos:

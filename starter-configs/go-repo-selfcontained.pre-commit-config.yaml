@@ -36,8 +36,8 @@
 #     environments, or omit it from repos developed exclusively on caulking
 #     workstations.
 #
-# References: ADR-0002 (supply chain), ADR-0004 (Go tools), ADR-0006 (self-contained
-# variants + repo-root go.mod), ADR-0007 (gitleaks via upstream hook), issue #36.
+# References: ADR-0004 (supply chain), ADR-0006 (Go tools), ADR-0008 (self-contained
+# variants + repo-root go.mod), ADR-0009 (gitleaks via upstream hook), issue #36.
 # ===========================================================================
 
 minimum_pre_commit_version: "3.0.0"
@@ -71,7 +71,7 @@ repos:
 
   # Secrets detection for CI / containers / non-caulking environments — gitleaks'
   # OWN upstream hook (a real Go module that self-installs via language: golang).
-  # Caulking ships no repo-level gitleaks hook of its own (ADR-0007) because
+  # Caulking ships no repo-level gitleaks hook of its own (ADR-0009) because
   # caulking workstations already scan globally. Do NOT set `SKIP=gitleaks` on a
   # caulking workstation (that bypasses caulking's global gitleaks scan); instead,
   # use this upstream hook only in CI or non-caulking environments.

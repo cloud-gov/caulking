@@ -25,6 +25,7 @@ LANGUAGE POLICY (see issue #34):
   Track: https://github.com/pre-commit/pre-commit/blob/main/CHANGELOG.md
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -157,7 +158,7 @@ def validate_hooks(filepath: str = ".pre-commit-hooks.yaml") -> tuple[list[str],
     return errors, hook_count
 
 
-FORMULA_PROFILE: dict[str, str] = {
+FORMULA_PROFILE: dict[str, str | tuple[str, ...]] = {
     "gitleaks": "baseline",
     "prek": "baseline",
     "bash": "baseline",
@@ -178,7 +179,7 @@ FORMULA_PROFILE: dict[str, str] = {
     "rubocop": "ruby",
     "opentofu": "opentofu",
     "terraform": "terraform",
-    "tflint": "opentofu",
+    "tflint": ("opentofu", "terraform"),
     "yamllint": "docs",
     "yamlfmt": "docs",
     "actionlint": "docs",
@@ -249,6 +250,13 @@ HOOK_FORMULAE: dict[str, set[str]] = {
 }
 
 
+def _formula_profiles(formula: str) -> tuple[str, ...]:
+    profs = FORMULA_PROFILE.get(formula)
+    if not profs:
+        return ()
+    return (profs,) if isinstance(profs, str) else profs
+
+
 def validate_starter_configs(root: Path, hooks: list[dict]) -> list[str]:
     """Validate starter-configs/*.yaml against .pre-commit-hooks.yaml and brewfiles/."""
     errors: list[str] = []
@@ -256,6 +264,29 @@ def validate_starter_configs(root: Path, hooks: list[dict]) -> list[str]:
     starter_files = sorted((root / "starter-configs").glob("*.pre-commit-config.yaml"))
     if not starter_files:
         return ["No starter-configs/*.pre-commit-config.yaml files found"]
+
+    adr_path_re = re.compile(r"docs/adr/ADR-\d{4}-[A-Za-z0-9_-]+\.md")
+    stale_adr_markers = (
+        "ADR-0002: Supply chain",
+        "ADR-0004: Language security",
+        "ADR-0006 (self-contained",
+        "ADR-0007 (gitleaks",
+    )
+    for scan_file in [root / ".pre-commit-hooks.yaml", *starter_files]:
+        if not scan_file.is_file():
+            continue
+        scan_text = scan_file.read_text(encoding="utf-8")
+        for match in adr_path_re.finditer(scan_text):
+            rel_adr = match.group(0)
+            if (root / "docs" / "adr").is_dir() and not (root / rel_adr).is_file():
+                errors.append(
+                    f"{scan_file.name}: broken ADR path reference '{rel_adr}'"
+                )
+        for stale in stale_adr_markers:
+            if stale in scan_text:
+                errors.append(
+                    f"{scan_file.name}: contains stale pre-consolidation ADR reference '{stale}'"
+                )
 
     toolchain_path = root / "scripts" / "toolchain.sh"
     toolchain_text = (
@@ -270,15 +301,21 @@ def validate_starter_configs(root: Path, hooks: list[dict]) -> list[str]:
                 )
             else:
                 for formula in HOOK_FORMULAE[hid]:
-                    prof = FORMULA_PROFILE.get(formula)
-                    if not prof:
+                    profs = _formula_profiles(formula)
+                    if not profs:
                         errors.append(
                             f"{hid}: formula '{formula}' missing from FORMULA_PROFILE"
                         )
-                    elif not (root / "brewfiles" / f"{prof}.Brewfile").is_file():
-                        errors.append(
-                            f"{hid}: formula '{formula}' profile '{prof}.Brewfile' missing"
-                        )
+                    for prof in profs:
+                        bf = root / "brewfiles" / f"{prof}.Brewfile"
+                        if not bf.is_file():
+                            errors.append(
+                                f"{hid}: formula '{formula}' profile '{prof}.Brewfile' missing"
+                            )
+                        elif formula not in bf.read_text(encoding="utf-8"):
+                            errors.append(
+                                f"{hid}: formula '{formula}' not declared in brewfiles/{prof}.Brewfile"
+                            )
             if toolchain_text and hid not in toolchain_text:
                 errors.append(
                     f"{hid}: system/unsupported hook missing from scripts/toolchain.sh"
@@ -314,13 +351,19 @@ def validate_starter_configs(root: Path, hooks: list[dict]) -> list[str]:
                             f"{cfg_path.name}: hook '{hid}' has no Homebrew formula mapping"
                         )
                     for formula in formulae:
-                        prof = FORMULA_PROFILE.get(formula, "")
-                        bf = root / "brewfiles" / f"{prof}.Brewfile"
-                        if not prof or not bf.is_file():
+                        profs = _formula_profiles(formula)
+                        if not profs:
                             errors.append(
                                 f"{cfg_path.name}: hook '{hid}' formula '{formula}' "
-                                f"not covered by brewfiles/{prof}.Brewfile"
+                                f"missing from FORMULA_PROFILE"
                             )
+                        for prof in profs:
+                            bf = root / "brewfiles" / f"{prof}.Brewfile"
+                            if not bf.is_file() or formula not in bf.read_text(encoding="utf-8"):
+                                errors.append(
+                                    f"{cfg_path.name}: hook '{hid}' formula '{formula}' "
+                                    f"not covered by brewfiles/{prof}.Brewfile"
+                                )
     return errors
 
 

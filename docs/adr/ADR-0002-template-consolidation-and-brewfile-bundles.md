@@ -47,7 +47,8 @@ Move all reusable hook assets from `cloud-gov/pre-commit-templates` into
   `scripts/trailing-whitespace.sh`) and hook/config validators
   (`scripts/validate-hooks.py`, `scripts/test-validate-hooks.sh`)
 - Architectural Decision Records (`docs/adr/ADR-0003` through `ADR-0010`),
-  supply-chain monitoring (`docs/MONITORING.md`), and `TROUBLESHOOTING.md`
+  supply-chain monitoring (`docs/MONITORING.md`), terminology reference
+  (`GLOSSARY.md`), and `TROUBLESHOOTING.md`
 
 ### 2. Replace Monolithic `Brewfile` with Composable `brewfiles/<profile>.Brewfile` Bundles
 
@@ -101,12 +102,14 @@ To onboard any new or existing single- or multi-stack repository:
   `SCA`) and Homebrew profiles, and if `.pre-commit-config.yaml` already exists,
   audits it for legacy `cloud-gov/pre-commit-templates` URLs, legacy ambient
   `check-yaml`/`check-json` hooks, and missing hooks for detected file types.
-- `./caulking.sh init --repo /path/to/repo [--write] [--force]` generates a
-  tailored, multi-stack `.pre-commit-config.yaml` combining all detected
-  languages in the repository (printing a dry-run preview to stdout by default,
-  or writing `<repo>/.pre-commit-config.yaml` atomically with `--write`,
-  refusing to overwrite an existing config unless `--force` is passed, and
-  always refusing symlinks).
+- `./caulking.sh init --repo /path/to/repo [--interactive|-i] [--stack NAME]... [--no-stack NAME]... [--write] [--force]`
+  generates a tailored, multi-stack `.pre-commit-config.yaml` combining all
+  detected languages in the repository, with an optional `--interactive` (`-i`)
+  9-row checkbox TUI on stderr pre-checked with auto-detected stacks or
+  non-interactive `--stack NAME` / `--no-stack NAME` overrides (printing a
+  dry-run preview to stdout by default, or writing `<repo>/.pre-commit-config.yaml`
+  atomically with `--write`, refusing to overwrite an existing config unless
+  `--force` is passed, and always refusing symlinks).
 
 `caulking.sh bootstrap --repo .`, `caulking.sh doctor --repo .`,
 `caulking.sh run --repo .`, and global hooks (`hook-run`) read hook IDs
@@ -192,3 +195,4 @@ compatibility endpoint:
 - [ADR-0004: Supply Chain Security Tool Selection](ADR-0004-supply-chain-security.md)
 - [Toolchain Bootstrap Plan](../toolchain-bootstrap-plan.md)
 - [Toolchain Bootstrap Guide](../toolchain-bootstrap.md)
+- [Glossary](../../GLOSSARY.md)

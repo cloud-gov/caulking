@@ -49,6 +49,14 @@ detect_has_configured_hook() {
   return 1
 }
 
+detect_has_legacy_repo() {
+  local existing
+  for existing in ${config_repos[@]+"${config_repos[@]}"}; do
+    [[ "$existing" != *"cloud-gov/pre-commit-templates"* ]] || return 0
+  done
+  return 1
+}
+
 detect_hook_satisfied() {
   local hook="$1"
   if detect_has_configured_hook "$hook"; then
@@ -127,7 +135,8 @@ detect_scan_file() {
 
   if ((has_shell == 0)) && [[ -f "$repo/$rel" && ! -L "$repo/$rel" ]] &&
     [[ "$base" != *.* || -x "$repo/$rel" ]]; then
-    first_line="$(LC_ALL=C head -n 1 "$repo/$rel" 2> /dev/null || true)"
+    first_line="$(LC_ALL=C head -c 128 "$repo/$rel" 2> /dev/null || true)"
+    first_line="${first_line%%$'\n'*}"
     if [[ "$first_line" =~ ^#!.*(/|[[:space:]])(ba)?sh([[:space:]]|$) ]]; then
       has_shell=1
     fi
@@ -159,6 +168,7 @@ detect_scan_files() {
       git_count=$((git_count + 1))
       detect_scan_file "$repo" "$rel"
       if ((git_count >= 10000)); then
+        printf 'caulking: warning: scan capped at 10000 files in %s\n' "$repo" >&2
         break
       fi
     done < <(git -C "$repo" ls-files -z 2> /dev/null)
@@ -169,6 +179,7 @@ detect_scan_files() {
       file_count=$((file_count + 1))
       detect_scan_file "$repo" "$rel"
       if ((file_count >= 10000)); then
+        printf 'caulking: warning: scan capped at 10000 files in %s\n' "$repo" >&2
         break
       fi
     done < <(cd "$repo" && find . -maxdepth 3 \( -type f -o -type l \) -print0 2> /dev/null)
@@ -183,8 +194,7 @@ detect_scan_files() {
   auto_opentofu=0
   auto_terraform=0
   if ((has_tf)); then
-    if [[ -f "$repo/.pre-commit-config.yaml" && ! -L "$repo/.pre-commit-config.yaml" && -r "$repo/.pre-commit-config.yaml" ]] &&
-      /usr/bin/grep -Eq 'terraform[-_]fmt' "$repo/.pre-commit-config.yaml"; then
+    if detect_has_configured_hook terraform-fmt || detect_has_configured_hook terraform_fmt; then
       auto_terraform=1
     else
       auto_opentofu=1
@@ -392,10 +402,11 @@ toolchain_tui_render() {
 }
 
 toolchain_tui_select_stacks() {
-  local cursor=0 key='' rest='' target_stack='' cur_val=0
+  local cursor=0 rendered=0 key='' rest='' target_stack='' cur_val=0
   local -a tui_stacks=(shell container python go javascript ruby opentofu terraform docs)
 
   toolchain_tui_render "$cursor"
+  rendered=1
   while true; do
     if [[ -t 0 ]]; then
       IFS= read -r -s -n 1 key || break
@@ -464,8 +475,8 @@ toolchain_tui_select_stacks() {
         esac
         ;;
     esac
-    if [[ -t 2 ]]; then
-      printf '\033[11A' >&2
+    if [[ -t 2 ]] && ((rendered == 1)); then
+      printf '\033[11A\r\033[J' >&2
     fi
     toolchain_tui_render "$cursor"
   done
@@ -478,53 +489,6 @@ detect_scan_repo() {
   detect_scan_files "$repo"
   detect_apply_stack_overrides "$@"
   detect_build_recommendations
-}
-
-toolchain_detect() {
-  local repo="$1" interactive="${2:-0}" write_config="${3:-0}" force_write="${4:-0}" assume_yes="${5:-0}" hook
-  shift 5 || shift "$#"
-  local has_shell=0 has_container=0 has_python=0 has_go=0
-  local has_js=0 has_ts=0 has_biome=0 has_pnpm_lock=0 has_yarn_lock=0
-  local has_ruby=0 has_gemfile_lock=0 has_tf=0 has_yaml=0 has_gha=0 has_md=0
-  local auto_shell=0 auto_container=0 auto_python=0 auto_go=0
-  local auto_javascript=0 auto_ruby=0 auto_opentofu=0 auto_terraform=0 auto_docs=0
-  local sel_shell=0 sel_container=0 sel_python=0 sel_go=0
-  local sel_javascript=0 sel_ruby=0 sel_opentofu=0 sel_terraform=0 sel_docs=0
-  local -a detected_stacks=() recommended_profiles=() recommended_hooks=() missing_hooks=() config_hooks=()
-
-  detect_scan_repo "$repo" "$@"
-
-  printf 'Detected stacks: %s\n' "${detected_stacks[*]}"
-  printf 'Recommended profiles: %s\n' "${recommended_profiles[*]}"
-  printf 'Recommended hooks: %s\n' "${recommended_hooks[*]}"
-
-  if [[ -e "$repo/.pre-commit-config.yaml" || -L "$repo/.pre-commit-config.yaml" ]]; then
-    toolchain_config_file "$repo/.pre-commit-config.yaml" || return 2
-    printf 'Configured hooks: %s\n' "${config_hooks[*]:-none}"
-    if /usr/bin/grep -Fq 'cloud-gov/pre-commit-templates' "$repo/.pre-commit-config.yaml"; then
-      printf 'Recommendation: migrate repo URL from cloud-gov/pre-commit-templates to https://github.com/cloud-gov/caulking (rev: v3.4.0)\n'
-    fi
-    if detect_has_configured_hook check-yaml || detect_has_configured_hook check-json; then
-      printf 'Recommendation: upgrade ambient check-yaml/check-json to check-yaml-selfcontained/check-json-selfcontained\n'
-    fi
-    for hook in "${recommended_hooks[@]}"; do
-      if ! detect_hook_satisfied "$hook"; then
-        missing_hooks+=("$hook")
-      fi
-    done
-    if ((${#missing_hooks[@]} > 0)); then
-      printf 'Missing recommended hooks: %s\n' "${missing_hooks[*]}"
-    else
-      printf 'Missing recommended hooks: none\n'
-    fi
-  else
-    printf "Config status: missing (.pre-commit-config.yaml not found; run 'caulking.sh init --repo %s --write' to generate)\n" "$repo"
-  fi
-
-  if ((interactive)); then
-    toolchain_init "$repo" "$write_config" "$force_write" "$interactive" "$assume_yes" "$@"
-    return $?
-  fi
 }
 
 detect_render_config() {
@@ -545,10 +509,10 @@ detect_render_config() {
   done
 }
 
-toolchain_init() {
-  local repo="$1" write_config="$2" force_write="$3" interactive="${4:-0}" assume_yes="${5:-0}"
-  shift 5 || shift "$#"
-  local target="$repo/.pre-commit-config.yaml" tmp_file=''
+toolchain_detect_or_init() {
+  local mode="$1" repo="$2" write_config="$3" force_write="$4" interactive="${5:-0}" assume_yes="${6:-0}"
+  shift 6 || shift "$#"
+  local target="$repo/.pre-commit-config.yaml" tmp_file='' hook
   local has_shell=0 has_container=0 has_python=0 has_go=0
   local has_js=0 has_ts=0 has_biome=0 has_pnpm_lock=0 has_yarn_lock=0
   local has_ruby=0 has_gemfile_lock=0 has_tf=0 has_yaml=0 has_gha=0 has_md=0
@@ -556,7 +520,50 @@ toolchain_init() {
   local auto_javascript=0 auto_ruby=0 auto_opentofu=0 auto_terraform=0 auto_docs=0
   local sel_shell=0 sel_container=0 sel_python=0 sel_go=0
   local sel_javascript=0 sel_ruby=0 sel_opentofu=0 sel_terraform=0 sel_docs=0
-  local -a detected_stacks=() recommended_profiles=() recommended_hooks=()
+  local -a detected_stacks=() recommended_profiles=() recommended_hooks=() missing_hooks=()
+
+  config_hooks=()
+  config_repos=()
+  if [[ "$mode" == detect ]]; then
+    if [[ -e "$target" || -L "$target" ]]; then
+      toolchain_config_file "$target" || return 2
+    fi
+  elif [[ -f "$target" && ! -L "$target" && -r "$target" ]]; then
+    toolchain_config_file "$target" 2> /dev/null || true
+  fi
+
+  if [[ "$mode" == detect ]]; then
+    detect_scan_repo "$repo" "$@"
+    printf 'Detected stacks: %s\n' "${detected_stacks[*]}"
+    printf 'Recommended profiles: %s\n' "${recommended_profiles[*]}"
+    printf 'Recommended hooks: %s\n' "${recommended_hooks[*]}"
+
+    if [[ -e "$target" || -L "$target" ]]; then
+      printf 'Configured hooks: %s\n' "${config_hooks[*]:-none}"
+      if detect_has_legacy_repo; then
+        printf 'Recommendation: migrate repo URL from cloud-gov/pre-commit-templates to https://github.com/cloud-gov/caulking (rev: v3.4.0)\n'
+      fi
+      if detect_has_configured_hook check-yaml || detect_has_configured_hook check-json; then
+        printf 'Recommendation: upgrade ambient check-yaml/check-json to check-yaml-selfcontained/check-json-selfcontained\n'
+      fi
+      for hook in "${recommended_hooks[@]}"; do
+        if ! detect_hook_satisfied "$hook"; then
+          missing_hooks+=("$hook")
+        fi
+      done
+      if ((${#missing_hooks[@]} > 0)); then
+        printf 'Missing recommended hooks: %s\n' "${missing_hooks[*]}"
+      else
+        printf 'Missing recommended hooks: none\n'
+      fi
+    else
+      printf "Config status: missing (.pre-commit-config.yaml not found; run 'caulking.sh init --repo %s --write' to generate)\n" "$repo"
+    fi
+
+    if ((interactive == 0)); then
+      return 0
+    fi
+  fi
 
   if ((write_config)); then
     if [[ -L "$target" ]]; then
@@ -569,8 +576,10 @@ toolchain_init() {
     fi
   fi
 
-  detect_scan_files "$repo"
-  detect_apply_stack_overrides "$@"
+  if [[ "$mode" != detect ]]; then
+    detect_scan_files "$repo"
+    detect_apply_stack_overrides "$@"
+  fi
   if ((interactive && assume_yes == 0)); then
     toolchain_tui_select_stacks || return $?
   fi

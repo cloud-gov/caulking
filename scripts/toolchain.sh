@@ -6,7 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/detect.sh"
 
 toolchain_usage() {
   printf '%s\n' \
-    'Usage: caulking.sh {bootstrap|doctor|run|detect|init} [--repo PATH] [--profile NAME]... [--dry-run] [--write] [--force]' \
+    'Usage: caulking.sh {bootstrap|doctor|run|detect|init} [--repo PATH] ...' \
     'Profiles: baseline (gitleaks >=8.21.0, prek >=0.4.0, bash >=4),' \
     '          shell (shellcheck >=0.9.0, shfmt >=3.6.0),' \
     '          container (hadolint >=2.12.0),' \
@@ -130,7 +130,7 @@ toolchain_validate_hook_id() {
 }
 
 toolchain_config_file() {
-  local file="$1" bytes line rest count=0
+  local file="$1" bytes line rest raw_repo count=0
   [[ -e "$file" || -L "$file" ]] || return 0
   if [[ ! -f "$file" || ! -r "$file" ]]; then
     toolchain_error "readable direct config required: $file"
@@ -152,6 +152,18 @@ toolchain_config_file() {
       return 2
     fi
     line="${line%%#*}"
+    if [[ "$line" =~ ^[[:space:]]*(-[[:space:]]*)?repo:[[:space:]]*([^[:space:]]+)[[:space:]]*$ ]]; then
+      raw_repo="${BASH_REMATCH[2]}"
+      if [[ "$raw_repo" == \"*\" && "$raw_repo" == *\" && "${#raw_repo}" -ge 2 ]]; then
+        raw_repo="${raw_repo#\"}"
+        raw_repo="${raw_repo%\"}"
+      elif [[ "$raw_repo" == \'*\' && "$raw_repo" == *\' && "${#raw_repo}" -ge 2 ]]; then
+        raw_repo="${raw_repo#\'}"
+        raw_repo="${raw_repo%\'}"
+      fi
+      config_repos+=("$raw_repo")
+      continue
+    fi
     if [[ "$line" =~ ^[[:space:]]*(-[[:space:]]*)?id:([[:space:]]+(.*))?$ ]]; then
       toolchain_validate_hook_id "${BASH_REMATCH[3]:-}" || return 2
       continue
@@ -402,7 +414,7 @@ toolchain_main() {
   local brew_bin='' brew_prefix='' runner='' scoped_path='' failed=0 has_baseline=0 profile_count=0 config_seen=0
   local git_bin='' runtime_file='' caulking_root='' brewfile='' RUNTIME_GIT='' RUNTIME_RUNNER=''
   # These arrays are dynamically scoped to the helpers; Bash 3 can launch bootstrap.
-  local -a profiles=() formulae=() tool_dirs=() config_hooks=() stack_overrides=()
+  local -a profiles=() formulae=() tool_dirs=() config_hooks=() config_repos=() stack_overrides=()
   case "$action" in
     -h | --help)
       toolchain_usage
@@ -535,12 +547,8 @@ toolchain_main() {
     toolchain_error 'repository path must be an accessible directory'
     return 2
   }
-  if [[ "$action" == detect ]]; then
-    toolchain_detect "$repo" "$interactive" "$write_config" "$force_write" "$assume_yes" ${stack_overrides[@]+"${stack_overrides[@]}"}
-    return $?
-  fi
-  if [[ "$action" == init ]]; then
-    toolchain_init "$repo" "$write_config" "$force_write" "$interactive" "$assume_yes" ${stack_overrides[@]+"${stack_overrides[@]}"}
+  if [[ "$action" == detect || "$action" == init ]]; then
+    toolchain_detect_or_init "$action" "$repo" "$write_config" "$force_write" "$interactive" "$assume_yes" ${stack_overrides[@]+"${stack_overrides[@]}"}
     return $?
   fi
   if [[ "$action" == hook-run ]] && [[ ! -f "$repo/.pre-commit-config.yaml" || ! -r "$repo/.pre-commit-config.yaml" ]]; then

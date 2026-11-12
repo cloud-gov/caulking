@@ -17,7 +17,7 @@
 # IMPORTANT: These are RECOMMENDED hooks, not requirements.
 # Teams MAY override tool selections based on their specific needs.
 # All tools have been security-assessed but alternatives may be appropriate.
-# See docs/adr/ADR-0002-supply-chain-security.md for assessment details.
+# See docs/adr/ADR-0004-supply-chain-security.md for assessment details.
 # ============================================================================
 #
 # Uses `language: system` for backward compatibility with pre-commit 3.2.0+
@@ -241,7 +241,7 @@
 # otherwise installs the LATEST Go, which usually works, but we PIN language_version
 # so the build is reproducible and cannot silently fall below a tool's floor. Bump
 # these in lockstep with the tool version in additional_dependencies.
-# See starter-configs/go-repo-selfcontained.pre-commit-config.yaml and ADR-0006.
+# See starter-configs/go-repo-selfcontained.pre-commit-config.yaml and ADR-0008.
 
 - id: gofmt-selfcontained
   name: gofmt (self-contained)
@@ -546,16 +546,16 @@
   description: Ensures commits use @gsa.gov email addresses
   entry: scripts/check-gsa-email.sh
   language: script
-  stages: [commit-msg]
+  stages: [pre-commit, commit-msg]
   always_run: true
   pass_filenames: false
 
 # =============================================================================
 # SECURITY SCANNING HOOKS
-# See docs/adr/ADR-0002-supply-chain-security.md for tool assessments
+# See docs/adr/ADR-0004-supply-chain-security.md for tool assessments
 # =============================================================================
 
-# --- Secrets detection: NOT a hook here (see ADR-0005, superseded by ADR-0007) ---
+# --- Secrets detection: NOT a hook here (see ADR-0007, superseded by ADR-0009) ---
 # This template intentionally ships NO gitleaks hook:
 #   * On caulking workstations, caulking already runs gitleaks globally — a hook
 #     here would double-scan.
@@ -565,9 +565,9 @@
 #   * WARNING: Do NOT set `SKIP=gitleaks` globally on a caulking workstation —
 #     `SKIP=gitleaks` bypasses caulking's global gitleaks scan! Instead, keep
 #     upstream gitleaks hooks for CI-only or non-caulking environments.
-# A cloud-gov-branded caulking-aware wrapper was tried (ADR-0005) but was removed:
+# A cloud-gov-branded caulking-aware wrapper was tried (ADR-0007) but was removed:
 # a language: golang hook resolves its `entry` against the CONSUMER repo, so a
-# repo-relative wrapper script cannot be found — it never worked in CI. ADR-0007
+# repo-relative wrapper script cannot be found — it never worked in CI. ADR-0009
 # records the Option-C decision.
 
 # --- Universal SCA (Software Composition Analysis) ---
@@ -638,7 +638,7 @@
 
 # =============================================================================
 # GO SECURITY HOOKS
-# See docs/adr/ADR-0004-language-security-tools.md for selection rationale
+# See docs/adr/ADR-0006-language-security-tools.md for selection rationale
 # =============================================================================
 
 - id: govulncheck
@@ -661,7 +661,7 @@
 
 # =============================================================================
 # PYTHON SECURITY HOOKS
-# See docs/adr/ADR-0004-language-security-tools.md for selection rationale
+# See docs/adr/ADR-0006-language-security-tools.md for selection rationale
 # =============================================================================
 
 - id: pip-audit
@@ -684,7 +684,7 @@
 
 # =============================================================================
 # JAVASCRIPT/NODE.JS SECURITY HOOKS
-# See docs/adr/ADR-0004-language-security-tools.md for selection rationale
+# See docs/adr/ADR-0006-language-security-tools.md for selection rationale
 # =============================================================================
 
 - id: npm-audit

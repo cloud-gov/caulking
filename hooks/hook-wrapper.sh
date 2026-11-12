@@ -373,7 +373,7 @@ run_repo_precommit_suite() {
 
   if [[ "${CAULKING_NO_TOOLCHAIN_PATH:-0}" != "1" && -n "${CAULKING_TOOLCHAIN_CLI:-}${CAULKING_BASH:-}" ]] &&
     { [[ ! -f "$repo_root/.pre-commit-config.yaml" || ! -r "$repo_root/.pre-commit-config.yaml" ]] ||
-      grep -Eq '^[[:space:]]*(-[[:space:]]*)?id:[[:space:]]*|^[^#]*[{,][[:space:]]*id:[[:space:]]*' "$repo_root/.pre-commit-config.yaml"; }; then
+      sed 's/#.*//' "$repo_root/.pre-commit-config.yaml" | grep -Eq '^[[:space:]]*(-[[:space:]]*)?id:[[:space:]]*|[[:space:],{]id:[[:space:]]*'; }; then
     [[ "${CAULKING_TOOLCHAIN_CLI:-}" == /* && -f "${CAULKING_TOOLCHAIN_CLI:-}" && -r "${CAULKING_TOOLCHAIN_CLI:-}" &&
       "${CAULKING_BASH:-}" == /* && -x "${CAULKING_BASH:-}" && ! -d "${CAULKING_BASH:-}" ]] || {
       say 'ERROR: toolchain-aware hook helper is missing; rerun caulking setup --no-install.'
