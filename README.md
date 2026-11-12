@@ -255,7 +255,38 @@ Conventional Commits, and independent Homebrew tool upgrades.
 ### Selective workstation toolchain & Brewfile bundles
 
 `.pre-commit-config.yaml` is the single repository configuration file—no
-separate `.caulking-profiles` file is needed. `caulking.sh bootstrap --repo .`,
+separate `.caulking-profiles` file is needed. You can detect a repository's
+languages, audit an existing configuration, generate a tailored multi-stack
+`.pre-commit-config.yaml`, and provision its Homebrew dependencies in four
+commands:
+
+```bash
+./caulking.sh detect --repo /path/to/repo
+./caulking.sh init --repo /path/to/repo --write
+./caulking.sh bootstrap --repo /path/to/repo
+./caulking.sh doctor --repo /path/to/repo
+```
+
+- **`./caulking.sh detect --repo /path/to/repo`:** Scans tracked files in the
+  repository (ignoring `node_modules/`, `.venv/`, `venv/`, `vendor/`,
+  `fixtures/`, `testdata/`, `examples/`) to detect all active stacks (`shell`,
+  `container`, `python`, `go`, `javascript`, `ruby`, `opentofu` / `terraform`,
+  `docs`), recommends the exact 5-pillar hooks (`FMT`, `LINT`, `CHECK`, `SAST`,
+  `SCA`) and Homebrew profiles for the repository, and if
+  `.pre-commit-config.yaml` already exists, audits it for legacy
+  `cloud-gov/pre-commit-templates` URLs, legacy ambient `check-yaml`/`check-json`
+  hooks, and missing hooks for detected file types.
+- **`./caulking.sh init --repo /path/to/repo [--interactive|-i] [--stack NAME]... [--no-stack NAME]... [--write] [--force]`:**
+  Generates a tailored, multi-stack `.pre-commit-config.yaml` combining all
+  detected languages in the repository. Pass `--interactive` (`-i`) to launch a
+  9-row checkbox TUI pre-checked with the detected stacks (`↑`/`↓` or `j`/`k` +
+  `Space`, `1`–`9` to toggle, `Enter` to confirm, `q` to cancel), or pass
+  `--stack NAME` / `--no-stack NAME` to toggle stacks non-interactively. Prints
+  to stdout by default (dry-run preview); `--write` writes
+  `<repo>/.pre-commit-config.yaml` atomically (refusing to overwrite an existing
+  config unless `--force` is passed, and always refusing symlinks).
+
+`caulking.sh bootstrap --repo .`,
 `caulking.sh doctor --repo .`, `caulking.sh run --repo .`, and global hooks
 (`hook-run`) read hook IDs directly from `.pre-commit-config.yaml` (using a
 bounded `<=64 KiB`, `<=1024 lines`, NUL-rejected, `eval`-free parser and static

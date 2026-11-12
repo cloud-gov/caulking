@@ -17,6 +17,42 @@ the consolidation decision.
 
 ## Try from a checkout
 
+Caulking includes repository stack detection, gap auditing, and multi-stack
+`.pre-commit-config.yaml` generation so any new or existing repository can be
+onboarded in four commands:
+
+```bash
+./caulking.sh detect --repo /path/to/repo
+./caulking.sh init --repo /path/to/repo --write
+./caulking.sh bootstrap --repo /path/to/repo
+./caulking.sh doctor --repo /path/to/repo
+```
+
+- **`./caulking.sh detect --repo /path/to/repo`:**
+  - Scans tracked files in the repository (ignoring `node_modules/`, `.venv/`,
+    `venv/`, `vendor/`, `fixtures/`, `testdata/`, and `examples/`) to detect all
+    active stacks (`shell`, `container`, `python`, `go`, `javascript`, `ruby`,
+    `opentofu` / `terraform`, `docs`).
+  - Recommends the exact 5-pillar hooks (`FMT`, `LINT`, `CHECK`, `SAST`, `SCA`)
+    and Homebrew profiles for the repository.
+  - If `.pre-commit-config.yaml` already exists, audits it for legacy
+    `cloud-gov/pre-commit-templates` URLs, legacy ambient `check-yaml`/`check-json`
+    hooks, and missing hooks for detected file types.
+- **`./caulking.sh init --repo /path/to/repo [--interactive|-i] [--stack NAME]... [--no-stack NAME]... [--write] [--force]`:**
+  - Generates a tailored, multi-stack `.pre-commit-config.yaml` combining all
+    detected languages in the repository.
+  - **`--interactive` (`-i`):** Launches an interactive 9-row checkbox TUI on
+    stderr pre-checked (`[x]`) with the auto-detected stacks (`shell`,
+    `container`, `python`, `go`, `javascript`, `ruby`, `opentofu`, `terraform`,
+    `docs`). Developers can use `↑`/`↓` (or `j`/`k`) + `Space`, number keys
+    `1`–`9`, `a` (all), or `n` (none) to toggle stacks before pressing `Enter`
+    to confirm (or `q` to cancel).
+  - **`--stack NAME` / `--no-stack NAME`:** Explicitly add or remove a stack
+    non-interactively.
+  - Prints to stdout by default (dry-run preview); `--write` writes
+    `<repo>/.pre-commit-config.yaml` atomically (refusing to overwrite an
+    existing config unless `--force` is passed, and always refusing symlinks).
+
 `.pre-commit-config.yaml` is the single repository configuration file—no
 separate `.caulking-profiles` file is needed. When invoked with `--repo PATH`
 (or defaulting to `.`), `caulking.sh bootstrap`, `caulking.sh doctor`,

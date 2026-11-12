@@ -80,6 +80,20 @@ pre-commit run  # Default: staged files only
 
 ## Installation & Toolchain Bootstrap Issues
 
+### Onboarding a new or existing repository (`detect` and `init`)
+
+To detect which stacks a repository uses, audit an existing `.pre-commit-config.yaml` for gaps, generate a multi-stack `.pre-commit-config.yaml`, and install the required Homebrew tools:
+
+```bash
+./caulking.sh detect --repo /path/to/repo
+./caulking.sh init --repo /path/to/repo --write
+./caulking.sh bootstrap --repo /path/to/repo
+./caulking.sh doctor --repo /path/to/repo
+```
+
+- **`./caulking.sh detect --repo /path/to/repo`:** Scans tracked files in the repository (ignoring `node_modules/`, `.venv/`, `venv/`, `vendor/`, `fixtures/`, `testdata/`, `examples/`) to detect all active stacks (`shell`, `container`, `python`, `go`, `javascript`, `ruby`, `opentofu` / `terraform`, `docs`), recommends the exact 5-pillar hooks (`FMT`, `LINT`, `CHECK`, `SAST`, `SCA`) and Homebrew profiles for the repository, and if `.pre-commit-config.yaml` already exists, audits it for legacy `cloud-gov/pre-commit-templates` URLs, legacy ambient `check-yaml`/`check-json` hooks, and missing hooks for detected file types.
+- **`./caulking.sh init --repo /path/to/repo [--write] [--force]`:** Generates a tailored, multi-stack `.pre-commit-config.yaml` combining all detected languages in the repository. Prints to stdout by default (dry-run preview); `--write` writes `<repo>/.pre-commit-config.yaml` atomically (refusing to overwrite an existing config unless `--force` is passed, and always refusing symlinks).
+
 ### "Executable not found" or missing linter when committing
 
 Run `caulking.sh doctor --repo .` in your repository to inspect which Homebrew formulae and minimum SemVer floors are required by the hooks enabled in `.pre-commit-config.yaml`, and `caulking.sh bootstrap --repo .` to install any missing Homebrew formulae:

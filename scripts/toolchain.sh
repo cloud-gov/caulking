@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck source=scripts/detect.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/detect.sh"
+
 toolchain_usage() {
   printf '%s\n' \
-    'Usage: caulking.sh {bootstrap|doctor|run} [--repo PATH] [--profile NAME]... [--dry-run]' \
+    'Usage: caulking.sh {bootstrap|doctor|run|detect|init} [--repo PATH] [--profile NAME]... [--dry-run] [--write] [--force]' \
     'Profiles: baseline (gitleaks >=8.21.0, prek >=0.4.0, bash >=4),' \
     '          shell (shellcheck >=0.9.0, shfmt >=3.6.0),' \
     '          container (hadolint >=2.12.0),' \
@@ -20,6 +23,9 @@ toolchain_usage() {
     'bootstrap: macOS only; install missing formulae. --dry-run prints the plan.' \
     'doctor: check-only; exit 0 healthy, 1 missing/broken tools, 2 invalid input.' \
     'run: requires baseline and a direct REPO/.pre-commit-config.yaml; pins --config.' \
+    'detect [-i|--interactive]: inspect repository files and audit .pre-commit-config.yaml coverage.' \
+    'init [-i|--interactive] [-y|--yes] [--stack NAME] [--no-stack NAME] [--write] [--force]:' \
+    '      generate recommended .pre-commit-config.yaml (stdout by default).' \
     'Internal: hook-run --repo ABS --stage pre-commit|pre-push reads .pre-commit-config.yaml,' \
     'checks dependencies and runs the pinned suite with stage-specific file selection.' \
     'Global setup: caulking setup --no-install (explicit; never performed by hooks).' \
@@ -391,17 +397,18 @@ toolchain_install() {
 }
 
 toolchain_main() {
-  local action="${1:-}" repo=. repo_seen=0 dry_run=0 profile formula dir hook_stage='' hook_id=''
+  local action="${1:-}" repo=. repo_seen=0 dry_run=0 write_config=0 force_write=0 interactive=0 assume_yes=0
+  local profile formula dir hook_stage='' hook_id=''
   local brew_bin='' brew_prefix='' runner='' scoped_path='' failed=0 has_baseline=0 profile_count=0 config_seen=0
   local git_bin='' runtime_file='' caulking_root='' brewfile='' RUNTIME_GIT='' RUNTIME_RUNNER=''
   # These arrays are dynamically scoped to the helpers; Bash 3 can launch bootstrap.
-  local -a profiles=() formulae=() tool_dirs=() config_hooks=()
+  local -a profiles=() formulae=() tool_dirs=() config_hooks=() stack_overrides=()
   case "$action" in
     -h | --help)
       toolchain_usage
       return 0
       ;;
-    bootstrap | doctor | run | hook-run) shift ;;
+    bootstrap | doctor | run | hook-run | detect | init) shift ;;
     *)
       toolchain_usage >&2
       return 2
@@ -421,6 +428,10 @@ toolchain_main() {
       --profile)
         if [[ "$action" == hook-run ]]; then
           toolchain_error 'hook-run reads hooks only from .pre-commit-config.yaml'
+          return 2
+        fi
+        if [[ "$action" == detect || "$action" == init ]]; then
+          toolchain_error "--profile is not supported for $action"
           return 2
         fi
         if (($# < 2)); then
@@ -452,12 +463,70 @@ toolchain_main() {
         dry_run=1
         shift
         ;;
+      --write)
+        if [[ "$action" != init && "$action" != detect ]] || ((write_config)); then
+          toolchain_error '--write is valid once, for init only'
+          return 2
+        fi
+        write_config=1
+        shift
+        ;;
+      --force)
+        if [[ "$action" != init && "$action" != detect ]] || ((force_write)); then
+          toolchain_error '--force is valid once, for init only'
+          return 2
+        fi
+        force_write=1
+        shift
+        ;;
+      -i | --interactive)
+        if [[ "$action" != init && "$action" != detect ]] || ((interactive)); then
+          toolchain_error '--interactive is valid once, for init or detect only'
+          return 2
+        fi
+        interactive=1
+        shift
+        ;;
+      -y | --yes)
+        if [[ "$action" != init && "$action" != detect ]] || ((assume_yes)); then
+          toolchain_error '--yes is valid once, for init or detect only'
+          return 2
+        fi
+        assume_yes=1
+        shift
+        ;;
+      --stack)
+        if [[ "$action" != init && "$action" != detect ]] || (($# < 2)); then
+          toolchain_error '--stack requires a stack name and is valid for init or detect only'
+          return 2
+        fi
+        detect_validate_stack_name "$2" || return 2
+        stack_overrides+=("add:$2")
+        shift 2
+        ;;
+      --no-stack)
+        if [[ "$action" != init && "$action" != detect ]] || (($# < 2)); then
+          toolchain_error '--no-stack requires a stack name and is valid for init or detect only'
+          return 2
+        fi
+        detect_validate_stack_name "$2" || return 2
+        stack_overrides+=("del:$2")
+        shift 2
+        ;;
       *)
         toolchain_error "unsupported argument: $1"
         return 2
         ;;
     esac
   done
+  if [[ "$action" == detect ]] && ((interactive == 0 && (write_config || force_write))); then
+    toolchain_error '--write and --force are valid for init (or detect --interactive) only'
+    return 2
+  fi
+  if ((force_write)) && ((write_config == 0)); then
+    toolchain_error '--force requires --write'
+    return 2
+  fi
   if [[ "$action" == hook-run ]] && [[ "$repo" != /* || "$repo_seen" != 1 || -z "$hook_stage" ]]; then
     toolchain_error 'hook-run requires --repo ABS and --stage pre-commit|pre-push'
     return 2
@@ -466,6 +535,14 @@ toolchain_main() {
     toolchain_error 'repository path must be an accessible directory'
     return 2
   }
+  if [[ "$action" == detect ]]; then
+    toolchain_detect "$repo" "$interactive" "$write_config" "$force_write" "$assume_yes" ${stack_overrides[@]+"${stack_overrides[@]}"}
+    return $?
+  fi
+  if [[ "$action" == init ]]; then
+    toolchain_init "$repo" "$write_config" "$force_write" "$interactive" "$assume_yes" ${stack_overrides[@]+"${stack_overrides[@]}"}
+    return $?
+  fi
   if [[ "$action" == hook-run ]] && [[ ! -f "$repo/.pre-commit-config.yaml" || ! -r "$repo/.pre-commit-config.yaml" ]]; then
     toolchain_error "hook-run requires a readable direct config: $repo/.pre-commit-config.yaml"
     return 2
